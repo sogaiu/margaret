@@ -861,6 +861,11 @@
            "whatever")
 # => @[{:fun :value}]
 
+(peg/match ~(sequence (constant :relax)
+                      (position))
+            "whatever")
+# => @[:relax 0]
+
 # `argument`
 # ----------
 
