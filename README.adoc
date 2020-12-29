@@ -91,6 +91,7 @@ Mostly done:
 .. backref
 .. capture, \<-, quote.
 .. drop
+.. error
 
 Todo:
 
@@ -105,7 +106,6 @@ Todo:
 
 . Captures
 .. cmt
-.. error
 .. constant
 .. replace, /
 .. position
