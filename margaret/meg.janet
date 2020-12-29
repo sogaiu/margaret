@@ -49,6 +49,8 @@
 #
 # . argument 4+ -- things for use with `argument`
 #
+# . output debugging info as "data" (jdn)
+#
 # . optimization speculation
 #
 #   . tco using loop + label as in mal
