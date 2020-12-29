@@ -42,7 +42,7 @@ There is some support for diagnostic output via the dynamic variable `:meg-debug
 
 [source,janet]
 ----
-`(setdyn :meg-debug true)`
+(setdyn :meg-debug true)
 ----
 
 before calling `meg/match`.  Output format is still evolving but likely will support at least:
