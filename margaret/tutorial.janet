@@ -527,7 +527,7 @@
 # `look` aka `>`
 # --------------
 
-# `(look pffset patt)`
+# `(look offset patt)`
 
 # Matches only if `patt` matches at a fixed offset.
 
