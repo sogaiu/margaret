@@ -255,6 +255,19 @@
               (when-let [leny (peg-match* patt text grammar)]
                 leny)))
           #
+          (or (= '> special)
+              (= 'look special))
+          (do (when (dyn :meg-debug) (print special))
+            (assert (>= (length tail) 2)
+                    "`look` requires at least 2 arguments")
+            (def offset (first tail))
+            (assert (int? offset)
+                    "offset argument should be an integer")
+            (def patt (get tail 1))
+            (def lenx (peg-match* patt
+                                  (string/slice text offset) grammar))
+            (when lenx 0))
+          #
           (or (= 'capture special)
               (= 'quote special)
               (= '<- special))
@@ -568,6 +581,27 @@
 
  (peg-match ~(capture :H) "g")
  # => @["g"]
+
+ (peg-match ~(look 3 "cat")
+             "my cat")
+ # => @[]
+
+ (peg-match ~(look 3 (capture "cat"))
+             "my cat")
+ # => @["cat"]
+
+(peg-match ~(look -4 (capture "cat"))
+             "my cat")
+ # => @["cat"]
+
+ (peg-match ~(sequence (look 3 "cat")
+                       "my")
+             "my cat")
+ # => @[]
+
+ (peg-match ~(capture (look 3 "cat"))
+             "my cat")
+ # => @[""]
 
  )
 
