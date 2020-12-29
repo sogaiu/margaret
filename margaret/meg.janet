@@ -296,8 +296,8 @@
           (do (when (dyn :meg-debug) (print special))
             (assert (not (empty? tail))
                     "`backref` requires at least one argument")
-            (when-let [tag (first tail)
-                       last-cap (get tags tag)]
+            (def tag (first tail))
+            (when-let [last-cap (get tags tag)]
               (array/push caps last-cap)
               (when-let [opt-tag (get tail 1)]
                 (put tags
