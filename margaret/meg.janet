@@ -9,6 +9,7 @@
 # . use existing tests / examples for peg/match for testing
 #
 #   . official janet tests
+#   . test things from default-peg-grammar
 #   . janet peg tutorial doc has examples
 #   . tests in various repositories
 #     . clojure-peg
@@ -43,7 +44,32 @@
 #   . some
 #   . if-not
 #
-# . determine and implement rest of constructs
+# . implement rest of combinators
+#
+#   . between, opt, ?
+#   . at-least
+#   . at-most
+#   . repeat, "n"
+#   . look, >
+#   . to
+#   . thru
+#   . backmatch
+#
+# . implement rest of captures
+#   . group
+#   . replace, /
+#   . constant
+#   . argument
+#   . line
+#   . column
+#   . accumulate, %
+#   . cmt
+#   . error
+#   . lenprefix
+#   . int
+#   . int-be
+#   . uint
+#   . uint-be
 #
 # . argument 3 -- where to start
 #
