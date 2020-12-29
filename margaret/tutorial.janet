@@ -545,6 +545,10 @@
            "my cat")
 # => @[]
 
+(peg/match ~(capture (look 3 "cat"))
+           "my cat")
+# => @[]
+
 # `(> offset patt)` is an alias for `(look offset patt)`
 
 (peg/match ~(> 3 "cat")
