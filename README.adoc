@@ -1,0 +1,135 @@
+= Margaret - Janet's peg/match in Janet
+:toc:
+
+This aims to be a pure-Janet implementation of Janet's `peg/match`.
+
+== Background
+
+While reading bakpakin's https://bakpakin.com/writing/how-janets-peg-works.html[How Janet's PEG module works], started typing the code in and evaluating it, next thing I knew...
+
+== Status
+
+In progress, see <<Specials Implementation Status>> for details.
+
+== Why?
+
+* Aid in understanding Janet's PEG system
+* Generate example PEG specials usages
+* Experiment with adding diagnostic info / tracing
+* Experiment with additional constructs
+
+== Setup
+
+* Clone this repository and cd to the relevant directory
+
+* Ensure `janet` and `jpm` are on your `PATH`
+
+* Install if you like: `jpm install`
+
+== Usage
+
+`meg/match` is an attempt at implementing `peg/match`, so for example:
+
+[source,janet]
+----
+(import margaret/meg)
+
+(meg/match ~(capture (some "smile")) "smile!")
+----
+should work.
+
+There is some support for diagnostic output via the dynamic variable `:meg-debug`, just do:
+
+[source,janet]
+----
+`(setdyn :meg-debug true)`
+----
+
+before calling `meg/match`.  Output format is still evolving but likely will support at least:
+
+. capture stack
+. tags
+. index into text
+. specials execution order
+
+== Testing
+
+Run all tests by:
+
+* Ensure https://gitlab.com/sogaiu/judge-gen[judge-gen] is installed (i.e. `jg` and `jg-verdict` are on your `PATH`)
+
+* From the project directory of margaret: `jpm test`
+
+There are currently tests for:
+
+* link:margaret/meg.janet[margaret's `meg` module]
+
+* link:margaret/tutorial.janet[`peg` module tutorial]
+
+* link:margaret/article.janet[modified code from bakpakin's article]
+
+== Specials Implementation Status
+
+Mostly done:
+
+. any
+. backref
+. capture, \<-, quote
+. choice, \+
+. drop
+. if
+. if-not
+. look, >
+. range
+. sequence, *
+. set
+. some
+
+Todo:
+
+. Combinators
+.. between, opt, ?
+.. at-least
+.. at-most
+.. repeat, "n"
+.. to
+.. thru
+.. backmatch
+
+. Captures
+.. cmt
+.. error
+.. constant
+.. replace, /
+.. position
+.. accumulate, %
+.. lenprefix
+.. group
+.. argument
+.. line
+.. column
+.. int
+.. int-be
+.. uint
+.. uint-b
+
+== Acknowledgments
+
+Thanks to (at least) the following folks:
+
+* ahungry
+* andrewchambers
+* bakpakin
+* crocket
+* goto-engineering
+* ikarius
+* LeafGarland
+* LeviSchuck
+* nate
+* pyrmont
+* pepe
+* subsetpark
+* swlkr
+* tami5
+
+...and other Janet community members :)
