@@ -479,7 +479,7 @@
 
 # Tries to match `patt` only if `cond` matches as well.
 
-# `cond` will not produce any captures.
+# `cond` will not produce any captures. [*]
 
 (peg/match ~(if 5 (set "eilms"))
            "smile")
@@ -496,7 +496,7 @@
 
 # Tries to match only if `cond` does not match.
 
-# `cond` will not produce any captures.
+# `cond` will not produce any captures. [*]
 
 (peg/match ~(if-not 5 (set "iknw"))
            "wink")
@@ -533,7 +533,7 @@
 
 # `offset` can be any integer.
 
-# `patt` will not produce captures and the peg will not advance any
+# `patt` will not produce captures [*] and the peg will not advance any
 # characters.
 
 (peg/match ~(look 3 "cat")
@@ -1518,5 +1518,13 @@ default-peg-grammar
 
 # * src/core/peg.c
 #     https://github.com/janet-lang/janet/blob/cae4f1962914e27aba3d40aa650ac1e63c3c5a9b/src/core/peg.c
+
+# Footnotes
+# ---------
+
+# [*] The phrase "not produce ... captures" seems misleading as
+#     the combinators themselves do not produce captures, but
+#     "arguments" (e.g. `cond`, `patt`, etc.) can (e.g. if
+#     `patt` is `(capture "a")` and `patt` succeeds).
 
 )
