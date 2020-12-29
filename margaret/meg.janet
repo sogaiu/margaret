@@ -248,7 +248,9 @@
     (peg-match* (peg-table :main) otext peg-table))
   (when (dyn :meg-debug)
     (prin "tags: ")
-    (pp tags))
+    (pp tags)
+    (prin "capture stack: ")
+    (pp caps))
   (when index
     (when (dyn :meg-debug)
       (print "index: " index))
