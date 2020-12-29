@@ -1061,13 +1061,13 @@
 # `patt` produces no captures or `patt` is not specified.
 
 (try
-  (peg/match ~(choice "a"
-                      "b"
-                      (error (capture $)))
-             "c")
+  (peg/match ~(sequence "a"
+                        (error (sequence (capture "b")
+                                         (capture "c"))))
+             "abc")
   ([err]
    err))
-# => "grammar error in $, unexpected peg source"
+# => "c"
 
 (try
   (peg/match ~(choice "a"
