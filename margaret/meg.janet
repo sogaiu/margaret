@@ -123,6 +123,7 @@
   #
   (def caps @[])
   (def tags @{})
+  (def tlen (length otext))
   #
   (defn peg-match*
     [peg text grammar]
@@ -338,6 +339,12 @@
             (when-let [tag (get tail 1)]
               (put tags
                    tag k))
+            0)
+          #
+          (or (= 'position special)
+              (= '$ special))
+          (do (when (dyn :meg-debug) (print special))
+            (array/push caps (- tlen (length text)))
             0)
           #
           (error (string "unknown special: " special))))
@@ -673,6 +680,27 @@
  (peg-match ~(constant {:fun :value})
              "whatever")
  # => @[{:fun :value}]
+
+ (peg-match ~(sequence (constant :relax)
+                       (position))
+             "whatever")
+ # => @[:relax 0]
+
+ (peg-match ~(position) "a")
+ # => @[0]
+
+ (peg-match ~(sequence "a"
+                       (position))
+             "ab")
+ # => @[1]
+
+ (peg-match ~($) "a")
+ # => @[0]
+
+ (peg-match ~(sequence "a"
+                       ($))
+             "ab")
+ # => @[1]
 
  )
 
