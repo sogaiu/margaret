@@ -80,7 +80,7 @@ Mostly done:
 
 . Combinators
 .. any
-.. choice, \+
+.. choice, {plus}
 .. if
 .. if-not
 .. look, >
