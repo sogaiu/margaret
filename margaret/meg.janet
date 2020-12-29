@@ -603,7 +603,7 @@
              "my cat")
  # => @["cat"]
 
-(peg-match ~(look -4 (capture "cat"))
+ (peg-match ~(look -4 (capture "cat"))
              "my cat")
  # => @["cat"]
 
