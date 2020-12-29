@@ -87,10 +87,11 @@
 # because PEGs offer a superset of the functionality of regular
 # expressions.)
 
-(keep (fn [sym]
-        (when (string/has-prefix? "peg/" (string sym))
-          (string sym)))
-      (all-bindings))
+(->> (all-bindings)
+     (keep (fn [sym]
+             (when (string/has-prefix? "peg/" (string sym))
+               (string sym))))
+     sort)
 ``
 @["peg/compile"
   "peg/find"
