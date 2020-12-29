@@ -72,18 +72,25 @@ There are currently tests for:
 
 Mostly done:
 
-. any
-. backref
-. capture, \<-, quote
-. choice, \+
-. drop
-. if
-. if-not
-. look, >
-. range
-. sequence, *
-. set
-. some
+. Primitive Patterns
+.. integer
+.. range
+.. set
+.. string
+
+. Combinators
+.. any
+.. choice, \+
+.. if
+.. if-not
+.. look, >
+.. sequence, *
+.. some
+
+. Captures
+.. backref
+.. capture, \<-, quote.
+.. drop
 
 Todo:
 
