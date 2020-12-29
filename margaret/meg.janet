@@ -73,6 +73,19 @@
 #   . uint
 #   . uint-be
 #
+# . capture stack load / save is done for following in c:
+#
+#   . accumulate, %
+#   . between
+#   . choice
+#   . cmt
+#   . drop
+#   . group
+#   . lenprefix
+#   . replace, /
+#   . thru
+#   . to
+#
 # . argument 3 -- where to start
 #
 # . argument 4+ -- things for use with `argument`
