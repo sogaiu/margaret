@@ -98,7 +98,8 @@ Mostly done:
 Todo:
 
 . Combinators
-.. between, opt, ?
+.. opt, ?
+.. between
 .. at-least
 .. at-most
 .. repeat, "n"
