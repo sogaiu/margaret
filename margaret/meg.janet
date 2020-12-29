@@ -329,6 +329,17 @@
                   (error "match error at line X, column Y")))
               (error "match error at line X, column Y")))
           #
+          (= 'constant special)
+          (do (when (dyn :meg-debug) (print special))
+            (assert (not (empty? tail))
+                    "`constant` requires at least one argument")
+            (def k (first tail))
+            (array/push caps k)
+            (when-let [tag (get tail 1)]
+              (put tags
+                   tag k))
+            0)
+          #
           (error (string "unknown special: " special))))
       #
       # unknown
@@ -654,6 +665,14 @@
    ([err]
     :match-error))
  # => :match-error
+
+ (peg-match ~(constant "smile")
+             "whatever")
+ # => @["smile"]
+
+ (peg-match ~(constant {:fun :value})
+             "whatever")
+ # => @[{:fun :value}]
 
  )
 
