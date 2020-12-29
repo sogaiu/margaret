@@ -24,9 +24,14 @@
 #      "test" phony target -- thanks to rduplain and bakpakin
 (put (dyn :rules) "test" nil)
 (phony "test" ["build"]
-       (os/execute ["jg-verdict"
-                    "-p" proj-root
-                    "-s" src-root] :p))
+       (when (try
+               (os/execute ["jg-verdict" "--version"] :p)
+               ([err]
+                (eprint "judge-gen is required for testing")
+                nil))
+         (os/execute ["jg-verdict"
+                      "-p" proj-root
+                      "-s" src-root] :p)))
 
 (phony "judge" ["build"]
        (os/execute ["jg-verdict"
