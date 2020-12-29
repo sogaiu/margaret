@@ -850,7 +850,7 @@
 
 # `(constant k ?tag)`
 
-# Captures a constant value and advances no character.
+# Captures a constant value and advances no characters.
 
 (peg/match ~(constant "smile")
            "whatever")
