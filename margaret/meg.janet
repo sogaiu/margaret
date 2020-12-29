@@ -316,6 +316,18 @@
                 (put tags
                      opt-tag last-cap))
               0))
+          # XXX: line and column info?
+          (= 'error special)
+          (do (when (dyn :meg-debug) (print special))
+            (if-let [patt (first tail)]
+              (let [pre-len (length caps) # XXX: hack?
+                    lenx (peg-match* patt text grammar)
+                    post-len (length caps)]
+                # XXX: hack to assess  "didn't produce captures"
+                (if (not= pre-len post-len)
+                  (error (array/peek caps))
+                  (error "match error at line X, column Y")))
+              (error "match error at line X, column Y")))
           #
           (error (string "unknown special: " special))))
       #
@@ -615,6 +627,33 @@
  (peg-match ~(capture (look 3 "cat"))
              "my cat")
  # => @[""]
+
+ (try
+   (peg-match ~(sequence "a"
+                         (error (sequence (capture "b")
+                                          (capture "c"))))
+               "abc")
+   ([err]
+    err))
+ # => "c"
+
+ (try
+   (peg-match ~(choice "a"
+                       "b"
+                       (error ""))
+               "c")
+   ([err]
+    err))
+ # => "match error at line X, column Y"
+
+ (try
+   (peg-match ~(choice "a"
+                       "b"
+                       (error))
+               "c")
+   ([err]
+    :match-error))
+ # => :match-error
 
  )
 
