@@ -93,6 +93,7 @@ Mostly done:
 .. constant
 .. drop
 .. error
+.. position
 
 Todo:
 
@@ -108,7 +109,6 @@ Todo:
 . Captures
 .. cmt
 .. replace, /
-.. position
 .. accumulate, %
 .. lenprefix
 .. group
