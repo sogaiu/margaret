@@ -282,6 +282,16 @@
                                   (string/slice text offset) grammar))
             (when lenx 0))
           #
+          (or (= 'opt special)
+              (= '? special))
+          (do (when (dyn :meg-debug) (print special))
+            (assert (not (empty? tail))
+                    "`opt` requires at least one argument")
+            (def patt (first tail))
+            (if-let [lenx (peg-match* patt text grammar)]
+              lenx
+              0))
+          #
           (or (= 'capture special)
               (= 'quote special)
               (= '<- special))
@@ -701,6 +711,18 @@
                        ($))
              "ab")
  # => @[1]
+
+ (peg-match ~(opt "a") "a")
+ # => @[]
+
+ (peg-match ~(opt "a") "")
+ # => @[]
+
+ (peg-match ~(? "a") "a")
+ # => @[]
+
+ (peg-match ~(? "a") "")
+ # => @[]
 
  )
 
