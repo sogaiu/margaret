@@ -205,6 +205,28 @@
               (+= len lenx))
             (when had-match len))
           #
+          (= 'if special)
+          (do (when (dyn :meg-debug) (print special))
+            (assert (>= (length tail) 2)
+                    "`if` requires at least 2 arguments")
+            (def cond-patt (first tail))
+            (def lenx (peg-match* cond-patt text grammar))
+            (when lenx
+              (def patt (get tail 1))
+              (when-let [leny (peg-match* patt text grammar)]
+                leny)))
+          #
+          (= 'if-not special)
+          (do (when (dyn :meg-debug) (print special))
+            (assert (>= (length tail) 2)
+                    "`if-not` requires at least 2 arguments")
+            (def cond-patt (first tail))
+            (def lenx (peg-match* cond-patt text grammar))
+            (unless lenx
+              (def patt (get tail 1))
+              (when-let [leny (peg-match* patt text grammar)]
+                leny)))
+          #
           (or (= 'capture special)
               (= 'quote special)
               (= '<- special))
@@ -496,6 +518,28 @@
 
  (peg-match ~(capture (any (range "09"))) "123")
  # => @["123"]
+
+ (peg-match ~(capture (if 5 (set "eilms")))
+             "smile")
+ # => @["s"]
+
+ (peg-match ~(capture (if 5 (set "eilms")))
+             "wink")
+ # => nil
+
+ (peg-match ~(capture (if-not 5 (set "iknw")))
+             "wink")
+ # => @["w"]
+
+ (peg-match ~(capture (if-not 4 (set "iknw")))
+             "wink")
+ # => nil
+
+ (peg-match ~(capture :A) "1")
+ # => @["1"]
+
+ (peg-match ~(capture :H) "g")
+ # => @["g"]
 
  )
 
