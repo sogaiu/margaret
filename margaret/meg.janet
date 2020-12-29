@@ -46,26 +46,28 @@
 #
 # . implement rest of combinators
 #
+#   . look, >
 #   . between, opt, ?
 #   . at-least
 #   . at-most
 #   . repeat, "n"
-#   . look, >
 #   . to
 #   . thru
 #   . backmatch
 #
 # . implement rest of captures
-#   . group
-#   . replace, /
+#
+#   . cmt
+#   . error
 #   . constant
+#   . replace, /
+# . . position
+#   . accumulate, %
+#   . lenprefix
+#   . group
 #   . argument
 #   . line
 #   . column
-#   . accumulate, %
-#   . cmt
-#   . error
-#   . lenprefix
 #   . int
 #   . int-be
 #   . uint
