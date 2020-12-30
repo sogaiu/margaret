@@ -302,14 +302,15 @@
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
                       "`capture` requires at least one argument")
-              (let [lenx (peg-match* (first tail)
-                                     text grammar)
-                    cap (string/slice text 0 lenx)]
-                (array/push caps cap)
-                (when-let [tag (get tail 1)]
-                  (put tags
-                       tag cap))
-                lenx))
+              (def patt (first tail))
+              (def lenx (peg-match* patt text grammar))
+              (when lenx
+                (let [cap (string/slice text 0 lenx)]
+                  (array/push caps cap)
+                  (when-let [tag (get tail 1)]
+                    (put tags
+                         tag cap))
+                  lenx)))
             #
             (= 'drop special)
             (do (when (dyn :meg-debug) (print special))
