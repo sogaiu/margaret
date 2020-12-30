@@ -392,13 +392,15 @@
   (def [caps index tags]
     (peg-match** the-peg the-text))
   (when (dyn :meg-debug)
+    (print "--------")
     (prin "tags: ")
     (pp tags)
     (prin "capture stack: ")
     (pp caps))
   (when index
     (when (dyn :meg-debug)
-      (print "index: " index))
+      (print "index: " index)
+      (print "--------"))
     caps))
 
 (comment
