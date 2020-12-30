@@ -360,7 +360,8 @@
             (or (= 'position special)
                 (= '$ special))
             (do (when (dyn :meg-debug) (print special))
-              (array/push caps (- tlen (length text)))
+              (def pos (- tlen (length text)))
+              (array/push caps pos)
               0)
             #
             (= 'cmt special)
