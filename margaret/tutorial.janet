@@ -392,8 +392,8 @@
 (peg/match ~(some "a") "")
 # => nil
 
-# `between` aka `opt` or `?`
-# --------------------------
+# `between` and `opt` / `?`
+# -------------------------
 
 # `(between min max patt)`
 
