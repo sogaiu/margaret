@@ -194,7 +194,8 @@
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
                       "`set` requires at least one argument")
-              (when (string/check-set (first tail)
+              (def patt (first tail))
+              (when (string/check-set patt
                                       (string/slice text 0 1))
                 1))
             #
@@ -203,7 +204,8 @@
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
                       "`not` requires at least one argument")
-              (unless (peg-match* (first tail) text grammar)
+              (def patt (first tail))
+              (unless (peg-match* patt text grammar)
                 0))
             #
             (or (= '+ special)
