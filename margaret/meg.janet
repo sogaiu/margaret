@@ -90,7 +90,13 @@
 #
 # . argument 4+ -- things for use with `argument`
 #
+# . review tag support
+#
 # . output debugging info as "data" (jdn)
+#
+# . experimental specials
+#
+#   . debug - dumps internal state (e.g. capture stack, tags, etc.)
 #
 # . optimization speculation
 #
