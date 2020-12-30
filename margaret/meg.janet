@@ -173,7 +173,7 @@
             (= 'range special)
             (do (print special)
               (assert (not (empty? tail))
-                      "`range` requires at least one argument")
+                      "`range` requires at least 1 argument")
               (let [target-bytes
                     (reduce (fn [acc elt]
                               (assert (= 2 (length elt))
@@ -193,7 +193,7 @@
             (= 'set special)
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`set` requires at least one argument")
+                      "`set` requires at least 1 argument")
               (def patt (first tail))
               (when (string/check-set patt
                                       (string/slice text 0 1))
@@ -203,7 +203,7 @@
                 (= 'not special))
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`not` requires at least one argument")
+                      "`not` requires at least 1 argument")
               (def patt (first tail))
               (unless (peg-match* patt text grammar)
                 0))
@@ -242,7 +242,7 @@
             #
             (= 'any special)
             (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail)) "`any` requires one argument")
+              (assert (not (empty? tail)) "`any` requires 1 argument")
               (def patt (first tail))
               (var len 0)
               (var subtext text)
@@ -256,7 +256,7 @@
             #
             (= 'some special)
             (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail)) "`some` requires one argument")
+              (assert (not (empty? tail)) "`some` requires 1 argument")
               (def patt (first tail))
               (var len 0)
               (var subtext text)
@@ -309,7 +309,7 @@
                 (= '? special))
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`opt` requires at least one argument")
+                      "`opt` requires at least 1 argument")
               (def patt (first tail))
               (if-let [lenx (peg-match* patt text grammar)]
                 lenx
@@ -320,7 +320,7 @@
                 (= '<- special))
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`capture` requires at least one argument")
+                      "`capture` requires at least 1 argument")
               (def patt (first tail))
               (def lenx (peg-match* patt text grammar))
               (when lenx
@@ -334,7 +334,7 @@
             (= 'drop special)
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`drop` requires at least one argument")
+                      "`drop` requires at least 1 argument")
               (def patt (first tail))
               (def [_ idx _]
                 (peg-match** (table/to-struct (merge grammar {:main patt}))
@@ -345,7 +345,7 @@
                 (= '-> special))
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`backref` requires at least one argument")
+                      "`backref` requires at least 1 argument")
               (def tag (first tail))
               (when-let [last-cap (get tags tag)]
                 (array/push caps last-cap)
@@ -369,7 +369,7 @@
             (= 'constant special)
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
-                      "`constant` requires at least one argument")
+                      "`constant` requires at least 1 argument")
               (def k (first tail))
               (array/push caps k)
               (when-let [tag (get tail 1)]
