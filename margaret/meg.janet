@@ -133,26 +133,26 @@
       (cond
         # keyword
         (keyword? peg)
-        (do (when (dyn :meg-debug) (print "keyword"))
-            (peg-match* (grammar peg) text grammar))
+        (do (when (dyn :meg-debug) (print "keyword: :" peg))
+          (peg-match* (grammar peg) text grammar))
         # string literal
         (string? peg)
-        (do (when (dyn :meg-debug) (print "string"))
-            (when (string/has-prefix? peg text)
-              (length peg)))
+        (do (when (dyn :meg-debug) (print "string: \"" peg "\""))
+          (when (string/has-prefix? peg text)
+            (length peg)))
         # integer
         (int? peg)
-        (do (when (dyn :meg-debug) (print "integer"))
-            (when (<= peg (length text))
-              (if (pos? peg)
-                peg
-                0)))
+        (do (when (dyn :meg-debug) (print "integer: " peg))
+          (when (<= peg (length text))
+            (if (pos? peg)
+              peg
+              0)))
         # struct
         (struct? peg)
         (do (when (dyn :meg-debug) (print "struct"))
-            (assert (peg :main)
-                    "peg does not have :main")
-            (peg-match* (peg :main) text peg))
+          (assert (peg :main)
+                  "peg does not have :main")
+          (peg-match* (peg :main) text peg))
         # tuple
         (tuple? peg)
         (do (when (dyn :meg-debug) (print "tuple"))
