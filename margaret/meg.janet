@@ -108,17 +108,17 @@
       (case (type opeg)
         :string
          @{:main opeg}
-         :number
+        :number
          (do (assert (int? opeg)
                      (string "number must be an integer: " opeg))
-             @{:main opeg})
-         :keyword
+           @{:main opeg})
+        :keyword
          (do (assert (default-peg-grammar opeg)
                      (string "default-peg-grammar does not have :" opeg))
-             @{:main opeg})
-         :tuple
+           @{:main opeg})
+        :tuple
          @{:main opeg}
-         :struct
+        :struct
          (table ;(kvs opeg))))
     (assert (peg-table :main)
             "peg needs a :main key")
