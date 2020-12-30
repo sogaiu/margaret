@@ -89,7 +89,7 @@ Mostly done:
 .. some
 
 . Captures
-.. backref
+.. backref, \->
 .. capture, \<-, quote
 .. cmt
 .. constant
