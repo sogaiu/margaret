@@ -315,6 +315,29 @@
                 lenx
                 0))
             #
+            (= 'between special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`between` requires at least 3 arguments")
+              (def [min-arg max-arg patt] tail)
+              (assert (and (int? min-arg) (>= min-arg 0))
+                      "min arg should be a non-negative integer")
+              (assert (and (int? max-arg) (>= max-arg 0))
+                      "max arg should be a non-negative integer")
+              (var match-cnt 0)
+              (var len 0)
+              (var subtext text)
+              (while (and (pos? (length subtext))
+                          (< match-cnt max-arg))
+                (def idx (peg-match* patt subtext grammar))
+                (unless idx
+                  (break))
+                (++ match-cnt)
+                (set subtext (string/slice subtext idx))
+                (+= len idx))
+              (when (<= min-arg match-cnt max-arg)
+                len))
+            #
             (or (= 'capture special)
                 (= 'quote special)
                 (= '<- special))
@@ -845,6 +868,21 @@
                 {"cat" "tiger"})
              "cat")
  # => @["tiger"]
+
+ (peg-match ~(between 1 3 "a") "aa")
+ # => @[]
+
+ (peg-match ~(between 0 8 "b") "")
+ # => @[]
+
+ (peg-match ~(sequence (between 0 2 "c") "c")
+             "ccc")
+ # => @[]
+
+ (peg-match ~(sequence (between 0 3 "c") "c")
+             "ccc")
+ # => nil
+
 
  )
 
