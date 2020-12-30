@@ -384,13 +384,16 @@
               (def fun (get tail 1))
               (assert (or (function? fun) (cfunction? fun))
                       "fun argument should be a function")
-              (def [new-caps idx _]
+              (def [new-caps idx new-tags]
                 (peg-match** (table/to-struct (merge grammar {:main patt}))
                              text))
               (when (and new-caps (not (empty? new-caps)))
                 (def res (fun ;new-caps))
                 (unless (or (false? res) (nil? res))
                   (array/push caps res)
+                  (when-let [tag (get tail 2)]
+                    (put (merge-into tags new-tags)
+                         tag res))
                   idx)))
             #
             (error (string "unknown special: " special))))
