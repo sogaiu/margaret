@@ -1,8 +1,15 @@
+# XXX: consider using portions of the janet grammar peg in the
+#      examples below
+
+# XXX: also consider a series of posts similar in spirit to pyrmont's post,
+#      subject can be the janet grammar peg, but start simple and build it
+#      up gradually
+
 # XXX: more tag examples?
 
 # XXX: after a single pass through, study examples and consider
 #      additional / changes.  then consider rearranging
-#      material to introduce things like `capture` earlier.
+#      material to introduce things like `capture` and/or `position` earlier.
 #      the current arrangement feels more like a reference and
 #      is not so good for learning the material for the first
 #      time.
