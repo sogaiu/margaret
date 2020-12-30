@@ -99,271 +99,298 @@
 #   . consider not using `match`
 
 (defn- peg-match
-  [opeg otext]
+  [the-peg the-text]
   #
-  (def peg-table
-    (case (type opeg)
-      :string
-       @{:main opeg}
-      :number
-       (do (assert (int? opeg)
-                   (string "number must be an integer: " opeg))
-         @{:main opeg})
-      :keyword
-       (do (assert (default-peg-grammar opeg)
-                   (string "default-peg-grammar does not have :" opeg))
-         @{:main opeg})
-      :tuple
-       @{:main opeg}
-      :struct
-       (table ;(kvs opeg))))
-  (assert (peg-table :main)
-          "peg needs a :main key")
-  (table/setproto peg-table default-peg-grammar)
-  #
-  (def caps @[])
-  (def tags @{})
-  (def tlen (length otext))
-  #
-  (defn peg-match*
-    [peg text grammar]
-    (cond
-      # keyword
-      (keyword? peg)
-      (do (when (dyn :meg-debug) (print "keyword"))
-        (peg-match* (grammar peg) text grammar))
-      # string literal
-      (string? peg)
-      (do (when (dyn :meg-debug) (print "string"))
-        (when (string/has-prefix? peg text)
-          (length peg)))
-      # integer
-      (int? peg)
-      (do (when (dyn :meg-debug) (print "integer"))
-        (when (<= peg (length text))
-          (if (pos? peg)
-            peg
-            0)))
-      # struct
-      (struct? peg)
-      (do (when (dyn :meg-debug) (print "struct"))
-        (assert (peg :main)
-                "peg does not have :main")
-        (peg-match* (peg :main) text peg))
-      # tuple
-      (tuple? peg)
-      (do (when (dyn :meg-debug) (print "tuple"))
-        (assert (pos? (length peg))
-                "peg must have non-zero length")
-        (def special (first peg))
-        # XXX: use tuple/slice?
-        (def tail (drop 1 peg))
-        #
-        (cond
-          # range
-          (= 'range special)
-          (do (print special)
-            (assert (not (empty? tail))
-                    "`range` requires at least one argument")
-            (let [target-bytes
-                  (reduce (fn [acc elt]
-                            (assert (= 2 (length elt))
-                                    "range argument must be length 2")
-                            (let [left (get elt 0)
-                                  right (get elt 1)]
-                              (assert (<= left right) "empty range")
-                              (array/concat acc (range left (inc right)))))
-                          @[]
-                          tail)
-                  target-set (string/from-bytes ;target-bytes)]
-              (when (string/check-set target-set
+  (defn peg-match**
+    [opeg otext]
+    #
+    (def peg-table
+      (case (type opeg)
+        :string
+         @{:main opeg}
+         :number
+         (do (assert (int? opeg)
+                     (string "number must be an integer: " opeg))
+             @{:main opeg})
+         :keyword
+         (do (assert (default-peg-grammar opeg)
+                     (string "default-peg-grammar does not have :" opeg))
+             @{:main opeg})
+         :tuple
+         @{:main opeg}
+         :struct
+         (table ;(kvs opeg))))
+    (assert (peg-table :main)
+            "peg needs a :main key")
+    (table/setproto peg-table default-peg-grammar)
+    #
+    (def caps @[])
+    (def tags @{})
+    (def tlen (length otext))
+    #
+    (defn peg-match*
+      [peg text grammar]
+      (cond
+        # keyword
+        (keyword? peg)
+        (do (when (dyn :meg-debug) (print "keyword"))
+            (peg-match* (grammar peg) text grammar))
+        # string literal
+        (string? peg)
+        (do (when (dyn :meg-debug) (print "string"))
+            (when (string/has-prefix? peg text)
+              (length peg)))
+        # integer
+        (int? peg)
+        (do (when (dyn :meg-debug) (print "integer"))
+            (when (<= peg (length text))
+              (if (pos? peg)
+                peg
+                0)))
+        # struct
+        (struct? peg)
+        (do (when (dyn :meg-debug) (print "struct"))
+            (assert (peg :main)
+                    "peg does not have :main")
+            (peg-match* (peg :main) text peg))
+        # tuple
+        (tuple? peg)
+        (do (when (dyn :meg-debug) (print "tuple"))
+          (assert (pos? (length peg))
+                  "peg must have non-zero length")
+          (def special (first peg))
+          # XXX: use tuple/slice?
+          (def tail (drop 1 peg))
+          #
+          (cond
+            # range
+            (= 'range special)
+            (do (print special)
+              (assert (not (empty? tail))
+                      "`range` requires at least one argument")
+              (let [target-bytes
+                    (reduce (fn [acc elt]
+                              (assert (= 2 (length elt))
+                                      "range argument must be length 2")
+                              (let [left (get elt 0)
+                                    right (get elt 1)]
+                                (assert (<= left right) "empty range")
+                                (array/concat acc
+                                              (range left (inc right)))))
+                            @[]
+                            tail)
+                    target-set (string/from-bytes ;target-bytes)]
+                (when (string/check-set target-set
+                                        (string/slice text 0 1))
+                  1)))
+            # set
+            (= 'set special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`set` requires at least one argument")
+              (when (string/check-set (first tail)
                                       (string/slice text 0 1))
-                1)))
-          # set
-          (= 'set special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`set` requires at least one argument")
-            (when (string/check-set (first tail)
-                                    (string/slice text 0 1))
-              1))
-          #
-          (or (= '! special)
-              (= 'not special))
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`not` requires at least one argument")
-            (unless (peg-match* (first tail) text grammar)
-              0))
-          #
-          (or (= '+ special)
-              (= 'choice special))
-          (do (when (dyn :meg-debug) (print special))
-            (some (fn [x]
-                    (peg-match* x text grammar))
-                  (tuple/slice peg 1)))
-          #
-          (or (= '* special)
-              (= 'sequence special))
-          (do (when (dyn :meg-debug) (print special))
-            (var len 0)
-            (var subtext text)
-            (var ok true)
-            (loop [x :in (tuple/slice peg 1)
-                   :let [lenx (peg-match* x subtext grammar)
-                         _ (set ok lenx)]
-                   :while ok]
-              (set subtext (string/slice subtext lenx))
-              (+= len lenx))
-            (when ok len))
-          #
-          (= 'any special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail)) "`any` requires one argument")
-            (def patt (first tail))
-            (var len 0)
-            (var subtext text)
-            (while (pos? (length subtext))
-              (def lenx (peg-match* patt subtext grammar))
+                1))
+            #
+            (or (= '! special)
+                (= 'not special))
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`not` requires at least one argument")
+              (unless (peg-match* (first tail) text grammar)
+                0))
+            #
+            (or (= '+ special)
+                (= 'choice special))
+            (do (when (dyn :meg-debug) (print special))
+              (some (fn [x]
+                      (peg-match* x text grammar))
+                    (tuple/slice peg 1)))
+            #
+            (or (= '* special)
+                (= 'sequence special))
+            (do (when (dyn :meg-debug) (print special))
+              (var len 0)
+              (var subtext text)
+              (var ok true)
+              (loop [x :in (tuple/slice peg 1)
+                     :let [lenx (peg-match* x subtext grammar)
+                           _ (set ok lenx)]
+                     :while ok]
+                (set subtext (string/slice subtext lenx))
+                (+= len lenx))
+              (when ok len))
+            #
+            (= 'any special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail)) "`any` requires one argument")
+              (def patt (first tail))
+              (var len 0)
+              (var subtext text)
+              (while (pos? (length subtext))
+                (def lenx (peg-match* patt subtext grammar))
+                (unless lenx
+                  (break))
+                (set subtext (string/slice subtext lenx))
+                (+= len lenx))
+              len)
+            #
+            (= 'some special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail)) "`some` requires one argument")
+              (def patt (first tail))
+              (var len 0)
+              (var subtext text)
+              (var had-match false)
+              (while (pos? (length subtext))
+                (def lenx (peg-match* patt subtext grammar))
+                (unless lenx
+                  (break))
+                (set had-match true)
+                (set subtext (string/slice subtext lenx))
+                (+= len lenx))
+              (when had-match len))
+            #
+            (= 'if special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (>= (length tail) 2)
+                      "`if` requires at least 2 arguments")
+              (def cond-patt (first tail))
+              (def lenx (peg-match* cond-patt text grammar))
+              (when lenx
+                (def patt (get tail 1))
+                (when-let [leny (peg-match* patt text grammar)]
+                  leny)))
+            #
+            (= 'if-not special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (>= (length tail) 2)
+                      "`if-not` requires at least 2 arguments")
+              (def cond-patt (first tail))
+              (def lenx (peg-match* cond-patt text grammar))
               (unless lenx
-                (break))
-              (set subtext (string/slice subtext lenx))
-              (+= len lenx))
-            len)
-          #
-          (= 'some special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail)) "`some` requires one argument")
-            (def patt (first tail))
-            (var len 0)
-            (var subtext text)
-            (var had-match false)
-            (while (pos? (length subtext))
-              (def lenx (peg-match* patt subtext grammar))
-              (unless lenx
-                (break))
-              (set had-match true)
-              (set subtext (string/slice subtext lenx))
-              (+= len lenx))
-            (when had-match len))
-          #
-          (= 'if special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (>= (length tail) 2)
-                    "`if` requires at least 2 arguments")
-            (def cond-patt (first tail))
-            (def lenx (peg-match* cond-patt text grammar))
-            (when lenx
+                (def patt (get tail 1))
+                (when-let [leny (peg-match* patt text grammar)]
+                  leny)))
+            #
+            (or (= '> special)
+                (= 'look special))
+            (do (when (dyn :meg-debug) (print special))
+              (assert (>= (length tail) 2)
+                      "`look` requires at least 2 arguments")
+              (def offset (first tail))
+              (assert (int? offset)
+                      "offset argument should be an integer")
               (def patt (get tail 1))
-              (when-let [leny (peg-match* patt text grammar)]
-                leny)))
-          #
-          (= 'if-not special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (>= (length tail) 2)
-                    "`if-not` requires at least 2 arguments")
-            (def cond-patt (first tail))
-            (def lenx (peg-match* cond-patt text grammar))
-            (unless lenx
-              (def patt (get tail 1))
-              (when-let [leny (peg-match* patt text grammar)]
-                leny)))
-          #
-          (or (= '> special)
-              (= 'look special))
-          (do (when (dyn :meg-debug) (print special))
-            (assert (>= (length tail) 2)
-                    "`look` requires at least 2 arguments")
-            (def offset (first tail))
-            (assert (int? offset)
-                    "offset argument should be an integer")
-            (def patt (get tail 1))
-            (def lenx (peg-match* patt
-                                  (string/slice text offset) grammar))
-            (when lenx 0))
-          #
-          (or (= 'opt special)
-              (= '? special))
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`opt` requires at least one argument")
-            (def patt (first tail))
-            (if-let [lenx (peg-match* patt text grammar)]
-              lenx
-              0))
-          #
-          (or (= 'capture special)
-              (= 'quote special)
-              (= '<- special))
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`capture` requires at least one argument")
-            (let [lenx (peg-match* (first tail)
-                                   text grammar)
-                  cap (string/slice text 0 lenx)]
-              (array/push caps cap)
+              (def lenx (peg-match* patt
+                                    (string/slice text offset) grammar))
+              (when lenx 0))
+            #
+            (or (= 'opt special)
+                (= '? special))
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`opt` requires at least one argument")
+              (def patt (first tail))
+              (if-let [lenx (peg-match* patt text grammar)]
+                lenx
+                0))
+            #
+            (or (= 'capture special)
+                (= 'quote special)
+                (= '<- special))
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`capture` requires at least one argument")
+              (let [lenx (peg-match* (first tail)
+                                     text grammar)
+                    cap (string/slice text 0 lenx)]
+                (array/push caps cap)
+                (when-let [tag (get tail 1)]
+                  (put tags
+                       tag cap))
+                lenx))
+            #
+            (= 'drop special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`drop` requires at least one argument")
+              (let [lenx (peg-match* (first tail)
+                                     text grammar)]
+                (array/pop caps)
+                lenx))
+            #
+            (= 'backref special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`backref` requires at least one argument")
+              (def tag (first tail))
+              (when-let [last-cap (get tags tag)]
+                (array/push caps last-cap)
+                (when-let [opt-tag (get tail 1)]
+                  (put tags
+                       opt-tag last-cap))
+                0))
+            # XXX: line and column info?
+            (= 'error special)
+            (do (when (dyn :meg-debug) (print special))
+              (if-let [patt (first tail)]
+                (let [pre-len (length caps) # XXX: hack?
+                      lenx (peg-match* patt text grammar)
+                      post-len (length caps)]
+                  # XXX: hack to assess  "didn't produce captures"
+                  (if (not= pre-len post-len)
+                    (error (array/peek caps))
+                    (error "match error at line X, column Y")))
+                (error "match error at line X, column Y")))
+            #
+            (= 'constant special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (not (empty? tail))
+                      "`constant` requires at least one argument")
+              (def k (first tail))
+              (array/push caps k)
               (when-let [tag (get tail 1)]
                 (put tags
-                     tag cap))
-              lenx))
-          #
-          (= 'drop special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`drop` requires at least one argument")
-            (let [lenx (peg-match* (first tail)
-                                   text grammar)]
-              (array/pop caps)
-              lenx))
-          #
-          (= 'backref special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`backref` requires at least one argument")
-            (def tag (first tail))
-            (when-let [last-cap (get tags tag)]
-              (array/push caps last-cap)
-              (when-let [opt-tag (get tail 1)]
-                (put tags
-                     opt-tag last-cap))
-              0))
-          # XXX: line and column info?
-          (= 'error special)
-          (do (when (dyn :meg-debug) (print special))
-            (if-let [patt (first tail)]
-              (let [pre-len (length caps) # XXX: hack?
-                    lenx (peg-match* patt text grammar)
-                    post-len (length caps)]
-                # XXX: hack to assess  "didn't produce captures"
-                (if (not= pre-len post-len)
-                  (error (array/peek caps))
-                  (error "match error at line X, column Y")))
-              (error "match error at line X, column Y")))
-          #
-          (= 'constant special)
-          (do (when (dyn :meg-debug) (print special))
-            (assert (not (empty? tail))
-                    "`constant` requires at least one argument")
-            (def k (first tail))
-            (array/push caps k)
-            (when-let [tag (get tail 1)]
-              (put tags
-                   tag k))
-            0)
-          #
-          (or (= 'position special)
-              (= '$ special))
-          (do (when (dyn :meg-debug) (print special))
-            (array/push caps (- tlen (length text)))
-            0)
-          #
-          (error (string "unknown special: " special))))
-      #
-      # unknown
-      (error (string "unknown construct: " peg))))
+                     tag k))
+              0)
+            #
+            (or (= 'position special)
+                (= '$ special))
+            (do (when (dyn :meg-debug) (print special))
+              (array/push caps (- tlen (length text)))
+              0)
+            #
+            (= 'cmt special)
+            (do (when (dyn :meg-debug) (print special))
+              (assert (>= (length tail) 2)
+                      "`cmt` requires at least 2 arguments")
+              (def patt (first tail))
+              (def fun (get tail 1))
+              # XXX: check appropriate?
+              (assert (or (function? fun) (cfunction? fun))
+                      "fun argument should be a function")
+              # XXX: is this approach sound?
+              (def [new-caps idx] (peg-match** patt text))
+              (when new-caps
+                (def res (fun ;new-caps))
+                (if-not (or (false? res) (nil? res))
+                  (do # XXX: debug output?
+                    (array/push caps res)
+                    idx)
+                  nil)))
+            #
+            (error (string "unknown special: " special))))
+        #
+        # unknown
+        (error (string "unknown construct: " peg))))
+    #
+    (def index
+      (peg-match* (peg-table :main) otext peg-table))
+    [caps index tags])
   #
-  (def index
-    (peg-match* (peg-table :main) otext peg-table))
+  (def [caps index tags]
+    (peg-match** the-peg the-text))
   (when (dyn :meg-debug)
     (prin "tags: ")
     (pp tags)
@@ -723,6 +750,20 @@
 
  (peg-match ~(? "a") "")
  # => @[]
+
+ (peg-match ~(cmt (capture "hello")
+                  ,(fn [cap]
+                     (string cap "!")))
+             "hello")
+ # => @["hello!"]
+
+ (peg-match ~(cmt (sequence (capture "hello")
+                            (some (set " ,"))
+                            (capture "world"))
+                  ,(fn [cap1 cap2]
+                     (string cap2 ": yes, " cap1 "!")))
+             "hello, world")
+ # => @["world: yes, hello!"]
 
  )
 
