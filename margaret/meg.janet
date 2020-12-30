@@ -203,9 +203,20 @@
             (or (= '+ special)
                 (= 'choice special))
             (do (when (dyn :meg-debug) (print special))
-              (some (fn [x]
-                      (peg-match* x text grammar))
-                    (tuple/slice peg 1)))
+              (def res
+                (some (fn [patt]
+                        (def [new-caps idx new-tags]
+                          (peg-match** (table/to-struct (merge grammar
+                                                               {:main patt}))
+                                       text))
+                        (when idx
+                          [new-caps idx new-tags]))
+                      (tuple/slice peg 1)))
+              (when res
+                (def [new-caps idx new-tags] res)
+                (array/concat caps new-caps)
+                (merge-into tags new-tags)
+                idx))
             #
             (or (= '* special)
                 (= 'sequence special))
@@ -316,10 +327,11 @@
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
                       "`drop` requires at least one argument")
-              (let [lenx (peg-match* (first tail)
-                                     text grammar)]
-                (array/pop caps)
-                lenx))
+              (def patt (first tail))
+              (def [_ idx _]
+                (peg-match** (table/to-struct (merge grammar {:main patt}))
+                             text))
+              idx)
             #
             (or (= 'backref special)
                 (= '-> special))
@@ -370,18 +382,16 @@
                       "`cmt` requires at least 2 arguments")
               (def patt (first tail))
               (def fun (get tail 1))
-              # XXX: check appropriate?
               (assert (or (function? fun) (cfunction? fun))
                       "fun argument should be a function")
-              # XXX: is this approach sound?
-              (def [new-caps idx] (peg-match** patt text))
-              (when new-caps
+              (def [new-caps idx _]
+                (peg-match** (table/to-struct (merge grammar {:main patt}))
+                             text))
+              (when (and new-caps (not (empty? new-caps)))
                 (def res (fun ;new-caps))
-                (if-not (or (false? res) (nil? res))
-                  (do # XXX: debug output?
-                    (array/push caps res)
-                    idx)
-                  nil)))
+                (unless (or (false? res) (nil? res))
+                  (array/push caps res)
+                  idx)))
             #
             (error (string "unknown special: " special))))
         #
@@ -770,6 +780,87 @@
                      (string cap2 ": yes, " cap1 "!")))
              "hello, world")
  # => @["world: yes, hello!"]
+
+ (peg-match ~(capture {:main :number
+                       :number (drop (cmt (<- :token)
+                                          ,scan-number))
+                       :token (some :symchars)
+                       :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
+                                    (set "!$%&*+-./:<?=>@^_"))})
+             "18")
+ # => @["18"]
+
+ (peg-match ~{:main :token
+              :token (some :symchars)
+              :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
+                           (set "!$%&*+-./:<?=>@^_"))}
+             "18")
+ # => @[]
+
+ )
+
+(comment
+
+ # based on:
+ #   https://janet-lang.org/docs/syntax.html#Grammar
+ (def grammar
+   ~{:ws (set " \t\r\f\n\0\v") # XXX: why \0?
+     :readermac (set "';~,|")
+     :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
+                  (set "!$%&*+-./:<?=>@^_"))
+     :token (some :symchars)
+     :hex (range "09" "af" "AF")
+     :escape (* "\\" (+ (set "ntrzfev0\"\\")
+                        (* "x" :hex :hex)
+                        (* "u" [4 :hex])
+                        (* "U" [6 :hex])
+                        (error (constant "bad escape"))))
+     :comment (* "#" (any (if-not (+ "\n" -1) 1)))
+     :symbol :token
+     :keyword (* ":" (any :symchars))
+     :constant (* (+ "true" "false" "nil")
+                  (not :symchars))
+     :bytes (* "\""
+               (any (+ :escape (if-not "\"" 1)))
+               "\"")
+     :string :bytes
+     :buffer (* "@" :bytes)
+     :long-bytes {:delim (some "`")
+                  :open (capture :delim :n)
+                  :close (cmt (* (not (> -1 "`"))
+                                 (-> :n)
+                                 ':delim)
+                              ,=)
+                  :main (drop (* :open
+                                 (any (if-not :close 1))
+                                 :close))}
+     :long-string :long-bytes
+     :long-buffer (* "@" :long-bytes)
+     :number (drop (cmt (<- :token) ,scan-number))
+     :raw-value (+ :comment :constant :number :keyword
+                   :string :buffer :long-string :long-buffer
+                   :parray :barray :ptuple :btuple :struct :table :symbol)
+     :value (* (any (+ :ws :readermac))
+               :raw-value
+               (any :ws))
+     :root (any :value)
+     :root2 (any (* :value :value))
+     :ptuple (* "(" :root (+ ")" (error "")))
+     :btuple (* "[" :root (+ "]" (error "")))
+     :struct (* "{" :root2 (+ "}" (error "")))
+     :parray (* "@" :ptuple)
+     :barray (* "@" :btuple)
+     :table (* "@" :struct)
+     :main :root})
+
+ (peg-match grammar "1")
+ # => @[]
+
+ (peg-match ~(capture ,grammar) "1")
+ # => @["1"]
+
+ (peg-match grammar "(+ 1 1)")
+ # => @[]
 
  )
 
