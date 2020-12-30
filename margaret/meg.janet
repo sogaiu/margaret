@@ -163,7 +163,7 @@
           (def tail (drop 1 peg))
           #
           (cond
-            # range
+            #
             (= 'range special)
             (do (print special)
               (assert (not (empty? tail))
@@ -183,7 +183,7 @@
                 (when (string/check-set target-set
                                         (string/slice text 0 1))
                   1)))
-            # set
+            #
             (= 'set special)
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
