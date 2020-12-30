@@ -91,6 +91,7 @@ Mostly done:
 . Captures
 .. backref
 .. capture, \<-, quote
+.. cmt
 .. constant
 .. drop
 .. error
@@ -108,7 +109,6 @@ Todo:
 .. backmatch
 
 . Captures
-.. cmt
 .. replace, /
 .. accumulate, %
 .. lenprefix
