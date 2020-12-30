@@ -385,7 +385,8 @@
             (error (string "unknown special: " special))))
         #
         # unknown
-        (error (string "unknown construct: " peg))))
+        (error (string "unknown construct type: " (type peg)
+                       " " (describe peg)))))
     #
     (def index
       (peg-match* (peg-table :main) otext peg-table))
