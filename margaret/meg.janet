@@ -396,6 +396,39 @@
                          tag res))
                   idx)))
             #
+            (or (= 'replace special)
+                (= '/ special))
+            (do (when (dyn :meg-debug) (print special))
+              (assert (>= (length tail) 2)
+                      "`replace` requires at least 2 arguments")
+              (def patt (first tail))
+              (def subst (get tail 1))
+              (def [new-caps idx new-tags]
+                (peg-match** (table/to-struct (merge grammar {:main patt}))
+                             text))
+              (when idx
+                (cond
+                  (dictionary? subst)
+                  (let [res (get subst (last new-caps))]
+                    (array/push caps res)
+                    (when-let [tag (get tail 2)]
+                      (put (merge-into tags new-tags)
+                           tag res)))
+                  #
+                  (or (function? subst) (cfunction? subst))
+                  (let [res (subst ;new-caps)]
+                    (array/push caps res)
+                    (when-let [tag (get tail 2)]
+                      (put (merge-into tags new-tags)
+                           tag subst)))
+                  #
+                  (do
+                    (array/push caps subst)
+                    (when-let [tag (get tail 2)]
+                      (put (merge-into tags new-tags)
+                           tag subst))))
+                idx))
+            #
             (error (string "unknown special: " special))))
         #
         # unknown
@@ -783,6 +816,27 @@
                      (string cap2 ": yes, " cap1 "!")))
              "hello, world")
  # => @["world: yes, hello!"]
+
+ (peg-match ~(replace (capture "cat")
+                      {"cat" "tiger"})
+             "cat")
+ # => @["tiger"]
+
+ (peg-match ~(replace (capture "cat")
+                      ,(fn [original]
+                         (string original "alog")))
+             "cat")
+ # => @["catalog"]
+
+ (peg-match ~(replace (capture "cat")
+                      "dog")
+             "cat")
+ # => @["dog"]
+
+ (peg-match ~(/ (capture "cat")
+                {"cat" "tiger"})
+             "cat")
+ # => @["tiger"]
 
  )
 
