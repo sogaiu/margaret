@@ -320,7 +320,8 @@
                 (array/pop caps)
                 lenx))
             #
-            (= 'backref special)
+            (or (= 'backref special)
+                (= '-> special))
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
                       "`backref` requires at least one argument")
