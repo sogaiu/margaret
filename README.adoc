@@ -96,6 +96,7 @@ Mostly done:
 .. drop
 .. error
 .. position
+.. replace, /
 
 Todo:
 
@@ -109,7 +110,6 @@ Todo:
 .. backmatch
 
 . Captures
-.. replace, /
 .. accumulate, %
 .. lenprefix
 .. group
