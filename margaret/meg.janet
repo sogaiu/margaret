@@ -781,14 +781,9 @@
              "hello, world")
  # => @["world: yes, hello!"]
 
- (peg-match ~(capture {:main :number
-                       :number (drop (cmt (<- :token)
-                                          ,scan-number))
-                       :token (some :symchars)
-                       :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
-                                    (set "!$%&*+-./:<?=>@^_"))})
-             "18")
- # => @["18"]
+ )
+
+(comment
 
  (peg-match ~{:main :token
               :token (some :symchars)
@@ -797,9 +792,14 @@
              "18")
  # => @[]
 
- )
-
-(comment
+ (peg-match ~(capture {:main :number
+                       :number (drop (cmt (<- :token)
+                                          ,scan-number))
+                       :token (some :symchars)
+                       :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
+                                    (set "!$%&*+-./:<?=>@^_"))})
+             "18")
+ # => @["18"]
 
  # based on:
  #   https://janet-lang.org/docs/syntax.html#Grammar
