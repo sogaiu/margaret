@@ -80,6 +80,7 @@ Mostly done:
 
 . Combinators
 .. any
+.. between
 .. choice, {plus}
 .. if
 .. if-not
@@ -101,7 +102,6 @@ Mostly done:
 Todo:
 
 . Combinators
-.. between
 .. at-least
 .. at-most
 .. repeat, "n"
