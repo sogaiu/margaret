@@ -314,7 +314,7 @@
               (if-let [lenx (peg-match* patt text grammar)]
                 lenx
                 0))
-            #
+            # XXX: need to be able to restore state if match-cnt < min-arg
             (= 'between special)
             (do (when (dyn :meg-debug) (print special))
               (assert (not (empty? tail))
