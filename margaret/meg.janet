@@ -872,6 +872,12 @@
  (peg-match ~(between 1 3 "a") "aa")
  # => @[]
 
+ (peg-match ~(between 1 3 (capture "a")) "aa")
+ # => @["a" "a"]
+
+ (peg-match ~(between 3 5 (capture "a")) "aa")
+ # => nil
+
  (peg-match ~(between 0 8 "b") "")
  # => @[]
 
