@@ -753,6 +753,7 @@
              "my cat")
  # => @["cat"]
 
+ # XXX: result below wrong?
  (peg-match ~(look -4 (capture "cat"))
              "my cat")
  # => @["cat"]
