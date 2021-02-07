@@ -1304,7 +1304,7 @@ default-peg-grammar
    :D (if-not :d 1)
 
    # hex
-   :h (range "09" "af")
+   :h (range "09" "af" "AF")
    :h* (any :h)
    :h+ (some :h)
    :H (if-not :h 1)
