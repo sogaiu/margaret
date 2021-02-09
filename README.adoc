@@ -72,9 +72,9 @@ There are currently tests for:
 
 * link:margaret/meg.janet[margaret's `meg` module]
 
-* link:examples/tutorial.janet[`peg` module tutorial]
+* link:examples/stand-alone/tutorial.janet[`peg` module tutorial]
 
-* link:examples/article.janet[modified code from bakpakin's article]
+* link:examples/stand-alone/article.janet[modified code from bakpakin's article]
 
 == Specials Implementation Status
 
