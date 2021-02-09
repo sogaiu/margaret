@@ -1,111 +1,5 @@
-# . emulate same grammar as janet's c implementation (use struct)
-#
-#   . string
-#   . integer
-#   . keyword (:s, :w, etc.)
-#   . tuple
-#   . struct
-#
-# . use existing tests / examples for peg/match for testing
-#
-#   . official janet tests
-#   . test things from default-peg-grammar
-#   . janet peg tutorial doc has examples
-#   . tests in various repositories
-#     . clojure-peg
-#     . janet-peg
-#     . others?
-#
-# . 2-parameter version of match-peg
-#
-#   . wrapper function that takes 2 args
-#   . create peg-table based on passed in grammar
-#     . struct -> check there is a :main key
-#     . tuple -> add :main key with tuple as value to peg-table
-#     . keyword -> add :main key with keyword as value to peg-table
-#     . integer -> add :main key with integer as value to peg-table
-#     . string -> add :main key with string as value in peg-table
-#   . hook up default-peg-grammar to peg-table:
-#     . use proto table: (table/setproto peg-table default-peg-grammar)
-#   . define capture stack as array
-#   . define tags table
-#   . define inner function
-#   . call inner function
-#   . overall return value
-#     . capture stack if match succeeds
-#     . nil if match fails
-#     . call error if `error` special (?)
-#
-# . implement constructs in default-peg-grammar
-#
-#   . set
-#   . range
-#   . any
-#   . some
-#   . if-not
-#
-# . implement rest of combinators
-#
-#   . look, >
-#   . between, opt, ?
-#   . at-least
-#   . at-most
-#   . repeat, "n"
-#   . to
-#   . thru
-#   . backmatch
-#
-# . implement rest of captures
-#
-#   . cmt
-#   . error
-#   . constant
-#   . replace, /
-# . . position
-#   . accumulate, %
-#   . lenprefix
-#   . group
-#   . argument
-#   . line
-#   . column
-#   . int
-#   . int-be
-#   . uint
-#   . uint-be
-#
-# . capture stack load / save is done for following in c:
-#
-#   . accumulate, %
-#   . between
-#   . choice
-#   . cmt
-#   . drop
-#   . group
-#   . lenprefix
-#   . replace, /
-#   . thru
-#   . to
-#
-# . argument 3 -- where to start
-#
-# . argument 4+ -- things for use with `argument`
-#
-# . review tag support
-#
-# . output debugging info as "data" (jdn)
-#
-# . experimental specials
-#
-#   . debug - dumps internal state (e.g. capture stack, tags, etc.)
-#
-# . optimization speculation
-#
-#   . tco using loop + label as in mal
-#   . tuple/slice over drop
-#   . consider not using `match`
-
 (defn- peg-match
-  [the-peg the-text]
+  [the-peg the-text &opt the-start & the-args]
   #
   (defn peg-match**
     [opeg otext]
@@ -113,866 +7,971 @@
     (def peg-table
       (case (type opeg)
         :string
-         @{:main opeg}
+        @{:main opeg}
+        #
         :number
-         (do (assert (int? opeg)
-                     (string "number must be an integer: " opeg))
-           @{:main opeg})
+        (do (assert (int? opeg)
+                    (string "number must be an integer: " opeg))
+          @{:main opeg})
+        #
         :keyword
-         (do (assert (default-peg-grammar opeg)
-                     (string "default-peg-grammar does not have :" opeg))
-           @{:main opeg})
+        (do (assert (in default-peg-grammar opeg)
+                    (string "default-peg-grammar does not have :" opeg))
+          @{:main opeg})
+        #
         :tuple
-         @{:main opeg}
+        @{:main opeg}
+        #
         :struct
-         (table ;(kvs opeg))))
+        (table ;(kvs opeg))))
     (assert (peg-table :main)
             "peg needs a :main key")
     (table/setproto peg-table default-peg-grammar)
     #
-    (def caps @[])
-    (def tags @{})
-    (def tlen (length otext))
+    (def tot-len (length otext))
+    #
+    (var indent 0)
+    (def nws 1)
+    #
+    (var captures @[])
+    (var scratch @"")
+    (var tags @[])
+    (var tagged_captures @[])
+    (var mode :peg_mode_normal)
+    (def linemap @[])
+    (var linemaplen -1)
+    # allow overriding via :meg-debug
+    (def has_backref
+      (if-let [md (dyn :meg-debug)]
+        (if-let [setting (in md :enable_tagged_captures)]
+          setting
+          true)
+        true))
+    #
+    (defn log-entry
+      [op peg text grammar]
+      (++ indent)
+      (when-let [md (dyn :meg-debug)]
+        (let [ind (string/repeat " " (* nws indent))]
+          (print ind op " >")
+          (when (struct? md)
+            (when (in md :captures)
+              (printf "%s captures: %j" ind captures))
+            (when (in md :scratch)
+              (printf "%s scratch: %j" ind scratch))
+            (when (in md :tags)
+              (printf "%s tags: %j" ind tags))
+            (when (in md :tagged_captures)
+              (printf "%s tagged_captures: %j" ind tagged_captures))
+            (when (in md :mode)
+              (printf "%s mode: %j" ind mode))
+            (when (in md :has_backref)
+              (printf "%s has_backref: %j" ind has_backref))
+            (when (in md :peg)
+              (printf "%s peg: %p" ind peg))
+            (when (in md :text)
+              (printf "%s text: %j" ind text))))))
+    #
+    (defn log-exit
+      [op ret &opt dict]
+      (default dict {})
+      (when-let [md (dyn :meg-debug)]
+        (let [ind (string/repeat " " (* nws indent))]
+          (print ind op " <")
+          (when (struct? md)
+            (when (in md :captures)
+              (printf "%s captures: %j" ind captures))
+            (when (in md :scratch)
+              (printf "%s scratch: %j" ind scratch))
+            (when (in md :tags)
+              (printf "%s tags: %j" ind tags))
+            (when (in md :tagged_captures)
+              (printf "%s tagged_captures: %j" ind tagged_captures))
+            (when (in md :mode)
+              (printf "%s mode: %j" ind mode))
+            (when (in md :has_backref)
+              (printf "%s has_backref: %j" ind has_backref))
+            (when (in md :peg)
+              (when-let [peg (in dict :peg)]
+                (printf "%s peg: %p" ind peg)))
+            (when (in md :text)
+              (when-let [text (in dict :text)]
+                (printf "%s text: %j" ind text))))
+          (printf "%s ret: %j" ind ret)))
+      (-- indent))
+    #
+    (defn cap_save
+      []
+      {:scratch (length scratch)
+       :captures (length captures)
+       :tagged_captures (length tagged_captures)})
+    #
+    (defn cap_load
+      [cs]
+      (set scratch
+           (buffer/slice scratch 0 (cs :scratch)))
+      (set captures
+           (array/slice captures 0 (cs :captures)))
+      (set tags
+           (array/slice tags 0 (cs :tagged_captures)))
+      (set tagged_captures
+           (array/slice tagged_captures 0 (cs :tagged_captures))))
+    #
+    (defn cap_load_keept
+      [cs]
+      (set scratch
+           (buffer/slice scratch 0 (cs :scratch)))
+      (set captures
+           (array/slice captures 0 (cs :captures))))
+    #
+    (defn pushcap
+      [capture tag]
+      (case mode
+        :peg_mode_accumulate
+        (buffer/push scratch (string capture))
+        #
+        :peg_mode_normal
+        (array/push captures capture)
+        #
+        (error (string "unrecognized mode: " mode)))
+      #
+      (when has_backref
+        (array/push tagged_captures capture)
+        (array/push tags tag)))
+    #
+    (defn get_linecol_from_position
+      [position]
+      (when (neg? linemaplen)
+        (var nl-count 0)
+        (def nl-char (chr "\n"))
+        (forv i 0 (length otext)
+          (let [ch (in otext i)]
+            (when (= ch nl-char)
+              (array/push linemap i)
+              (++ nl-count))))
+        (set linemaplen nl-count))
+      #
+      (var hi linemaplen)
+      (var lo 0)
+      (while (< (inc lo) hi)
+        (def mid
+          (math/floor (+ lo (/ (- hi lo) 2))))
+        (if (>= (get linemap mid) position)
+          (set hi mid)
+          (set lo mid)))
+      (if (or (= linemaplen 0)
+              (and (= lo 0)
+                   (>= (get linemap 0) position)))
+        [1 (inc position)]
+        [(+ lo 2) (- position (get linemap lo))]))
     #
     (defn peg-match*
       [peg text grammar]
+      #
       (cond
-        # keyword
+        # keyword leads to a lookup in the grammar
         (keyword? peg)
-        (do (when (dyn :meg-debug) (print "keyword: :" peg))
-          (peg-match* (grammar peg) text grammar))
-        # string literal
+        (do
+          (log-entry "KEYWORD" peg text grammar)
+          (def ret
+            (peg-match* (grammar peg) text grammar))
+          (log-exit "KEYWORD" ret {:peg peg :text text})
+          ret)
+        # string is RULE_LITERAL
         (string? peg)
-        (do (when (dyn :meg-debug) (print "string: \"" peg "\""))
-          (when (string/has-prefix? peg text)
-            (length peg)))
-        # integer
-        (int? peg)
-        (do (when (dyn :meg-debug) (print "integer: " peg))
-          (when (<= peg (length text))
-            (if (pos? peg)
-              peg
-              0)))
-        # struct
+        (do
+          (log-entry "RULE_LITERAL" peg text grammar)
+          (def ret
+            (when (string/has-prefix? peg text)
+              (length peg)))
+          (log-exit "RULE_LITERAL" ret {:peg peg :text text})
+          ret)
+        # non-negative integer is RULE_NCHAR
+        (nat? peg)
+        (do
+          (log-entry "RULE_NCHAR" peg text grammar)
+          (def ret
+            (when (<= peg (length text))
+              peg))
+          (log-exit "RULE_NCHAR" ret {:peg peg :text text})
+          ret)
+        # negative integer is RULE_NOTNCHAR
+        (and (int? peg)
+             (neg? peg))
+        (do
+          (log-entry "RULE_NOTNCHAR" peg text grammar)
+          (def text-len (length text))
+          (def ret
+            (when (not (<= (math/abs peg) text-len))
+              text-len))
+          (log-exit "RULE_NOTNCHAR" ret {:peg peg :text text})
+          ret)
+        # struct looks up the peg associated with :main
         (struct? peg)
-        (do (when (dyn :meg-debug) (print "struct"))
+        (do
+          (log-entry "STRUCT" peg text grammar)
           (assert (peg :main)
                   "peg does not have :main")
-          (peg-match* (peg :main) text peg))
-        # tuple
+          (def ret
+            (peg-match* (peg :main) text peg))
+          (log-exit "STRUCT" ret {:peg peg :text text})
+          ret)
+        #
         (tuple? peg)
-        (do (when (dyn :meg-debug) (print "tuple"))
+        (do
           (assert (pos? (length peg))
                   "peg must have non-zero length")
-          (def special (first peg))
-          # XXX: use tuple/slice?
+          (def op (get peg 0))
           (def tail (drop 1 peg))
           #
           (cond
-            #
-            (= 'range special)
-            (do (print special)
+            # RULE_RANGE
+            (= 'range op)
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
                       "`range` requires at least 1 argument")
-              (let [target-bytes
-                    (reduce (fn [acc elt]
-                              (assert (= 2 (length elt))
-                                      "range argument must be length 2")
-                              (let [left (get elt 0)
-                                    right (get elt 1)]
-                                (assert (<= left right) "empty range")
-                                (array/concat acc
-                                              (range left (inc right)))))
-                            @[]
-                            tail)
-                    target-set (string/from-bytes ;target-bytes)]
-                (when (string/check-set target-set
-                                        (string/slice text 0 1))
-                  1)))
-            #
-            (= 'set special)
-            (do (when (dyn :meg-debug) (print special))
+              (def ret
+                (let [target-bytes
+                      (reduce (fn [acc elt]
+                                (assert (= 2 (length elt))
+                                        "range argument must be length 2")
+                                (let [left (get elt 0)
+                                      right (get elt 1)]
+                                  (assert (<= left right) "empty range")
+                                  (array/concat acc
+                                                (range left (inc right)))))
+                              @[]
+                              tail)
+                      target-set (string/from-bytes ;target-bytes)]
+                  (when (string/check-set target-set
+                                          (string/slice text 0 1))
+                    1)))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_SET
+            (= 'set op)
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
                       "`set` requires at least 1 argument")
               (def patt (first tail))
-              (when (string/check-set patt
-                                      (string/slice text 0 1))
-                1))
-            #
-            (or (= '! special)
-                (= 'not special))
-            (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail))
-                      "`not` requires at least 1 argument")
-              (def patt (first tail))
-              (unless (peg-match* patt text grammar)
-                0))
-            #
-            (or (= '+ special)
-                (= 'choice special))
-            (do (when (dyn :meg-debug) (print special))
-              (def res
-                (some (fn [patt]
-                        (def [new-caps idx new-tags]
-                          (peg-match** (table/to-struct (merge grammar
-                                                               {:main patt}))
-                                       text))
-                        (when idx
-                          [new-caps idx new-tags]))
-                      (tuple/slice peg 1)))
-              (when res
-                (def [new-caps idx new-tags] res)
-                (array/concat caps new-caps)
-                (merge-into tags new-tags)
-                idx))
-            #
-            (or (= '* special)
-                (= 'sequence special))
-            (do (when (dyn :meg-debug) (print special))
-              (var len 0)
-              (var subtext text)
-              (var ok true)
-              (loop [x :in (tuple/slice peg 1)
-                     :let [lenx (peg-match* x subtext grammar)
-                           _ (set ok lenx)]
-                     :while ok]
-                (set subtext (string/slice subtext lenx))
-                (+= len lenx))
-              (when ok len))
-            #
-            (= 'any special)
-            (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail)) "`any` requires 1 argument")
-              (def patt (first tail))
-              (var len 0)
-              (var subtext text)
-              (while (pos? (length subtext))
-                (def lenx (peg-match* patt subtext grammar))
-                (unless lenx
-                  (break))
-                (set subtext (string/slice subtext lenx))
-                (+= len lenx))
-              len)
-            #
-            (= 'some special)
-            (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail)) "`some` requires 1 argument")
-              (def patt (first tail))
-              (var len 0)
-              (var subtext text)
-              (var had-match false)
-              (while (pos? (length subtext))
-                (def lenx (peg-match* patt subtext grammar))
-                (unless lenx
-                  (break))
-                (set had-match true)
-                (set subtext (string/slice subtext lenx))
-                (+= len lenx))
-              (when had-match len))
-            #
-            (= 'if special)
-            (do (when (dyn :meg-debug) (print special))
+              (def ret
+                (when (string/check-set patt
+                                        (string/slice text 0 1))
+                  1))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_LOOK
+            (or (= 'look op)
+                (= '> op))
+            (do
+              (log-entry op peg text grammar)
               (assert (>= (length tail) 2)
-                      "`if` requires at least 2 arguments")
-              (def cond-patt (first tail))
-              (def lenx (peg-match* cond-patt text grammar))
-              (when lenx
-                (def patt (get tail 1))
-                (when-let [leny (peg-match* patt text grammar)]
-                  leny)))
-            #
-            (= 'if-not special)
-            (do (when (dyn :meg-debug) (print special))
-              (assert (>= (length tail) 2)
-                      "`if-not` requires at least 2 arguments")
-              (def cond-patt (first tail))
-              (def lenx (peg-match* cond-patt text grammar))
-              (unless lenx
-                (def patt (get tail 1))
-                (when-let [leny (peg-match* patt text grammar)]
-                  leny)))
-            #
-            (or (= '> special)
-                (= 'look special))
-            (do (when (dyn :meg-debug) (print special))
-              (assert (>= (length tail) 2)
-                      "`look` requires at least 2 arguments")
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
               (def offset (first tail))
               (assert (int? offset)
                       "offset argument should be an integer")
-              (def patt (get tail 1))
-              (def lenx (peg-match* patt
-                                    (string/slice text offset) grammar))
-              (when lenx 0))
-            #
-            (or (= 'opt special)
-                (= '? special))
-            (do (when (dyn :meg-debug) (print special))
+              (def ret
+                (label result
+                  (let [text-len (length text)
+                        cur-idx (- tot-len text-len)
+                        new-start (+ cur-idx offset)]
+                    (when (or (< new-start 0)
+                              (> new-start text-len))
+                      (return result nil))
+                    (def patt (in tail 1))
+                    (when-let [res-idx
+                               (peg-match* patt
+                                           (string/slice otext new-start)
+                                           grammar)]
+                      0))))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_CHOICE
+            (or (= 'choice op)
+                (= '+ op))
+            (do
+              (log-entry op peg text grammar)
+              (def len (length tail))
+              (def ret
+                (label result
+                  (when (= len 0)
+                    (return result nil))
+                  (def cs (cap_save))
+                  (forv i 0 (dec len)
+                    (def sub-peg (get tail i))
+                    (def res-idx (peg-match* sub-peg text grammar))
+                    # XXX: should be ok?
+                    (when res-idx
+                      (return result res-idx))
+                    (cap_load cs))
+                  (peg-match* (get tail (dec len))
+                              text grammar)))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_SEQUENCE
+            (or (= '* op)
+                (= 'sequence op))
+            (do
+              (log-entry op peg text grammar)
+              (def len (length tail))
+              (def ret
+                (label result
+                  (when (= len 0)
+                    # XXX
+                    (return result 0)
+                    #(return result (- tot-len
+                    #                  (length text)))
+                    )
+                  (var cur-text text)
+                  (var res-idx nil)
+                  (var acc-idx 0)
+                  (forv i 0 (dec len)
+                    (def sub-peg (get tail i))
+                    (set res-idx (peg-match* sub-peg cur-text grammar))
+                    (when (nil? res-idx)
+                      (break))
+                    (+= acc-idx res-idx)
+                    (set cur-text (string/slice cur-text res-idx)))
+                  (when (nil? res-idx)
+                    (return result nil))
+                  (when-let [last-idx
+                             (peg-match* (get tail (dec len))
+                                         cur-text grammar)]
+                    (+ acc-idx last-idx))))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_IF
+            (= 'if op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (>= (length tail) 2)
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
+              (def patt-a (first tail))
+              (def patt-b (in tail 1))
+              (def res-idx (peg-match* patt-a text grammar))
+              (def ret
+                (if res-idx
+                  (peg-match* patt-b text grammar)
+                  nil))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_IFNOT
+            (= 'if-not op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (>= (length tail) 2)
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
+              (def patt-a (first tail))
+              (def patt-b (in tail 1))
+              (def res-idx (peg-match* patt-a text grammar))
+              (def ret
+                (if res-idx
+                  nil
+                  (peg-match* patt-b text grammar)))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_NOT
+            (or (= 'not op)
+                (= '! op))
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`opt` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
-              (if-let [lenx (peg-match* patt text grammar)]
-                lenx
-                0))
-            # XXX: need to be able to restore state if match-cnt < min-arg
-            (= 'between special)
-            (do (when (dyn :meg-debug) (print special))
+              (def res-idx (peg-match* patt text grammar))
+              (def ret
+                (if res-idx
+                  nil
+                  0))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_THRU
+            (= 'thru op)
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`between` requires at least 3 arguments")
-              (def [min-arg max-arg patt] tail)
-              (assert (and (int? min-arg) (>= min-arg 0))
-                      "min arg should be a non-negative integer")
-              (assert (and (int? max-arg) (>= max-arg 0))
-                      "max arg should be a non-negative integer")
-              (var match-cnt 0)
-              (var len 0)
-              (var subtext text)
-              (while (and (pos? (length subtext))
-                          (< match-cnt max-arg))
-                (def idx (peg-match* patt subtext grammar))
-                (unless idx
-                  (break))
-                (++ match-cnt)
-                (set subtext (string/slice subtext idx))
-                (+= len idx))
-              (when (<= min-arg match-cnt max-arg)
-                len))
-            #
-            (or (= 'capture special)
-                (= 'quote special)
-                (= '<- special))
-            (do (when (dyn :meg-debug) (print special))
-              (assert (not (empty? tail))
-                      "`capture` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
-              (def lenx (peg-match* patt text grammar))
-              (when lenx
-                (let [cap (string/slice text 0 lenx)]
-                  (array/push caps cap)
-                  (when-let [tag (get tail 1)]
-                    (put tags
-                         tag cap))
-                  lenx)))
-            #
-            (= 'drop special)
-            (do (when (dyn :meg-debug) (print special))
+              (def cs (cap_save))
+              (def ret
+                (label result
+                  (var cur-text text)
+                  (def text-len (length text))
+                  (var next-idx nil)
+                  (var cur-idx 0)
+                  (while (< cur-idx text-len)
+                    (set next-idx (peg-match* patt cur-text grammar))
+                    (when next-idx
+                      (break))
+                    (set cur-text (string/slice cur-text 1))
+                    (++ cur-idx))
+                  (when (>= cur-idx text-len)
+                    (cap_load cs)
+                    (return result nil))
+                  (+= cur-idx next-idx)))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_TO
+            (= 'to op)
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`drop` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
-              (def [_ idx _]
-                (peg-match** (table/to-struct (merge grammar {:main patt}))
-                             text))
-              idx)
-            #
-            (or (= 'backref special)
-                (= '-> special))
-            (do (when (dyn :meg-debug) (print special))
+              (def cs (cap_save))
+              (def ret
+                (label result
+                  (var cur-text text)
+                  (def text-len (length text))
+                  (var next-idx nil)
+                  (var cur-idx 0)
+                  (while (< cur-idx text-len)
+                    (def cs2 (cap_save))
+                    (set next-idx (peg-match* patt cur-text grammar))
+                    (when next-idx
+                      (cap_load cs2)
+                      (break))
+                    (set cur-text (string/slice cur-text 1))
+                    (++ cur-idx))
+                  (when (>= cur-idx text-len)
+                    (cap_load cs)
+                    (return result nil))
+                  cur-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_BETWEEN
+            (or (= 'between op)
+                # XXX: might remove if if analysis / rewrite path is taken
+                (= 'opt op)
+                (= '? op)
+                (= 'any op)
+                (= 'some op)
+                (= 'at-least op)
+                (= 'at-most op)
+                (= 'repeat op)
+                (int? op))
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`backref` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (var lo 0)
+              (var hi 1)
+              (var patt nil)
+              (cond
+                (= 'between op)
+                (do
+                  (assert (<= 3 (length tail))
+                          "`between` requires at least 3 arguments")
+                  (set lo (in tail 0))
+                  (assert (nat? lo)
+                          (string "expected non-neg int, got: " lo))
+                  (set hi (in tail 1))
+                  (assert (nat? hi)
+                          (string "expected non-neg int, got: " hi))
+                  (set patt (in tail 2)))
+                #
+                (or (= 'opt op)
+                    (= '? op))
+                (set patt (first tail))
+                #
+                (= 'any op)
+                (do
+                  (set patt (first tail))
+                  # XXX: 2 ^ 32 - 1 not an integer...
+                  (set hi (math/pow 2 30)))
+                #
+                (= 'some op)
+                (do
+                  (set patt (first tail))
+                  (set lo 1)
+                  # XXX: 2 ^ 32 - 1 not an integer...
+                  (set hi (math/pow 2 30)))
+                #
+                (= 'at-least op)
+                (do
+                  (assert (<= 2 (length tail))
+                          "`at-least` requires at least 2 arguments")
+                  (set patt (in tail 1))
+                  (set lo (first tail))
+                  (assert (nat? lo)
+                          (string "expected non-neg int, got: " lo))
+                  # XXX: 2 ^ 32 - 1 not an integer...
+                  (set hi (math/pow 2 30)))
+                #
+                (= 'at-most op)
+                (do
+                  (assert (<= 2 (length tail))
+                          "`at-most` requires at least 2 arguments")
+                  (set patt (in tail 1))
+                  (set hi (first tail))
+                  (assert (nat? hi)
+                          (string "expected non-neg int, got: " hi)))
+                #
+                (= 'repeat op)
+                (do
+                  (assert (<= 2 (length tail))
+                          "`repeat` requires at least 2 arguments")
+                  (set patt (in tail 1))
+                  (def arg (first tail))
+                  (assert (nat? arg)
+                          (string "expected non-neg int, got: " arg))
+                  (set lo arg)
+                  (set hi arg))
+                #
+                (int? op)
+                (do
+                  (assert (not (empty? tail))
+                          "`n` requires at least 1 argument")
+                  (set patt (first tail))
+                  (assert (nat? op)
+                          (string "expected non-neg int, got: " op))
+                  (set lo op)
+                  (set hi op)))
+              #
+              (def cs (cap_save))
+              (def ret
+                (label result
+                  (var captured 0)
+                  (var cur-text text)
+                  (var next-idx nil)
+                  (var acc-idx 0)
+                  (while (< captured hi)
+                    (def cs2 (cap_save))
+                    (set next-idx (peg-match* patt cur-text grammar))
+                    # match fail or no change in position
+                    (when (or (nil? next-idx)
+                              (= next-idx 0))
+                      (cap_load cs2)
+                      (break))
+                    (++ captured)
+                    (set cur-text (string/slice cur-text next-idx))
+                    (+= acc-idx next-idx))
+                  (when (< captured lo)
+                    (cap_load cs)
+                    (return result nil))
+                  acc-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_GETTAG
+            (or (= 'backref op)
+                (= '-> op))
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def tag (first tail))
-              (when-let [last-cap (get tags tag)]
-                (array/push caps last-cap)
-                (when-let [opt-tag (get tail 1)]
-                  (put tags
-                       opt-tag last-cap))
-                0))
-            # XXX: line and column info?
-            (= 'error special)
-            (do (when (dyn :meg-debug) (print special))
-              (if-let [patt (first tail)]
-                (let [pre-len (length caps) # XXX: hack?
-                      lenx (peg-match* patt text grammar)
-                      post-len (length caps)]
-                  # XXX: hack to assess  "didn't produce captures"
-                  (if (not= pre-len post-len)
-                    (error (array/peek caps))
-                    (error "match error at line X, column Y")))
-                (error "match error at line X, column Y")))
-            #
-            (= 'constant special)
-            (do (when (dyn :meg-debug) (print special))
+              (def ret
+                (label result
+                  (loop [i :down-to [(dec (length tags)) 0]]
+                    (let [cur-tag (get tags i)]
+                      (when (= cur-tag tag)
+                        (pushcap (get tagged_captures i) tag)
+                        (return result 0))))
+                  nil))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_POSITION
+            (or (= 'position op)
+                (= '$ op))
+            (do
+              (log-entry op peg text grammar)
+              (def tag (when (not (empty? tail))
+                         (first tail)))
+              (pushcap (- tot-len (length text)) tag)
+              (def ret 0)
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_LINE
+            (= 'line op)
+            (do
+              (log-entry op peg text grammar)
+              (def tag (when (not (empty? tail))
+                         (first tail)))
+              (def [line _]
+                (get_linecol_from_position (- tot-len
+                                              (length text))))
+              (pushcap line tag)
+              (def ret 0)
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_COLUMN
+            (= 'column op)
+            (do
+              (log-entry op peg text grammar)
+              (def tag (when (not (empty? tail))
+                         (first tail)))
+              (def [_ col]
+                (get_linecol_from_position (- tot-len
+                                              (length text))))
+              (pushcap col tag)
+              (def ret 0)
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_ARGUMENT
+            (= 'argument op)
+            (do
+              (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`constant` requires at least 1 argument")
-              (def k (first tail))
-              (array/push caps k)
-              (when-let [tag (get tail 1)]
-                (put tags
-                     tag k))
-              0)
-            #
-            (or (= 'position special)
-                (= '$ special))
-            (do (when (dyn :meg-debug) (print special))
-              (def pos (- tlen (length text)))
-              (array/push caps pos)
-              0)
-            #
-            (= 'cmt special)
-            (do (when (dyn :meg-debug) (print special))
-              (assert (>= (length tail) 2)
-                      "`cmt` requires at least 2 arguments")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
-              (def fun (get tail 1))
-              (assert (or (function? fun) (cfunction? fun))
-                      "fun argument should be a function")
-              (def [new-caps idx new-tags]
-                (peg-match** (table/to-struct (merge grammar {:main patt}))
-                             text))
-              (when (and new-caps (not (empty? new-caps)))
-                (def res (fun ;new-caps))
-                (unless (or (false? res) (nil? res))
-                  (array/push caps res)
-                  (when-let [tag (get tail 2)]
-                    (put (merge-into tags new-tags)
-                         tag res))
-                  idx)))
-            #
-            (or (= 'replace special)
-                (= '/ special))
-            (do (when (dyn :meg-debug) (print special))
-              (assert (>= (length tail) 2)
-                      "`replace` requires at least 2 arguments")
+              (assert (nat? patt)
+                      (string "expected non-negative integer, got: " patt))
+              (assert (< patt (length the-args))
+                      (string "expected smaller integer, got: " patt))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (def arg-n (in the-args patt))
+              (pushcap arg-n tag)
+              (def ret 0)
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_CONSTANT
+            (= 'constant op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
-              (def subst (get tail 1))
-              (def [new-caps idx new-tags]
-                (peg-match** (table/to-struct (merge grammar {:main patt}))
-                             text))
-              (when idx
-                (cond
-                  (dictionary? subst)
-                  (let [res (get subst (last new-caps))]
-                    (array/push caps res)
-                    (when-let [tag (get tail 2)]
-                      (put (merge-into tags new-tags)
-                           tag res)))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (pushcap patt tag)
+              (def ret 0)
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_CAPTURE
+            (or (= 'capture op)
+                (= 'quote op)
+                (= '<- op))
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def patt (first tail))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (def text-idx (peg-match* patt text grammar))
+              (def ret
+                (when text-idx
+                  (let [cap (string/slice text 0 text-idx)]
+                    (if (and (not has_backref)
+                             (= mode :peg_mode_accumulate))
+                      (buffer/push scratch cap)
+                      (pushcap cap tag)))
+                  text-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_ACCUMULATE
+            (or (= 'accumulate op)
+                (= '% op))
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def patt (first tail))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (def old-mode mode)
+              (when (and (not tag)
+                         (= old-mode :peg_mode_accumulate))
+                (peg-match* patt text grammar))
+              (def cs (cap_save))
+              (set mode :peg_mode_accumulate)
+              (def res-idx (peg-match* patt text grammar))
+              (set mode old-mode)
+              (def ret
+                (when res-idx
+                  (def cap (string scratch))
+                  (cap_load_keept cs)
+                  (pushcap cap tag)
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_DROP
+            (= 'drop op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def patt (first tail))
+              (def cs (cap_save))
+              (def res-idx (peg-match* patt text grammar))
+              (def ret
+                (when res-idx
+                  (cap_load cs)
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_GROUP
+            (= 'group op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def patt (first tail))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (def old-mode mode)
+              (def cs (cap_save))
+              (set mode :peg_mode_normal)
+              (def res-idx (peg-match* patt text grammar))
+              (set mode old-mode)
+              (def ret
+                (when res-idx
+                  (def cap (array/slice captures
+                                        (cs :captures)
+                                        (- (length captures)
+                                           (cs :captures))))
+                  (cap_load_keept cs)
+                  (pushcap cap tag)
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_REPLACE
+            (or (= 'replace op)
+                (= '/ op))
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (< (length tail) 2))
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
+              (def patt (first tail))
+              (def subst (in tail 1))
+              (def tag (when (> (length tail) 2)
+                         (in tail 2)))
+              (def old-mode mode)
+              (def cs (cap_save))
+              (set mode :peg_mode_normal)
+              (def res-idx (peg-match* patt text grammar))
+              (set mode old-mode)
+              (def ret
+                (when res-idx
+                  (def cap
+                    (cond
+                      (dictionary? subst)
+                      (get subst (last captures))
+                      #
+                      (or (function? subst)
+                          (cfunction? subst))
+                      (subst ;(array/slice captures
+                                           0 (- (length captures)
+                                                (cs :captures))))
+                      #
+                      subst))
+                  (cap_load_keept cs)
+                  (pushcap cap tag)
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_MATCHTIME
+            (= 'cmt op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (< (length tail) 2))
+                      (string/format "`%s` requires at least 2 )arguments"
+                                     (string op)))
+              (def patt (first tail))
+              (def subst (in tail 1))
+              (def tag (when (> (length tail) 2)
+                         (in tail 2)))
+              (def old-mode mode)
+              (def cs (cap_save))
+              (set mode :peg_mode_normal)
+              (def res-idx (peg-match* patt text grammar))
+              (set mode old-mode)
+              (def ret
+                (label result
+                  (when res-idx
+                    (def cap
+                      # XXX: does it make sense to have the non-function
+                      #      cases in here?
+                      (cond
+                        (dictionary? subst)
+                        (get subst (last captures))
+                        #
+                        (or (function? subst)
+                            (cfunction? subst))
+                        (subst ;(array/slice captures
+                                             0 (- (length captures)
+                                                  (cs :captures))))
+                        #
+                        subst))
+                     (cap_load_keept cs)
+                     (when (not (truthy? cap))
+                      (return result nil))
+                    (pushcap cap tag)
+                    res-idx)))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_ERROR
+            (= 'error op)
+            (do
+              (log-entry op peg text grammar)
+              (def patt (if (empty? tail)
+                          0 # determined via gdb
+                          (first tail)))
+              (def old-mode mode)
+              (set mode :peg_mode_normal)
+              (def old-cap (length captures))
+              (def res-idx (peg-match* patt text grammar))
+              (set mode old-mode)
+              (def ret
+                (when res-idx
+                  (if (> (length captures) old-cap)
+                    (error (string (last captures)))
+                    (let [[line col]
+                          (get_linecol_from_position (- tot-len
+                                                        (length text)))]
+                      (errorf "match error at line %d, column %d" line col)))
+                  # XXX: should not get here
+                  nil))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_BACKMATCH
+            (= 'backmatch op)
+            (do
+              (log-entry op peg text grammar)
+              (def tag (when (not (empty? tail))
+                         (first tail)))
+              (def ret
+                (label result
+                  (loop [i :down-to [(dec (length tags)) 0]]
+                    (let [cur-tag (get tags i)]
+                      (when (= cur-tag tag)
+                        (def cap
+                          (get tagged_captures i))
+                        (when (not (string? cap))
+                          (return result nil))
+                        #
+                        (let [caplen (length cap)]
+                          (when (> (+ (length text) caplen)
+                                   tot-len)
+                            (return result nil))
+                          (return result
+                                  (when (string/has-prefix? cap text)
+                                    caplen))))))
+                  nil))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_LENPREFIX
+            (= 'lenprefix op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (< (length tail) 2))
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
+              (def n-patt (first tail))
+              (def patt (in tail 1))
+              (def old-mode mode)
+              (set mode :peg_mode_normal)
+              (def cs (cap_save))
+              (def ret
+                (label result
+                  (def idx (peg-match* n-patt text grammar))
+                  (when (nil? idx)
+                    (return result nil))
                   #
-                  (or (function? subst) (cfunction? subst))
-                  (let [res (subst ;new-caps)]
-                    (array/push caps res)
-                    (when-let [tag (get tail 2)]
-                      (put (merge-into tags new-tags)
-                           tag subst)))
+                  (set mode old-mode)
+                  (def num-sub-caps
+                    (- (length captures) (cs :captures)))
+                  (var lencap nil)
+                  (when (<= num-sub-caps 0)
+                    (cap_load cs)
+                    (return result nil))
                   #
-                  (do
-                    (array/push caps subst)
-                    (when-let [tag (get tail 2)]
-                      (put (merge-into tags new-tags)
-                           tag subst))))
-                idx))
+                  (set lencap (get captures (cs :captures)))
+                  (when (not (int? lencap))
+                    (cap_load cs)
+                    (return result nil))
+                  #
+                  (def nrep lencap)
+                  (cap_load cs)
+                  (var next-idx nil)
+                  (var next-text (string/slice text idx))
+                  (var acc-idx idx)
+                  (forv i 0 nrep
+                    (set next-idx
+                         (peg-match* patt next-text grammar))
+                    (when (nil? next-idx)
+                      (cap_load cs)
+                      (return result nil))
+                    (+= acc-idx next-idx)
+                    (set next-text
+                         (string/slice next-text next-idx)))
+                  acc-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
             #
-            (error (string "unknown special: " special))))
+            (error (string "unknown tuple op: " op))))
         #
-        # unknown
-        (error (string "unknown construct type: " (type peg)
-                       " " (describe peg)))))
+        (error (string "unknown peg: " peg))))
+    # XXX: for aesthetic purposes
+    (when (dyn :meg-debug)
+      (print))
     #
     (def index
       (peg-match* (peg-table :main) otext peg-table))
-    [caps index tags])
+    [captures index tags])
   #
-  (def [caps index tags]
+  (def [captures index tags]
     (peg-match** the-peg the-text))
   (when (dyn :meg-debug)
     (print "--------")
     (prin "tags: ")
     (pp tags)
-    (prin "capture stack: ")
-    (pp caps))
+    (prin "captures: ")
+    (pp captures))
   (when index
     (when (dyn :meg-debug)
       (print "index: " index)
       (print "--------"))
-    caps))
+    captures))
 
 (comment
 
- (peg-match "a" "a")
- # => @[]
-
- (peg-match ~(capture "a") "a")
- # => @["a"]
-
- (peg-match ~(<- "a") "a")
- # => @["a"]
-
- (peg-match "ab" "ab")
- # => @[]
-
- (peg-match ~(capture "ab") "ab")
- # => @["ab"]
-
- (peg-match 1 "a")
- # => @[]
-
- (peg-match ~(capture 1) "a")
- # => @["a"]
-
- (peg-match 2 "ab")
- # => @[]
-
- (peg-match ~(capture 2) "ab")
- # => @["ab"]
-
- (peg-match 2 "a")
- # => nil
-
- (peg-match ~(capture 2) "a")
- # => nil
-
- (peg-match -1 "")
- # => @[]
-
- (peg-match ~(capture -1) "")
- # => @[""]
-
- (peg-match :s " ")
- # => @[]
-
- (peg-match ~(capture :s) " ")
- # => @[" "]
-
- (peg-match :v " ")
- # !
-
- (peg-match ~(set "act") "cat")
- # => @[]
-
- (peg-match ~(capture (set "act")) "cat")
- # => @["c"]
-
- (peg-match ~{:main (set "act")} "cat")
- # => @[]
-
- (peg-match ~(capture {:main (set "act")}) "cat")
- # => @["c"]
-
- (peg-match ~(* "a" "b") "ab")
- # => @[]
-
- (peg-match ~(* (capture "a") (capture "b"))
-             "ab")
- # => @["a" "b"]
-
- (peg-match ~(sequence (capture "a") (capture "b"))
-             "ab")
- # => @["a" "b"]
-
- (peg-match ~(capture (* "a" "b"))
-             "ab")
- # => @["ab"]
-
- (peg-match ~(*) "")
- # => @[]
-
- (peg-match ~(capture (*)) "")
- # => @[""]
-
- (peg-match ~(* "a" "b") "ac")
- # => nil
-
- (peg-match ~(capture (* "a" "b")) "ac")
- # => nil
-
- (peg-match ~(+ "a" "b") "a")
- # => @[]
-
- (peg-match ~(capture (+ "a" "b")) "a")
- # => @["a"]
-
- (peg-match ~(+ "a" "b") "b")
- # => @[]
-
- (peg-match ~(capture (+ "a" "b")) "b")
- # => @["b"]
-
- (peg-match ~(+ "a" "b" "c") "c")
- # => @[]
-
- (peg-match ~(capture (+ "a" "b" "c")) "c")
- # => @["c"]
-
- (peg-match ~(+ "a" "b" (* "c" "d")) "cd")
- # => @[]
-
- (peg-match ~(capture (+ "a" "b" (* "c" "d")))
-             "cd")
- # => @["cd"]
-
- (peg-match ~(+ "a" "b") "c")
- # => nil
-
- (peg-match ~(capture (+ "a" "b")) "c")
- # => nil
-
- (peg-match ~(* "a" (not "b")) "ac")
- # => @[]
-
- (peg-match ~(capture (* "a" (not "b")))
-             "ac")
- # => @["a"]
-
- (peg-match ~(capture (* "a" (! "b")))
-             "ac")
- # => @["a"]
-
- (peg-match ~(quote (* "a" (! "b")))
-             "ac")
- # => @["a"]
-
- (peg-match ~'(* "a" (! "b"))
-             "ac")
- # => @["a"]
-
- (peg-match ~(drop (capture "a")) "a")
- # => @[]
-
- (peg-match ~(sequence (drop (capture "a"))
-                       (capture "b"))
-             "ab")
- # => @["b"]
-
- (peg-match ~(capture "a" :target) "a")
- # => @["a"]
-
- (peg-match ~(sequence (capture "a" :target)
-                       (backref :target))
-             "a")
- # => @["a" "a"]
-
- (peg-match ~(sequence (capture "a" :a)
-                       (backref :a :b)
-                       (backref :b))
-             "a")
- # => @["a" "a" "a"]
-
- (peg-match ~(range "az") "c")
- # => @[]
-
- (peg-match ~(range "aa") "a")
- # => @[]
-
- (peg-match ~(capture (range "az")) "c")
- # => @["c"]
-
- (peg-match ~(capture (range "az" "AZ")) "J")
- # => @["J"]
-
- (peg-match :h "a")
- # => @[]
-
- (peg-match ~':h "a")
- # => @["a"]
-
- (peg-match :h "g")
- # => nil
-
- (peg-match :w "j")
- # => @[]
-
- (peg-match ~':w "j")
- # => @["j"]
-
- (peg-match :w " ")
- # => nil
-
- (peg-match ~(some "a") "")
- # => nil
-
- (peg-match ~(some "a") "a")
- # => @[]
-
- (peg-match ~'(some "a") "a")
- # => @["a"]
-
- (peg-match ~(some "a") "aa")
- # => @[]
-
- (peg-match ~'(some "a") "aa")
- # => @["aa"]
-
- (peg-match ~(some (range "az")) "j")
- # => @[]
-
- (peg-match ~'(some (range "az")) "j")
- # => @["j"]
-
- (peg-match ~'(some (range "az" "AZ")) "J")
- # => @["J"]
-
- (peg-match :a+ "J")
- # => @[]
-
- (peg-match ~':a+ "J")
- # => @["J"]
-
- (peg-match ~(any 1) "a")
- # => @[]
-
- (peg-match ~(capture (any 1)) "a")
- # => @["a"]
-
- (peg-match ~(capture (any 1)) "abc")
- # => @["abc"]
-
- (peg-match ~(capture (any 1)) "")
- # => @[""]
-
- (peg-match ~(capture :d*) "123")
- # => @["123"]
-
- (peg-match ~(capture (any (range "09"))) "123")
- # => @["123"]
-
- (peg-match ~(capture (if 5 (set "eilms")))
-             "smile")
- # => @["s"]
-
- (peg-match ~(capture (if 5 (set "eilms")))
-             "wink")
- # => nil
-
- (peg-match ~(capture (if-not 5 (set "iknw")))
-             "wink")
- # => @["w"]
-
- (peg-match ~(capture (if-not 4 (set "iknw")))
-             "wink")
- # => nil
-
- (peg-match ~(capture :A) "1")
- # => @["1"]
-
- (peg-match ~(capture :H) "g")
- # => @["g"]
-
- (peg-match ~(look 3 "cat")
-             "my cat")
- # => @[]
-
- (peg-match ~(look 3 (capture "cat"))
-             "my cat")
- # => @["cat"]
-
- # XXX: result below wrong?
- (peg-match ~(look -4 (capture "cat"))
-             "my cat")
- # => @["cat"]
-
- (peg-match ~(sequence (look 3 "cat")
-                       "my")
-             "my cat")
- # => @[]
-
- (peg-match ~(capture (look 3 "cat"))
-             "my cat")
- # => @[""]
-
- (try
-   (peg-match ~(sequence "a"
-                         (error (sequence (capture "b")
-                                          (capture "c"))))
-               "abc")
-   ([err]
-    err))
- # => "c"
-
- (try
-   (peg-match ~(choice "a"
-                       "b"
-                       (error ""))
-               "c")
-   ([err]
-    err))
- # => "match error at line X, column Y"
-
- (try
-   (peg-match ~(choice "a"
-                       "b"
-                       (error))
-               "c")
-   ([err]
-    :match-error))
- # => :match-error
-
- (peg-match ~(constant "smile")
-             "whatever")
- # => @["smile"]
-
- (peg-match ~(constant {:fun :value})
-             "whatever")
- # => @[{:fun :value}]
-
- (peg-match ~(sequence (constant :relax)
-                       (position))
-             "whatever")
- # => @[:relax 0]
-
- (peg-match ~(position) "a")
- # => @[0]
-
- (peg-match ~(sequence "a"
-                       (position))
-             "ab")
- # => @[1]
-
- (peg-match ~($) "a")
- # => @[0]
-
- (peg-match ~(sequence "a"
-                       ($))
-             "ab")
- # => @[1]
-
- (peg-match ~(opt "a") "a")
- # => @[]
-
- (peg-match ~(opt "a") "")
- # => @[]
-
- (peg-match ~(? "a") "a")
- # => @[]
-
- (peg-match ~(? "a") "")
- # => @[]
-
- (peg-match ~(cmt (capture "hello")
-                  ,(fn [cap]
-                     (string cap "!")))
-             "hello")
- # => @["hello!"]
-
- (peg-match ~(cmt (sequence (capture "hello")
-                            (some (set " ,"))
-                            (capture "world"))
-                  ,(fn [cap1 cap2]
-                     (string cap2 ": yes, " cap1 "!")))
+  (setdyn :meg-debug {:captures true
+                      #:scratch true
+                      :tags true
+                      :tagged_captures true
+                      :mode true
+                      :has_backref true
+                      :text true})
+
+  (setdyn :meg-debug {:captures true
+                      #:scratch true
+                      #:tags true
+                      :tagged_captures true
+                      #:mode true
+                      #:has_backref true
+                      :peg true
+                      :text true})
+
+  (import ./meg :fresh true)
+
+  (meg/match ~(cmt (sequence (capture "hello")
+                             (some (set " ,"))
+                             (capture "world"))
+                   ,(fn [cap1 cap2]
+                      (string cap2 ": yes, " cap1 "!")))
              "hello, world")
- # => @["world: yes, hello!"]
+  # => @["world: yes, hello!"]
 
- (peg-match ~(replace (capture "cat")
-                      {"cat" "tiger"})
-             "cat")
- # => @["tiger"]
-
- (peg-match ~(replace (capture "cat")
-                      ,(fn [original]
-                         (string original "alog")))
-             "cat")
- # => @["catalog"]
-
- (peg-match ~(replace (capture "cat")
-                      "dog")
-             "cat")
- # => @["dog"]
-
- (peg-match ~(/ (capture "cat")
-                {"cat" "tiger"})
-             "cat")
- # => @["tiger"]
-
- (peg-match ~(between 1 3 "a") "aa")
- # => @[]
-
- (peg-match ~(between 1 3 (capture "a")) "aa")
- # => @["a" "a"]
-
- (peg-match ~(between 3 5 (capture "a")) "aa")
- # => nil
-
- (peg-match ~(between 0 8 "b") "")
- # => @[]
-
- (peg-match ~(sequence (between 0 2 "c") "c")
-             "ccc")
- # => @[]
-
- (peg-match ~(sequence (between 0 3 "c") "c")
-             "ccc")
- # => nil
-
-
- )
-
-(comment
-
- (peg-match ~{:main :token
-              :token (some :symchars)
-              :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
-                           (set "!$%&*+-./:<?=>@^_"))}
-             "18")
- # => @[]
-
- (peg-match ~(capture {:main :number
-                       :number (drop (cmt (<- :token)
-                                          ,scan-number))
-                       :token (some :symchars)
-                       :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
-                                    (set "!$%&*+-./:<?=>@^_"))})
-             "18")
- # => @["18"]
-
- # based on:
- #   https://janet-lang.org/docs/syntax.html#Grammar
- (def grammar
-   ~{:ws (set " \t\r\f\n\0\v") # XXX: why \0?
-     :readermac (set "';~,|")
-     :symchars (+ (range "09" "AZ" "az" "\x80\xFF")
-                  (set "!$%&*+-./:<?=>@^_"))
-     :token (some :symchars)
-     :hex (range "09" "af" "AF")
-     :escape (* "\\" (+ (set "ntrzfev0\"\\")
-                        (* "x" :hex :hex)
-                        (* "u" [4 :hex])
-                        (* "U" [6 :hex])
-                        (error (constant "bad escape"))))
-     :comment (* "#" (any (if-not (+ "\n" -1) 1)))
-     :symbol :token
-     :keyword (* ":" (any :symchars))
-     :constant (* (+ "true" "false" "nil")
-                  (not :symchars))
-     :bytes (* "\""
-               (any (+ :escape (if-not "\"" 1)))
-               "\"")
-     :string :bytes
-     :buffer (* "@" :bytes)
-     :long-bytes {:delim (some "`")
-                  :open (capture :delim :n)
-                  :close (cmt (* (not (> -1 "`"))
-                                 (-> :n)
-                                 ':delim)
-                              ,=)
-                  :main (drop (* :open
-                                 (any (if-not :close 1))
-                                 :close))}
-     :long-string :long-bytes
-     :long-buffer (* "@" :long-bytes)
-     :number (drop (cmt (<- :token) ,scan-number))
-     :raw-value (+ :comment :constant :number :keyword
-                   :string :buffer :long-string :long-buffer
-                   :parray :barray :ptuple :btuple :struct :table :symbol)
-     :value (* (any (+ :ws :readermac))
-               :raw-value
-               (any :ws))
-     :root (any :value)
-     :root2 (any (* :value :value))
-     :ptuple (* "(" :root (+ ")" (error "")))
-     :btuple (* "[" :root (+ "]" (error "")))
-     :struct (* "{" :root2 (+ "}" (error "")))
-     :parray (* "@" :ptuple)
-     :barray (* "@" :btuple)
-     :table (* "@" :struct)
-     :main :root})
-
- (peg-match grammar "1")
- # => @[]
-
- (peg-match ~(capture ,grammar) "1")
- # => @["1"]
-
- (peg-match grammar "(+ 1 1)")
- # => @[]
-
- )
+  )
 
 # XXX: hack for better naming
 (def match peg-match)

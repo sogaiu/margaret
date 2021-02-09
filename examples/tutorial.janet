@@ -917,7 +917,7 @@
 # `line`
 # ------
 
-# `(line)`
+# `(line ?tag)`
 
 # Captures the line of the current index into the text and advances no input.
 

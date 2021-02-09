@@ -1,0 +1,458 @@
+(comment
+
+# questions
+#
+# X. peg_call_reset doesn't touch tagged_captures...is that ok?
+# Y. how to address the problem of testing / exploring code with
+#    "inner" definitions (e.g. defn within a defn)
+
+# notes
+#
+# XXX: enumeration of 47 specials (missing integer and string literals):
+#      !, spec_not
+#      $, spec_position
+#      %, spec_accumulate
+#      *, spec_sequence
+#      +, spec_choice
+#      ->, spec_reference
+#      /, spec_replace
+#      <-, spec_capture
+#      >, spec_look
+#      ?, spec_opt
+#      accumulate, spec_accumulate
+#      any, spec_any
+#      argument, spec_argument
+#      at-least, spec_atleast
+#      at-most, spec_atmost
+#      backmatch, spec_backmatch
+#      backref, spec_reference
+#      between, spec_between
+#      capture, spec_capture
+#      choice, spec_choice
+#      cmt, spec_matchtime
+#      column, spec_column
+#      constant, spec_constant
+#      drop, spec_drop
+#      error, spec_error
+#      group, spec_group
+#      if, spec_if
+#      if-not, spec_ifnot
+#      int, spec_int_le
+#      int-be, spec_int_be
+#      lenprefix, spec_lenprefix
+#      line, spec_line
+#      look, spec_look
+#      not, spec_not
+#      opt, spec_opt
+#      position, spec_position
+#      quote, spec_capture
+#      range, spec_range
+#      repeat, spec_repeat
+#      replace, spec_replace
+#      sequence, spec_sequence
+#      set, spec_set
+#      some, spec_some
+#      thru, spec_thru
+#      to, spec_to
+#      uint, spec_uint_le
+#      uint-be, spec_uint_be
+# XXX: support the `start` optional argument to peg-match
+# XXX: consider having an analysis / rewriting / transformation phase
+#      * determine value for has_backref
+#      * rewriting of the peg expressed in 47 specials to only use the
+#        30 specials
+#        * behavior will more closely match c implementation
+#        * implementing the following might be easier:
+#          * ?
+#          * any
+#          * at-least
+#          * at-most
+#          * int
+#          * int-be
+#          * opt
+#          * repeat
+#          * some
+#          * uint
+#          * uint-be
+#      * if the peg is turned into a different representation it may
+#        be possible to retain information such as what the original
+#        special was (e.g. `any`) and/or create a "source map"
+#      * possibly it might be easier to mirror the c implementation
+#        more closely
+#      * determine whether position -> line, col table necessary
+#      * any other benefits?
+# XXX: review the spec_* functions and compare with meg.janet
+# XXX: tco
+# XXX: track current position in string?
+# XXX: consider rewriting
+#      * try to use non-internal definitions to ease testing / exploration
+#      * easier to use macros(?)
+# XXX: consider rewriting some parts to more closely resemble the c
+#      implementation (e.g. `range`, `set`, and other things?)
+# XXX: bounds checking for things like `look`
+# XXX: possibly support other peg/* functions?
+# XXX: try to improve log-entry and log-exit -- should there just be a
+#      single dictionary argument?
+# XXX: think about how to improve tests
+#      * adapt from janet suite
+#      * look elsewhere?
+#      * try to think of and cover boundary cases
+#      * try to use specials in combination
+
+# https://github.com/janet-lang/janet/issues/547#issuecomment-755015713
+
+# Captures are implemented as a stack, and some combinators will pop
+# captures from the stack - the fact that a capture is referenced by
+# backref or has a tag does not change that. This is why accumulate and
+# group get rid of the tagged capture and cause backref to fail.
+#
+# One interesting solution is to use separate stacks for tagged captures
+# and normal captures.  Combinators like accumulate and group could then
+# reset the normal capture stack on success, but keep the tagged capture
+# stack as is. On match failure, you would still reset both stacks
+# though. The only purpose of the tagged capture stack would be to
+# support backref.
+
+# /* Hold captured patterns and match state */
+# typedef struct {
+#     const uint8_t *text_start;
+#     const uint8_t *text_end;     // check for moved beyond end of string
+#     const uint32_t *bytecode;    // accessing subsequent bytecode
+#     const Janet *constants;      // lookup for `constant`, `replace`, `cmt`
+#     JanetArray *captures;        // capture stack
+#     JanetBuffer *scratch;        // for `capture` and `accumulate`
+#     JanetBuffer *tags;           // for tagged capture and retrieval
+#     JanetArray *tagged_captures; // `backref`, `backmatch`
+#     const Janet *extrav;         // for `argument`
+#     int32_t *linemap;            // for `line`, `column`, and `error`
+#     int32_t extrac;              // for `argument`
+#     int32_t depth;               // "stack" overflow protection
+#     int32_t linemaplen;          // for `line`, `column`, and `error`
+#     int32_t has_backref;         //
+#     enum {
+#         PEG_MODE_NORMAL,         // `group`, `replace`, `cmt`, `error`, etc.
+#         PEG_MODE_ACCUMULATE      // `accumulate` and `capture` (but see below)
+#     } mode;
+# } PegState;
+
+# typedef struct {
+#     int32_t cap;
+#     int32_t tcap;
+#     int32_t scratch;
+# } CapState;
+
+# candidate order
+#
+# RULE_NCHAR - text_end
+# RULE_CAPTURE - captures (add scratch, mode later) - cover tag too
+# RULE_GETTAG - tags, tagged_captures
+# RULE_MATCHTIME - constants, captures + scratch -> cap_save, tags -> cap_load
+# RULE_ERROR - linemap and linemaplen
+# RULE_ARGUMENT - extrav and extrac
+
+# text_start
+#   RULE_LOOK
+#   RULE_POSITION
+#   RULE_LINE
+#   RULE_COLUMN
+#   RULE_ERROR
+
+# text_end
+#   RULE_LOOK
+#   RULE_LITERAL
+#   RULE_NCHAR
+#   RULE_NOTNCHAR
+#   RULE_RANGE
+#   RULE_SET
+#   RULE_THRU
+#   RULE_TO
+#   RULE_BACKMATCH
+#   RULE_READINT
+
+# bytecode
+#   RULE_LOOK
+#   RULE_CHOICE
+#   RULE_SEQUENCE
+#   RULE_IF
+#   RULE_IFNOT
+#   RULE_NOT
+#   RULE_THRU
+#   RULE_TO
+#   RULE_BETWEEN
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_DROP
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_ERROR
+#   RULE_LENPREFIX
+
+# constants
+#   RULE_ACCUMULATE
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+
+# captures
+#   RULE_GETTAG
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_ERROR
+#   RULE_BACKMATCH
+#   RULE_LENPREFIX
+
+# scratch
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+
+# tags
+#   RULE_GETTAG
+#   RULE_BACKMATCH
+
+# tag
+#   RULE_GETTAG
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_READINT
+
+# tagged_captures
+#   RULE_GETTAG
+#   RULE_BACKMATCH
+
+# extrav
+#   RULE_ARGUMENT
+
+# linemap (via get_linecol_from_position)
+#   RULE_LINE
+#   RULE_COLUMN
+#   RULE_ERROR
+
+# extrac
+#   RULE_ARGUMENT
+
+# depth (via up1 / down1)
+#   RULE_LOOK
+#   RULE_CHOICE
+#   RULE_SEQUENCE
+#   RULE_IF
+#   RULE_IFNOT
+#   RULE_NOT
+#   RULE_THRU
+#   RULE_TO
+#   RULE_BETWEEN
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_DROP
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_ERROR
+#   RULE_LENPREFIX
+
+# linemaplen (via get_linecol_from_position)
+#   RULE_LINE
+#   RULE_COLUMN
+#   RULE_ERROR
+
+# has_backref
+#   RULE_CAPTURE
+
+# has_backref (via pushcap)
+#   RULE_CAPTURE
+#   anything that calls pushcap if has_backref == 1
+#     RULE_GETTAG
+#     RULE_POSITION
+#     RULE_LINE
+#     RULE_COLUMN
+#     RULE_ARGUMENT
+#     RULE_CONSTANT
+#     RULE_CAPTURE (a repeat, see above)
+#     RULE_ACCUMULATE
+#     RULE_GROUP
+#     RULE_REPLACE
+#     RULE_MATCHTIME
+#     RULE_READINT
+
+# mode
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_ERROR
+#   RULE_LENPREFIX
+
+# PEG_MODE_ACCUMULATE
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+
+# PEG_MODE_NORMAL
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_ERROR
+#   RULE_LENPREFIX
+
+# PEG_MODE_ACCUMULATE / PEG_MODE_NORMAL (via pushcap)
+#   RULE_GETTAG
+#   RULE_POSITION
+#   RULE_LINE
+#   RULE_COLUMN
+#   RULE_ARGUMENT
+#   RULE_CONSTANT
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_READINT
+
+# cap_save
+#   RULE_CHOICE
+#   RULE_THRU
+#   RULE_TO
+#   RULE_BETWEEN
+#   RULE_ACCUMULATE
+#   RULE_DROP
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_LENPREFIX
+
+# cap_load
+#   RULE_CHOICE
+#   RULE_THRU
+#   RULE_TO
+#   RULE_BETWEEN
+#   RULE_ACCUMULATE
+#   RULE_DROP
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_LENPREFIX
+
+# cap_load_keept
+#   RULE_ACCUMULATE
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+
+# pushcap
+#   RULE_GETTAG
+#   RULE_POSITION
+#   RULE_LINE
+#   RULE_COLUMN
+#   RULE_ARGUMENT
+#   RULE_CONSTANT
+#   RULE_CAPTURE
+#   RULE_ACCUMULATE
+#   RULE_GROUP
+#   RULE_REPLACE
+#   RULE_MATCHTIME
+#   RULE_READINT
+
+# 30 rules
+
+# RULE_LITERAL,    /* [len, bytes...] */
+# RULE_NCHAR,      /* [n] */
+# RULE_NOTNCHAR,   /* [n] */
+# RULE_RANGE,      /* [lo | hi << 16 (1 word)] */
+# RULE_SET,        /* [bitmap (8 words)] */
+# RULE_LOOK,       /* [offset, rule] */
+# RULE_CHOICE,     /* [len, rules...] */
+# RULE_SEQUENCE,   /* [len, rules...] */
+# RULE_IF,         /* [rule_a, rule_b (b if a)] */
+# RULE_IFNOT,      /* [rule_a, rule_b (b if not a)] */
+# RULE_NOT,        /* [rule] */
+# RULE_BETWEEN,    /* [lo, hi, rule] */
+# RULE_GETTAG,     /* [searchtag, tag] */
+# RULE_CAPTURE,    /* [rule, tag] */
+# RULE_POSITION,   /* [tag] */
+# RULE_ARGUMENT,   /* [argument-index, tag] */
+# RULE_CONSTANT,   /* [constant, tag] */
+# RULE_ACCUMULATE, /* [rule, tag] */
+# RULE_GROUP,      /* [rule, tag] */
+# RULE_REPLACE,    /* [rule, constant, tag] */
+# RULE_MATCHTIME,  /* [rule, constant, tag] */
+# RULE_ERROR,      /* [rule] */
+# RULE_DROP,       /* [rule] */
+# RULE_BACKMATCH,  /* [tag] */
+# RULE_TO,         /* [rule] */
+# RULE_THRU,       /* [rule] */
+# RULE_LENPREFIX,  /* [rule_a, rule_b (repeat rule_b rule_a times)] */
+# RULE_READINT,    /* [(signedness << 4) | (endianess << 5) | bytewidth, tag] */
+# RULE_LINE,       /* [tag] */
+# RULE_COLUMN      /* [tag] */
+
+# text_end
+#  RULE_LITERAL
+#  RULE_NCHAR
+#  RULE_NOTNCHAR
+#  RULE_RANGE
+#  RULE_SET
+
+# bytecode, text_end, text_start
+#  RULE_LOOK
+
+# bytecode, cap_load, cap_save
+#  RULE_CHOICE
+#  RULE_BETWEEN
+
+# bytecode
+#  RULE_SEQUENCE
+#  RULE_IF
+#  RULE_IFNOT
+#  RULE_NOT
+
+# bytecode, cap_load, cap_save, text_end
+#  RULE_THRU
+#  RULE_TO
+
+# pushcap, tagged_captures, tags
+#  RULE_GETTAG
+
+# pushcap, text_start
+#  RULE_POSITION
+#  RULE_LINE
+#  RULE_COLUMN
+
+# extrac, extrav, pushcap
+#  RULE_ARGUMENT
+
+# pushcap, constants
+#  RULE_CONSTANT
+
+# bytecode, has_backref, mode, pushcap, scratch
+#  RULE_CAPTURE
+
+# bytecode, cap_load_keept, cap_save, mode, pushcap, scratch
+#  RULE_ACCUMULATE
+
+# bytecode, cap_load, cap_save
+#  RULE_DROP
+
+# bytecode, cap_save, cap_load_keept, captures, mode, pushcap
+#  RULE_GROUP
+
+# bytecode, cap_load_keept, cap_save, captures, constants, mode, pushcap
+#  RULE_REPLACE
+#  RULE_MATCHTIME
+
+# text_start, bytecode, captures, mode
+#  RULE_ERROR
+
+# tagged_captures, tags, text_end
+#  RULE_BACKMATCH
+
+# bytecode, cap_load, cap_save, captures, mode
+#  RULE_LENPREFIX
+
+# pushcap, text_end
+#  RULE_READINT
+
+)
+

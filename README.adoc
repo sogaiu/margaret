@@ -38,35 +38,43 @@ In progress, see <<Specials Implementation Status>> for details.
 ----
 should work.
 
-There is some support for diagnostic output via the dynamic variable `:meg-debug`, just do:
+There is some support for diagnostic output via the dynamic variable `:meg-debug`.
+
+To try it, do:
 
 [source,janet]
 ----
 (setdyn :meg-debug true)
 ----
 
+or for more detailed info, try:
+
+[source,janet]
+----
+(setdyn :meg-debug {:captures true
+                    :peg true
+                    :text true})
+----
+
 before calling `meg/match`.  Output format is still evolving but likely will support at least:
 
 . capture stack
 . tags
-. index into text
 . specials execution order
 
 == Testing
 
 Run all tests by:
 
-* Ensure https://gitlab.com/sogaiu/judge-gen[judge-gen] is installed (i.e. `jg` and `jg-verdict` are on your `PATH`)
-
-* From the project directory of margaret: `jpm test`
+* `jpm test` from the project directory of margaret
 
 There are currently tests for:
 
 * link:margaret/meg.janet[margaret's `meg` module]
 
-* link:margaret/tutorial.janet[`peg` module tutorial]
+* link:examples/tutorial.janet[`peg` module tutorial]
 
-* link:margaret/article.janet[modified code from bakpakin's article]
+* link:examples/article.janet[modified code from bakpakin's article]
 
 == Specials Implementation Status
 
@@ -80,42 +88,40 @@ Mostly done:
 
 . Combinators
 .. any
+.. at-least
+.. at-most
+.. backmatch
 .. between
 .. choice, {plus}
 .. if
 .. if-not
 .. look, >
 .. opt, ?
+.. repeat, "n"
 .. sequence, *
 .. some
+.. thru
+.. to
 
 . Captures
+.. accumulate, %
+.. argument
 .. backref, \->
 .. capture, \<-, quote
 .. cmt
+.. column
 .. constant
 .. drop
 .. error
+.. group
+.. lenprefix
+.. line
 .. position
 .. replace, /
 
 Todo:
 
-. Combinators
-.. at-least
-.. at-most
-.. repeat, "n"
-.. to
-.. thru
-.. backmatch
-
 . Captures
-.. accumulate, %
-.. lenprefix
-.. group
-.. argument
-.. line
-.. column
 .. int
 .. int-be
 .. uint
@@ -131,13 +137,19 @@ Thanks to (at least) the following folks:
 * crocket
 * goto-engineering
 * ikarius
+* jcmkk3
 * LeafGarland
+* leahneukirchen
 * LeviSchuck
+* MikeBeller
 * nate
 * pyrmont
 * pepe
+* Saikyun
 * subsetpark
 * swlkr
 * tami5
+* uvtc
+* yumaikas
 
 ...and other Janet community members :)
