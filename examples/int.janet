@@ -1,6 +1,6 @@
 (import ../margaret/meg)
 
-# `(int n)`
+# `(int n ?tag)`
 
 # Captures `n` bytes interpreted as a little endian integer.
 
@@ -17,6 +17,11 @@
       (meg/match ~(int 8) "abcdefgh")))
   # => :core/s64
 
+  (meg/match ~(sequence (int 2 :a)
+                        (backref :a))
+             "ab")
+  # => @[25185 25185]
+
   # (meg/match '(int 1) "a")
   # # => @[(chr "a")]
 
@@ -26,7 +31,7 @@
   # (meg/match '(int 2) "\xFF\x7f")
   # # => @[0x7fff]
 
-  # (meg/match '(int 8) 
+  # (meg/match '(int 8)
   #            "\xff\x7f\x00\x00\x00\x00\x00\x00")
   # # => @[(int/s64 0x7fff)]
 

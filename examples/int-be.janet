@@ -1,6 +1,6 @@
 (import ../margaret/meg)
 
-# `(int-be n)`
+# `(int-be n ?tag)`
 
 # Captures `n` bytes interpreted as a big endian integer.
 
@@ -13,6 +13,11 @@
     (first
       (meg/match ~(int-be 8) "abcdefgh")))
   # => :core/s64
+
+  (meg/match ~(sequence (int-be 2 :a)
+                        (backref :a))
+             "ab")
+  # => @[24930 24930]
 
   # (meg/match '(int-be 1) "a")
   # # => @[(chr "a")]
