@@ -664,15 +664,15 @@
               (def patt (first tail))
               (def tag (when (< 1 (length tail))
                          (in tail 1)))
-              (def text-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar))
               (def ret
-                (when text-idx
-                  (let [cap (string/slice text 0 text-idx)]
+                (when res-idx
+                  (let [cap (string/slice text 0 res-idx)]
                     (if (and (not has_backref)
                              (= mode :peg_mode_accumulate))
                       (buffer/push scratch cap)
                       (pushcap cap tag)))
-                  text-idx))
+                  res-idx))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_ACCUMULATE
