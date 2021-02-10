@@ -43,8 +43,8 @@
     # allow overriding via :meg-debug
     (def has_backref
       (if-let [md (dyn :meg-debug)]
-        (if-let [setting (in md :enable_tagged_captures)]
-          setting
+        (if-let [setting (in md :disable_tagged_captures)]
+          (not setting)
           true)
         true))
     #
@@ -959,7 +959,8 @@
                       #:tags true
                       :tagged_captures true
                       #:mode true
-                      #:has_backref true
+                      :has_backref true
+                      #:disable_tagged_captures true
                       :peg true
                       :text true})
 
