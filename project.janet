@@ -1,4 +1,4 @@
-(import ./vendor/path)
+(import ./support/path)
 
 (declare-project
   :name "margaret"

@@ -1,5 +1,5 @@
-(import ../vendor/jg-verdict :as "jgv")
-(import ../vendor/path)
+(import ../support/jg-verdict :as "jgv")
+(import ../support/path)
 
 (def proj-root
   (path/abspath "."))
