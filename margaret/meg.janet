@@ -770,9 +770,9 @@
                       #
                       (or (function? subst)
                           (cfunction? subst))
+                      # use only the new captures
                       (subst ;(array/slice captures
-                                           0 (- (length captures)
-                                                (cs :captures))))
+                                           (cs :captures)))
                       #
                       subst))
                   (cap_load_keept cs)
@@ -808,9 +808,9 @@
                         #
                         (or (function? subst)
                             (cfunction? subst))
+                        # use only the new captures
                         (subst ;(array/slice captures
-                                             0 (- (length captures)
-                                                  (cs :captures))))
+                                             (cs :captures)))
                         #
                         subst))
                      (cap_load_keept cs)
