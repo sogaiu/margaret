@@ -1,4 +1,4 @@
-(import ../support/jg-verdict :as "jgv")
+(import ../support/jg-runner :as "jgr")
 (import ../support/path)
 
 (def proj-root
@@ -7,7 +7,7 @@
 (def src-root
   (path/join proj-root "examples"))
 
-(jgv/handle-one
+(jgr/handle-one
   {:judge-dir-name "judge"
    :judge-file-prefix "judge-"
    :proj-root proj-root
