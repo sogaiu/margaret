@@ -37,5 +37,18 @@
              "hello, world")
   # => @["world: yes, hello!"]
 
+  (meg/match ~{:main :pair
+               :pair (sequence (cmt (capture :key)
+                                    ,identity)
+                               "="
+                               (cmt (capture :value)
+                                    ,identity))
+               :key (any (sequence (not "=")
+                                   1))
+               :value (any (sequence (not "&")
+                                     1))}
+             "name=tao")
+  # => @["name" "tao"]
+
   )
 
