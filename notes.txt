@@ -8,6 +8,7 @@
 
 # notes
 #
+# XXX: remove necessity of `jg` binary installation
 # XXX: enumeration of 47 specials (missing integer and string literals):
 #      !, spec_not
 #      $, spec_position
@@ -98,6 +99,9 @@
 #      * look elsewhere?
 #      * try to think of and cover boundary cases
 #      * try to use specials in combination
+#      * consider how to exercise meg
+#        * janet-uri
+#        * find other pegs to test and test
 
 # https://github.com/janet-lang/janet/issues/547#issuecomment-755015713
 
