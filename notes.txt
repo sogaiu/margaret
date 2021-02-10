@@ -8,6 +8,8 @@
 
 # notes
 #
+# XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
+# XXX: go through source looking for XXX, and collect here
 # XXX: enumeration of 47 specials (missing integer and string literals):
 #      !, spec_not
 #      $, spec_position
