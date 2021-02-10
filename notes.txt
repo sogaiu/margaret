@@ -8,7 +8,6 @@
 
 # notes
 #
-# XXX: remove necessity of `jg` binary installation
 # XXX: enumeration of 47 specials (missing integer and string literals):
 #      !, spec_not
 #      $, spec_position
@@ -459,4 +458,3 @@
 #  RULE_READINT
 
 )
-
