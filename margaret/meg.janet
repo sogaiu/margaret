@@ -230,13 +230,14 @@
             (do
               (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`range` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def ret
                 (when (> (length text) 0)
                   (let [target-bytes
                         (reduce (fn [acc elt]
                                   (assert (= 2 (length elt))
-                                          "range argument must be length 2")
+                                          "`range` argument must be length 2")
                                   (let [left (get elt 0)
                                         right (get elt 1)]
                                     (assert (<= left right) "empty range")
@@ -255,7 +256,8 @@
             (do
               (log-entry op peg text grammar)
               (assert (not (empty? tail))
-                      "`set` requires at least 1 argument")
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
               (def patt (first tail))
               (def ret
                 (when (and (> (length text) 0)
@@ -451,7 +453,7 @@
               ret)
             # RULE_BETWEEN
             (or (= 'between op)
-                # XXX: might remove if if analysis / rewrite path is taken
+                # XXX: might remove if analysis / rewrite path is taken
                 (= 'opt op)
                 (= '? op)
                 (= 'any op)
