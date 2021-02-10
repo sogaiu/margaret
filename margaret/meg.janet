@@ -258,8 +258,9 @@
                       "`set` requires at least 1 argument")
               (def patt (first tail))
               (def ret
-                (when (string/check-set patt
-                                        (string/slice text 0 1))
+                (when (and (> (length text) 0)
+                           (string/check-set patt
+                                             (string/slice text 0 1)))
                   1))
               (log-exit op ret {:peg peg :text text})
               ret)
