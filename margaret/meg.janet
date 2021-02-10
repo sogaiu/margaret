@@ -232,21 +232,22 @@
               (assert (not (empty? tail))
                       "`range` requires at least 1 argument")
               (def ret
-                (let [target-bytes
-                      (reduce (fn [acc elt]
-                                (assert (= 2 (length elt))
-                                        "range argument must be length 2")
-                                (let [left (get elt 0)
-                                      right (get elt 1)]
-                                  (assert (<= left right) "empty range")
-                                  (array/concat acc
-                                                (range left (inc right)))))
-                              @[]
-                              tail)
-                      target-set (string/from-bytes ;target-bytes)]
-                  (when (string/check-set target-set
-                                          (string/slice text 0 1))
-                    1)))
+                (when (> (length text) 0)
+                  (let [target-bytes
+                        (reduce (fn [acc elt]
+                                  (assert (= 2 (length elt))
+                                          "range argument must be length 2")
+                                  (let [left (get elt 0)
+                                        right (get elt 1)]
+                                    (assert (<= left right) "empty range")
+                                    (array/concat acc
+                                                  (range left (inc right)))))
+                                @[]
+                                tail)
+                        target-set (string/from-bytes ;target-bytes)]
+                    (when (string/check-set target-set
+                                            (string/slice text 0 1))
+                      1))))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_SET
