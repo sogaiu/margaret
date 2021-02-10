@@ -36,6 +36,7 @@ In progress, see <<Specials Implementation Status>> for details.
 
 (meg/match ~(capture (some "smile")) "smile!")
 ----
+
 should work.
 
 There is some support for diagnostic output via the dynamic variable `:meg-debug`.
@@ -47,7 +48,7 @@ To try it, do:
 (setdyn :meg-debug true)
 ----
 
-or for more detailed info, try:
+or for more detailed info:
 
 [source,janet]
 ----
@@ -56,7 +57,9 @@ or for more detailed info, try:
                     :text true})
 ----
 
-before calling `meg/match`.  Output format is still evolving but likely will support at least:
+before calling `meg/match`.
+
+Output format is still evolving but likely will support at least:
 
 . capture stack
 . tags
@@ -143,8 +146,8 @@ Thanks to (at least) the following folks:
 * LeviSchuck
 * MikeBeller
 * nate
-* pyrmont
 * pepe
+* pyrmont
 * Saikyun
 * subsetpark
 * swlkr
