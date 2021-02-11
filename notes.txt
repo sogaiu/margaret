@@ -8,8 +8,59 @@
 
 # notes
 #
+# XXX: investigate and note about `meg/compile` having problems when
+#      used with `comptime`
+# XXX: support the `start` optional argument to peg-match
+# XXX: try to improve log-entry and log-exit -- should there just be a
+#      single dictionary argument?
+# XXX: tco
+# XXX: consider an introspective / debugging repl
+#      * entry and exit points of each special seem possible to support
+#        without too much difficulty
+#      * how about other locations?
+# XXX: possibly support other peg/* functions?
 # XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
 # XXX: go through source looking for XXX, and collect here
+# XXX: consider having an analysis / rewriting / transformation phase
+#      * determine value for has_backref
+#      * rewriting of the peg expressed in 47 specials to only use the
+#        30 specials
+#        * behavior will more closely match c implementation
+#        * implementing the following might be easier:
+#          * ?
+#          * any
+#          * at-least
+#          * at-most
+#          * int
+#          * int-be
+#          * opt
+#          * repeat
+#          * some
+#          * uint
+#          * uint-be
+#      * if the peg is turned into a different representation it may
+#        be possible to retain information such as what the original
+#        special was (e.g. `any`) and/or create a "source map"
+#      * possibly it might be easier to mirror the c implementation
+#        more closely
+#      * determine whether position -> line, col table necessary
+#      * any other benefits?
+# XXX: consider rewriting
+#      * try to use non-internal definitions to ease testing / exploration
+#      * easier to use macros(?)
+# XXX: consider rewriting some parts to more closely resemble the c
+#      implementation (e.g. `range`, `set`, and other things?)
+# XXX: bounds checking for things like `look`
+# XXX: think about how to improve tests
+#      * adapt from janet suite
+#      * look elsewhere?
+#      * try to think of and cover boundary cases
+#      * try to use specials in combination
+#      * consider how to exercise meg
+#        * janet-uri
+#        * find other pegs to test and test
+# XXX: review the spec_* functions and compare with meg.janet
+# XXX: track current position in string?
 # XXX: enumeration of 47 specials (missing integer and string literals):
 #      !, spec_not
 #      $, spec_position
@@ -58,51 +109,6 @@
 #      to, spec_to
 #      uint, spec_uint_le
 #      uint-be, spec_uint_be
-# XXX: support the `start` optional argument to peg-match
-# XXX: consider having an analysis / rewriting / transformation phase
-#      * determine value for has_backref
-#      * rewriting of the peg expressed in 47 specials to only use the
-#        30 specials
-#        * behavior will more closely match c implementation
-#        * implementing the following might be easier:
-#          * ?
-#          * any
-#          * at-least
-#          * at-most
-#          * int
-#          * int-be
-#          * opt
-#          * repeat
-#          * some
-#          * uint
-#          * uint-be
-#      * if the peg is turned into a different representation it may
-#        be possible to retain information such as what the original
-#        special was (e.g. `any`) and/or create a "source map"
-#      * possibly it might be easier to mirror the c implementation
-#        more closely
-#      * determine whether position -> line, col table necessary
-#      * any other benefits?
-# XXX: review the spec_* functions and compare with meg.janet
-# XXX: tco
-# XXX: track current position in string?
-# XXX: consider rewriting
-#      * try to use non-internal definitions to ease testing / exploration
-#      * easier to use macros(?)
-# XXX: consider rewriting some parts to more closely resemble the c
-#      implementation (e.g. `range`, `set`, and other things?)
-# XXX: bounds checking for things like `look`
-# XXX: possibly support other peg/* functions?
-# XXX: try to improve log-entry and log-exit -- should there just be a
-#      single dictionary argument?
-# XXX: think about how to improve tests
-#      * adapt from janet suite
-#      * look elsewhere?
-#      * try to think of and cover boundary cases
-#      * try to use specials in combination
-#      * consider how to exercise meg
-#        * janet-uri
-#        * find other pegs to test and test
 
 # https://github.com/janet-lang/janet/issues/547#issuecomment-755015713
 
