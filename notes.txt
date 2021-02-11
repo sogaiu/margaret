@@ -10,7 +10,6 @@
 #
 # XXX: investigate and note about `meg/compile` having problems when
 #      used with `comptime`
-# XXX: support the `start` optional argument to peg-match
 # XXX: try to improve log-entry and log-exit -- should there just be a
 #      single dictionary argument?
 # XXX: tco

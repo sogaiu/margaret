@@ -1001,8 +1001,12 @@
       (peg-match* (peg-table :main) otext peg-table))
     [captures index tags])
   #
+  (default the-start 0)
   (def [captures index tags]
-    (peg-match** the-peg the-text))
+    (peg-match** the-peg
+                 (if (not= 0 the-start)
+                   (string/slice the-text the-start)
+                   the-text)))
   (when (dyn :meg-debug)
     (print "--------")
     (prin "tags: ")
