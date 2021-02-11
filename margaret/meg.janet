@@ -920,6 +920,75 @@
                   acc-idx))
               (log-exit op ret {:peg peg :text text})
               ret)
+            # RULE_READINT
+            (or (= 'int op)
+                (= 'int-be op)
+                (= 'uint op)
+                (= 'uint-be op))
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def width (first tail))
+              (def tag (when (> (length tail) 1)
+                         (in tail 1)))
+              (def ret
+                (label result
+                  (when (> width (length text))
+                    (return result nil))
+                  (var accum nil)
+                  (cond
+                    (= 'int op)
+                    (do
+                      (set accum (if (> width 6)
+                                   (int/s64 0)
+                                   0))
+                      (loop [i :down-to [(dec width) 0]]
+                        (set accum
+                             (bor (blshift accum 8)
+                                  (get text i)))))
+                    #
+                    (= 'int-be op)
+                    (do
+                      (set accum (if (> width 6)
+                                   (int/s64 0)
+                                   0))
+                      (forv i 0 width
+                        (set accum
+                             (bor (blshift accum 8)
+                                  (get text i)))))
+                    #
+                    (= 'uint op)
+                    (do
+                      (set accum (if (> width 6)
+                                   (int/u64 0)
+                                   0))
+                      (loop [i :down-to [(dec width) 0]]
+                        (set accum
+                             (bor (blshift accum 8)
+                                  (get text i)))))
+                    #
+                    (= 'uint-be op)
+                    (do
+                      (set accum (if (> width 6)
+                                   (int/u64 0)
+                                   0))
+                      (forv i 0 width
+                        (set accum
+                             (bor (blshift accum 8)
+                                  (get text i))))))
+                  #
+                  (when (or (= 'int op)
+                            (= 'int-be op))
+                    (def shift (* 8 (- 8 width)))
+                    (set accum
+                         (brshift (blshift accum shift) shift)))
+                  (var capture-value accum)
+                  (pushcap capture-value tag)
+                  width))
+              (log-exit op ret {:peg peg :text text})
+              ret)
             #
             (error (string "unknown tuple op: " op))))
         #
