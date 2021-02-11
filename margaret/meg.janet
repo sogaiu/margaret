@@ -994,11 +994,11 @@
       (peg-match* (peg-table :main) otext peg-table))
     [captures index tags])
   #
-  (let [text-len (length the-text)]
-    (when (and the-start
-               (or (< text-len the-start)
-                   (< the-start (* -1 (inc text-len)))))
-      (error "start argument out of range")))
+  (when the-start
+    (let [text-len (length the-text)]
+      (assert (and (<= the-start text-len)
+                   (<= (* -1 (inc text-len)) the-start))
+              "start argument out of range")))
   (default the-start 0)
   (def [captures index tags]
     (peg-match** the-peg
