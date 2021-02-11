@@ -787,10 +787,13 @@
             (do
               (log-entry op peg text grammar)
               (assert (not (< (length tail) 2))
-                      (string/format "`%s` requires at least 2 )arguments"
+                      (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
               (def patt (first tail))
               (def subst (in tail 1))
+              (assert (or (function? subst)
+                          (cfunction? subst))
+                      (string "expected a function, got: " (type subst)))
               (def tag (when (> (length tail) 2)
                          (in tail 2)))
               (def old-mode mode)
@@ -802,21 +805,11 @@
                 (label result
                   (when res-idx
                     (def cap
-                      # XXX: does it make sense to have the non-function
-                      #      cases in here?
-                      (cond
-                        (dictionary? subst)
-                        (get subst (last captures))
-                        #
-                        (or (function? subst)
-                            (cfunction? subst))
-                        # use only the new captures
-                        (subst ;(array/slice captures
-                                             (cs :captures)))
-                        #
-                        subst))
-                     (cap_load_keept cs)
-                     (when (not (truthy? cap))
+                      # use only the new captures
+                      (subst ;(array/slice captures
+                                           (cs :captures))))
+                    (cap_load_keept cs)
+                    (when (not (truthy? cap))
                       (return result nil))
                     (pushcap cap tag)
                     res-idx)))
