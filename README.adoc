@@ -83,7 +83,7 @@ Some of the tests were adapted / copied from Janet's tests.
 
 == Specials Implementation
 
-In many cases an attempt to follow the original `peg.c` implementation
+In many cases an attempt to follow the original https://github.com/janet-lang/janet/blob/master/src/core/peg.c[`peg.c`] implementation
 by bakpakin was made.  Some motivations for doing so include:
 
 . If `peg.c` changes, tracking those changes may be easier.
