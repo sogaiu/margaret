@@ -104,47 +104,47 @@ Each of the 47 Janet PEG specials has an initial implementation with
 tests.  Specifically, that includes:
 
 . Primitive Patterns
-.. integer
-.. range
-.. set
-.. string
+.. link:examples/0.integer.janet[integer]
+.. link:examples/range.janet[range]
+.. link:examples/set.janet[set]
+.. link:examples/0.string.janet[string]
 
 . Combinators
-.. any
-.. at-least
-.. at-most
-.. backmatch
-.. between
-.. choice, {plus}
-.. if
-.. if-not
-.. look, >
-.. opt, ?
-.. repeat, "n"
-.. sequence, *
-.. some
-.. thru
-.. to
+.. link:examples/any.janet[any]
+.. link:examples/at-least.janet[at-least]
+.. link:examples/at-most.janet[at-most]
+.. link:examples/backmatch.janet[backmatch]
+.. link:examples/between.janet[between]
+.. link:examples/choice.janet[choice, {plus}]
+.. link:examples/if.janet[if]
+.. link:examples/if-not.janet[if-not]
+.. link:examples/look.janet[look, >]
+.. link:examples/between.janet[opt, ?]
+.. link:examples/repeat.janet[repeat, "n"]
+.. link:examples/sequence.janet[sequence, *]
+.. link:examples/some.janet[some]
+.. link:examples/thru.janet[thru]
+.. link:examples/to.janet[to]
 
 . Captures
-.. accumulate, %
-.. argument
-.. backref, \->
-.. capture, \<-, quote
-.. cmt
-.. column
-.. constant
-.. drop
-.. error
-.. group
-.. int
-.. int-be
-.. lenprefix
-.. line
-.. position
-.. replace, /
-.. uint
-.. uint-be
+.. link:examples/accumulate.janet[accumulate, %]
+.. link:examples/argument.janet[argument]
+.. link:examples/backref.janet[backref, \->]
+.. link:examples/capture.janet[capture, \<-, quote]
+.. link:examples/cmt.janet[cmt]
+.. link:examples/column.janet[column]
+.. link:examples/constant.janet[constant]
+.. link:examples/drop.janet[drop]
+.. link:examples/error.janet[error]
+.. link:examples/group.janet[group]
+.. link:examples/int.janet[int]
+.. link:examples/int-be.janet[int-be]
+.. link:examples/lenprefix.janet[lenprefix]
+.. link:examples/line.janet[line]
+.. link:examples/position.janet[position]
+.. link:examples/replace.janet[replace, /]
+.. link:examples/uint.janet[uint]
+.. link:examples/uint-be.janet[uint-be]
 
 == Acknowledgments
 
