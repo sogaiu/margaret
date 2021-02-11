@@ -1,8 +1,5 @@
 (import ../margaret/meg)
 
-# `some`
-# ------
-
 # `(some patt)`
 
 # Matches 1 or more repetitions of `patt`

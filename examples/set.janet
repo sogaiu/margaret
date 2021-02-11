@@ -1,8 +1,8 @@
 (import ../margaret/meg)
 
-# Match any character in the argument string. Advances 1 character.
-
 # `(set chars)`
+
+# Match any character in the argument string. Advances 1 character.
 
 (comment
 
