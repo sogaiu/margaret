@@ -5,11 +5,14 @@ This aims to be a pure-Janet implementation of Janet's `peg/match`.
 
 == Background
 
-While reading bakpakin's https://bakpakin.com/writing/how-janets-peg-works.html[How Janet's PEG module works], started typing the code in and evaluating it, next thing I knew...
+While reading bakpakin's
+https://bakpakin.com/writing/how-janets-peg-works.html[How Janet's PEG
+module works], started typing the code in and evaluating it, next
+thing I knew...
 
 == Status
 
-In progress, see <<Specials Implementation>> for details.
+In progress, see <<Specials Implementation Status>> for details.
 
 == Why?
 
@@ -39,7 +42,8 @@ In progress, see <<Specials Implementation>> for details.
 
 should work.
 
-There is some support for diagnostic output via the dynamic variable `:meg-debug`.
+There is some support for diagnostic output via the dynamic variable
+`:meg-debug`.
 
 To try it, do:
 
@@ -81,24 +85,7 @@ There are currently tests for:
 
 Some of the tests were adapted / copied from Janet's tests.
 
-== Specials Implementation
-
-In many cases an attempt to follow the original https://github.com/janet-lang/janet/blob/master/src/core/peg.c[`peg.c`] implementation
-by bakpakin was made.  Some motivations for doing so include:
-
-. If `peg.c` changes, tracking those changes may be easier.
-
-. If an experimentally added special in margaret proves useful, it
-  might be easier to port it to `peg.c`.
-
-. Arriving at a correct implementation might be easier because
-  comparing it with a similar one is more meaningful.
-
-. Debugging information obtained here might be more relevant when
-  trying to understand a situation in the original `peg.c` context.
-
-. Reading margaret's implementation might be an easier place to start
-  if one wants to study `peg.c`.
+== Specials Implementation Status
 
 Each of the 47 Janet PEG specials has an initial implementation with
 tests.  Specifically, that includes:
@@ -145,6 +132,36 @@ tests.  Specifically, that includes:
 .. link:examples/replace.janet[replace, /]
 .. link:examples/uint.janet[uint]
 .. link:examples/uint-be.janet[uint-be]
+
+== Implementation Notes
+
+In many cases an attempt to follow the original
+https://github.com/janet-lang/janet/blob/master/src/core/peg.c[`peg.c`]
+implementation by bakpakin was made.  Some motivations for doing so
+include:
+
+. If `peg.c` changes, tracking those changes may be easier.
+
+. If an experimentally added special in margaret proves useful, it
+  might be easier to port it to `peg.c`.
+
+. Arriving at a correct implementation might be easier because
+  comparing it with a similar one is more meaningful.
+
+. Debugging information obtained here might be more relevant when
+  trying to understand a situation in the original `peg.c` context.
+
+. Reading margaret's implementation might be an easier place to start
+  if one wants to study `peg.c`.
+
+Some differences include:
+
+. `peg.c` creates a bytecode representation before execution and some
+  information (e.g. tag names) is not retained.  In at least one case,
+  some uses of `range` get compiled to the same type of bytecode
+  instruction used by `set`.
+
+. `peg.c` has protections for too much recursion.
 
 == Acknowledgments
 
