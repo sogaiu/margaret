@@ -994,6 +994,9 @@
       (peg-match* (peg-table :main) otext peg-table))
     [captures index tags])
   #
+  (when (and the-start
+             (> the-start (length the-text)))
+    (error "start argument beyond bounds of text"))
   (default the-start 0)
   (def [captures index tags]
     (peg-match** the-peg

@@ -17,4 +17,12 @@
              2)
   # => nil
 
+  (try
+    (meg/match ~(capture 1)
+               "xy"
+               3)
+    ([err]
+      err))
+  # => "start argument beyond bounds of text"
+
 )
