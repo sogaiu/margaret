@@ -8,6 +8,7 @@
 
 # notes
 #
+# XXX: support relevant negative indices for start argument
 # XXX: go through source looking for XXX, and collect here
 # XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
 #      to use a non-integer for it?
