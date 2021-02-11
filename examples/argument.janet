@@ -13,15 +13,15 @@
              :smile)
   # => @[:smile]
 
-  (let [start 0]
-    (meg/match ~(argument 2) "whatever"
-               start
-               :zero :one :two))
-  # => @[:two]
-
   (meg/match ~(argument 0) "whatever"
              0
              :zero :one :two)
   # => @[:zero]
+
+  (meg/match ~(argument 2) "whatever"
+             0
+             :zero :one :two)
+  # => @[:two]
+
 
   )
