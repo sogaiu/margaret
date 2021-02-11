@@ -994,9 +994,11 @@
       (peg-match* (peg-table :main) otext peg-table))
     [captures index tags])
   #
-  (when (and the-start
-             (> the-start (length the-text)))
-    (error "start argument beyond bounds of text"))
+  (let [text-len (length the-text)]
+    (when (and the-start
+               (or (< text-len the-start)
+                   (< the-start (* -1 (inc text-len)))))
+      (error "start argument out of range")))
   (default the-start 0)
   (def [captures index tags]
     (peg-match** the-peg
@@ -1047,5 +1049,12 @@
 
   )
 
+(defn- peg-compile
+  [peg]
+  peg)
+
 # XXX: hack for better naming
+
 (def match peg-match)
+
+(def compile peg-compile)

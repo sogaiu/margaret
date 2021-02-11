@@ -3,17 +3,17 @@
 (comment
 
   (meg/match ~(capture 1)
-             "ab"
+             "xy"
              0)
-  # => @["a"]
+  # => @["x"]
 
   (meg/match ~(capture 1)
-             "ab"
+             "xy"
              1)
-  # => @["b"]
+  # => @["y"]
 
   (meg/match ~(capture 1)
-             "ab"
+             "xy"
              2)
   # => nil
 
@@ -23,6 +23,29 @@
                3)
     ([err]
       err))
-  # => "start argument beyond bounds of text"
+  # => "start argument out of range"
+
+  (meg/match ~(capture 1)
+             "xy"
+             -1)
+  # => nil
+
+  (meg/match ~(capture 1)
+             "xy"
+             -2)
+  # => @["y"]
+
+  (meg/match ~(capture 1)
+             "xy"
+             -3)
+  # => @["x"]
+
+  (try
+    (meg/match ~(capture 1)
+               "xy"
+               -4)
+    ([err]
+      err))
+  # => "start argument out of range"
 
 )
