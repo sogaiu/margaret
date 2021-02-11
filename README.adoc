@@ -9,7 +9,7 @@ While reading bakpakin's https://bakpakin.com/writing/how-janets-peg-works.html[
 
 == Status
 
-In progress, see <<Specials Implementation Status>> for details.
+In progress, see <<Specials Implementation>> for details.
 
 == Why?
 
@@ -79,9 +79,29 @@ There are currently tests for:
 
 * link:examples/stand-alone/article.janet[modified code from bakpakin's article]
 
-== Specials Implementation Status
+Some of the tests were adapted / copied from Janet's tests.
 
-Mostly done:
+== Specials Implementation
+
+In many cases an attempt to follow the original `peg.c` implementation
+by bakpakin was made.  Some motivations for doing so include:
+
+. If `peg.c` changes, tracking those changes may be easier.
+
+. If an experimentally added special in margaret proves useful, it
+  might be easier to port it to `peg.c`.
+
+. Arriving at a correct implementation might be easier because
+  comparing it with a similar one is more meaningful.
+
+. Debugging information obtained here might be more relevant when
+  trying to understand a situation in the original `peg.c` context.
+
+. Reading margaret's implementation might be an easier place to start
+  if one wants to study `peg.c`.
+
+Each of the 47 Janet PEG specials has an initial implementation with
+tests.  Specifically, that includes:
 
 . Primitive Patterns
 .. integer
@@ -117,16 +137,12 @@ Mostly done:
 .. drop
 .. error
 .. group
+.. int
+.. int-be
 .. lenprefix
 .. line
 .. position
 .. replace, /
-
-Todo:
-
-. Captures
-.. int
-.. int-be
 .. uint
 .. uint-be
 
