@@ -8,6 +8,9 @@
 
 # notes
 #
+# XXX: go through source looking for XXX, and collect here
+# XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
+#      to use a non-integer for it?
 # XXX: investigate and note about `meg/compile` having problems when
 #      used with `comptime`
 # XXX: try to improve log-entry and log-exit -- should there just be a
@@ -19,7 +22,6 @@
 #      * how about other locations?
 # XXX: possibly support other peg/* functions?
 # XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
-# XXX: go through source looking for XXX, and collect here
 # XXX: consider having an analysis / rewriting / transformation phase
 #      * determine value for has_backref
 #      * rewriting of the peg expressed in 47 specials to only use the
