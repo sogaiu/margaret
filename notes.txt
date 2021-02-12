@@ -8,6 +8,15 @@
 
 # notes
 #
+# XXX: think about how to improve tests
+#      * adapt from janet suite
+#      * look elsewhere?
+#      * try to think of and cover boundary cases
+#      * try to use specials in combination
+#      * consider how to exercise meg
+#        * janet-uri
+#        * spork/fmt
+#        * find other pegs to test and test
 # XXX: go through source looking for XXX, and collect here
 # XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
 #      to use a non-integer for it?
@@ -20,6 +29,9 @@
 #      * how about other locations?
 # XXX: possibly support other peg/* functions?
 # XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
+# XXX: compilation idea
+#      * meg/compile generates something like meg/match, then
+#        meg/match just executes
 # XXX: consider having an analysis / rewriting / transformation phase
 #      * determine value for has_backref
 #      * rewriting of the peg expressed in 47 specials to only use the
@@ -50,14 +62,6 @@
 # XXX: consider rewriting some parts to more closely resemble the c
 #      implementation (e.g. `range`, `set`, and other things?)
 # XXX: bounds checking for things like `look`
-# XXX: think about how to improve tests
-#      * adapt from janet suite
-#      * look elsewhere?
-#      * try to think of and cover boundary cases
-#      * try to use specials in combination
-#      * consider how to exercise meg
-#        * janet-uri
-#        * find other pegs to test and test
 # XXX: review the spec_* functions and compare with meg.janet
 # XXX: track current position in string?
 # XXX: enumeration of 47 specials (missing integer and string literals):
