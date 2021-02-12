@@ -172,6 +172,7 @@ Thanks to (at least) the following folks:
 * bakpakin
 * crocket
 * goto-engineering
+* GrayJack
 * ikarius
 * jcmkk3
 * LeafGarland
