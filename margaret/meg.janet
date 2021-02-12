@@ -737,10 +737,10 @@
               (set mode old-mode)
               (def ret
                 (when res-idx
-                  (def cap (array/slice captures
-                                        (cs :captures)
-                                        (- (length captures)
-                                           (cs :captures))))
+                  (def cap
+                    # use only the new captures
+                    (array/slice captures
+                                 (cs :captures)))
                   (cap_load_keept cs)
                   (pushcap cap tag)
                   res-idx))

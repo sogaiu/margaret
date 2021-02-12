@@ -19,4 +19,9 @@
                "(defn hi [] 1)"))
   # => @["(" "defn hi [] 1" ")"]
 
+  (meg/match ~(group (* (capture "a")
+                        (group (capture "b"))))
+             "ab")
+  # => @[@["a" @["b"]]]
+
   )
