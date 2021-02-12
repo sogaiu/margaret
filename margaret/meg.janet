@@ -1001,7 +1001,9 @@
               "start argument out of range")))
   (default the-start 0)
   (def [captures index tags]
-    (peg-match** the-peg
+    (peg-match** (if (= :function (type the-peg))
+                   (the-peg)
+                   the-peg)
                  (if (not= 0 the-start)
                    (string/slice the-text the-start)
                    the-text)))
@@ -1051,7 +1053,7 @@
 
 (defn- peg-compile
   [peg]
-  peg)
+  (fn [] peg))
 
 # XXX: hack for better naming
 
