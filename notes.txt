@@ -21,7 +21,7 @@
 #        * andrewchambers' janet-uri
 #        * bakpakin's mendoza
 #        * bakpakin's x43bot
-#        * bakpakin's spork/fmt, spork/temple, spork/regex
+#        * bakpakin's spork/fmt, spork/regex, spork/temple (need too much?)
 #        * crocket's janet-utf8
 #        * Duncaen's dhall-janet
 #        * ikarius' bencode
