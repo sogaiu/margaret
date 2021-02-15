@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(between min max patt)`
 
@@ -9,51 +9,51 @@
 (comment
 
   # between
-  (meg/match ~(between 1 3 "a")
+  (peg/match ~(between 1 3 "a")
              "aa")
   # => @[]
 
   # between matching max
-  (meg/match ~(between 0 1 "a")
+  (peg/match ~(between 0 1 "a")
              "a")
   # => @[]
 
   # between matching min 0 on empty string
-  (meg/match ~(between 0 1 "a")
+  (peg/match ~(between 0 1 "a")
              "")
   # => @[]
 
   # between matching 0 occurrences
-  (meg/match ~(between 0 8 "b")
+  (peg/match ~(between 0 8 "b")
              "")
   # => @[]
 
   # between with sequence
-  (meg/match ~(sequence (between 0 2 "c")
+  (peg/match ~(sequence (between 0 2 "c")
                         "c")
              "ccc")
   # => @[]
 
   # between matched max, so sequence fails
-  (meg/match ~(sequence (between 0 3 "c")
+  (peg/match ~(sequence (between 0 3 "c")
                         "c")
              "ccc")
   # => nil
 
   # opt
-  (meg/match ~(opt "a")
+  (peg/match ~(opt "a")
              "a")
   # => @[]
 
   # opt with empty string
-  (meg/match ~(opt "a")
+  (peg/match ~(opt "a")
              "")
   # => @[]
 
-  (meg/match ~(? "a") "a")
+  (peg/match ~(? "a") "a")
   # => @[]
 
-  (meg/match ~(? "a") "")
+  (peg/match ~(? "a") "")
   # => @[]
 
 )

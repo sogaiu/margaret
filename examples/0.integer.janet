@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `<n>` -- where <n> is an integer
 
@@ -13,34 +13,34 @@
 
 (comment
 
-  (meg/match 0 "")
+  (peg/match 0 "")
   # => @[]
 
-  (meg/match 1 "")
+  (peg/match 1 "")
   # => nil
 
-  (meg/match 1 "a")
+  (peg/match 1 "a")
   # => @[]
 
-  (meg/match 3 "cat")
+  (peg/match 3 "cat")
   # => @[]
 
-  (meg/match 2 "cat")
+  (peg/match 2 "cat")
   # => @[]
 
-  (meg/match 4 "cat")
+  (peg/match 4 "cat")
   # => nil
 
-  (meg/match -1 "")
+  (peg/match -1 "")
   # => @[]
 
-  (meg/match -2 "")
+  (peg/match -2 "")
   # => @[]
 
-  (meg/match -1 "cat")
+  (peg/match -1 "cat")
   # => nil
 
-  (meg/match -2 "o")
+  (peg/match -2 "o")
   # => @[]
 
 )

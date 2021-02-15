@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(if cond patt)`
 
@@ -8,15 +8,15 @@
 
 (comment
 
-  (meg/match ~(if 1 "a")
+  (peg/match ~(if 1 "a")
              "a")
   # => @[]
 
-  (meg/match ~(if 5 (set "eilms"))
+  (peg/match ~(if 5 (set "eilms"))
              "smile")
   # => @[]
 
-  (meg/match ~(if 5 (set "eilms"))
+  (peg/match ~(if 5 (set "eilms"))
              "wink")
   # => nil
 

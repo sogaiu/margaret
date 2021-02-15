@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(capture patt ?tag)`
 
@@ -15,88 +15,88 @@
 
 (comment
 
-  (meg/match '(capture 1) "a")
+  (peg/match '(capture 1) "a")
   # => @["a"]
 
-  (meg/match ~(capture "a") "a")
+  (peg/match ~(capture "a") "a")
   # => @["a"]
 
-  (meg/match '(capture 1 :a) "a")
+  (peg/match '(capture 1 :a) "a")
   # => @["a"]
 
-  (meg/match ~(capture 2) "hi")
+  (peg/match ~(capture 2) "hi")
   # => @["hi"]
 
-  (meg/match ~(capture -1) "")
+  (peg/match ~(capture -1) "")
   # => @[""]
 
-  (meg/match ~(capture (range "ac")) "b")
+  (peg/match ~(capture (range "ac")) "b")
   # => @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")
-        [cap] (meg/match ~(capture (range "ac" "xz"))
+        [cap] (peg/match ~(capture (range "ac" "xz"))
                          text)]
     (or (= cap "b")
         (= cap "y")))
   # => true
 
-  (meg/match ~(capture (set "cat")) "cat")
+  (peg/match ~(capture (set "cat")) "cat")
   # => @["c"]
 
-  (meg/match ~(<- "a") "a")
+  (peg/match ~(<- "a") "a")
   # => @["a"]
 
-  (meg/match ~(<- 2) "hi")
+  (peg/match ~(<- 2) "hi")
   # => @["hi"]
 
-  (meg/match ~(<- -1) "")
+  (peg/match ~(<- -1) "")
   # => @[""]
 
-  (meg/match ~(<- (range "ac")) "b")
+  (peg/match ~(<- (range "ac")) "b")
   # => @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")
-        [cap] (meg/match ~(<- (range "ac" "xz"))
+        [cap] (peg/match ~(<- (range "ac" "xz"))
                          text)]
     (or (= cap "b")
         (= cap "y")))
   # => true
 
-  (meg/match ~(<- (set "cat")) "cat")
+  (peg/match ~(<- (set "cat")) "cat")
   # => @["c"]
 
-  (meg/match ~(quote "a") "a")
+  (peg/match ~(quote "a") "a")
   # => @["a"]
 
-  (meg/match ~'"a" "a")
+  (peg/match ~'"a" "a")
   # => @["a"]
 
-  (meg/match ~(quote 2) "hi")
+  (peg/match ~(quote 2) "hi")
   # => @["hi"]
 
-  (meg/match ~'2 "hi")
+  (peg/match ~'2 "hi")
   # => @["hi"]
 
-  (meg/match ~(quote -1) "")
+  (peg/match ~(quote -1) "")
   # => @[""]
 
-  (meg/match ~'-1 "")
+  (peg/match ~'-1 "")
   # => @[""]
 
-  (meg/match ~(quote (range "ac")) "b")
+  (peg/match ~(quote (range "ac")) "b")
   # => @["b"]
 
-  (meg/match ~'(range "ac") "b")
+  (peg/match ~'(range "ac") "b")
   # => @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")
-        [cap] (meg/match ~(quote (range "ac" "xz"))
+        [cap] (peg/match ~(quote (range "ac" "xz"))
                          text)]
     (or (= cap "b")
         (= cap "y")))
@@ -105,16 +105,16 @@
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")
-        [cap] (meg/match ~'(range "ac" "xz")
+        [cap] (peg/match ~'(range "ac" "xz")
                          text)]
     (or (= cap "b")
         (= cap "y")))
   # => true
 
-  (meg/match ~(quote (set "cat")) "cat")
+  (peg/match ~(quote (set "cat")) "cat")
   # => @["c"]
 
-  (meg/match ~'(set "cat") "cat")
+  (peg/match ~'(set "cat") "cat")
   # => @["c"]
 
   )

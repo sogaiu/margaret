@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(column ?tag)`
 
@@ -6,26 +6,26 @@
 
 (comment
 
-  (meg/match ~(column) 
+  (peg/match ~(column)
              "a")
   # => @[1]
 
-  (meg/match ~(sequence "a"
+  (peg/match ~(sequence "a"
                         (column))
              "ab")
   # => @[2]
 
-  (meg/match ~(sequence "a\n"
+  (peg/match ~(sequence "a\n"
                         (column))
              "a\nb")
   # => @[1]
 
-  (meg/match ~(sequence "a\nb"
+  (peg/match ~(sequence "a\nb"
                         (column))
              "a\nb")
   # => @[2]
 
-  (meg/match ~(sequence "ab"
+  (peg/match ~(sequence "ab"
                         (column)
                         (capture "c"))
              "abc")

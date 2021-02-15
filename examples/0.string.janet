@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # "<s>" -- where <s> is string literal content
 
@@ -6,19 +6,19 @@
 
 (comment
 
-  (meg/match "cat" "cat")
+  (peg/match "cat" "cat")
   # => @[]
 
-  (meg/match "cat" "cat1")
+  (peg/match "cat" "cat1")
   # => @[]
 
-  (meg/match "" "")
+  (peg/match "" "")
   # => @[]
 
-  (meg/match "" "a")
+  (peg/match "" "a")
   # => @[]
 
-  (meg/match "cat" "dog")
+  (peg/match "cat" "dog")
   # => nil
 
 )

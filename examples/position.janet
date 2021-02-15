@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(position ?tag)`
 
@@ -8,24 +8,24 @@
 
 (comment
 
-  (meg/match ~(position) "a")
+  (peg/match ~(position) "a")
   # => @[0]
 
-  (meg/match ~(sequence "a"
+  (peg/match ~(sequence "a"
                         (position))
              "ab")
   # => @[1]
 
-  (meg/match ~(sequence (capture "w")
+  (peg/match ~(sequence (capture "w")
                         (position :p)
                         (backref :p))
              "whatever")
   # => @["w" 1 1]
 
-  (meg/match ~($) "a")
+  (peg/match ~($) "a")
   # => @[0]
 
-  (meg/match ~(sequence "a"
+  (peg/match ~(sequence "a"
                         ($))
              "ab")
   # => @[1]

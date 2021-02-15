@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(to patt)`
 
@@ -9,11 +9,11 @@
 
 (comment
 
-  (meg/match ~(to "\n")
+  (peg/match ~(to "\n")
              "this is a nice line\n")
   # => @[]
 
-  (meg/match ~(sequence (to "\n")
+  (peg/match ~(sequence (to "\n")
                         "\n")
              "this is a nice line\n")
   # => @[]

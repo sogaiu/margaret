@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(accumulate patt ?tag)`
 
@@ -8,19 +8,19 @@
 
 (comment
 
-  (meg/match ~(accumulate (sequence (capture 1)
+  (peg/match ~(accumulate (sequence (capture 1)
                                     (capture 1)
                                     (capture 1)))
              "abc")
   # => @["abc"]
 
-  (meg/match ~(accumulate (sequence (capture "a")
+  (peg/match ~(accumulate (sequence (capture "a")
                                     (capture "b")
                                     (capture "c")))
              "abc")
   # => @["abc"]
 
-  (meg/match ~(accumulate (sequence (capture "a")
+  (peg/match ~(accumulate (sequence (capture "a")
                                     (position)
                                     (capture "b")
                                     (position)
@@ -29,13 +29,13 @@
              "abc")
   # => @["a1b2c3"]
 
-  (meg/match ~(% (sequence (capture "a")
+  (peg/match ~(% (sequence (capture "a")
                            (capture "b")
                            (capture "c")))
              "abc")
   # => @["abc"]
 
-  (meg/match ~(% (sequence (capture "a")
+  (peg/match ~(% (sequence (capture "a")
                            (position)
                            (capture "b")
                            (position)

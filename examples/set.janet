@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(set chars)`
 
@@ -6,19 +6,19 @@
 
 (comment
 
-  (meg/match ~(set "act")
+  (peg/match ~(set "act")
              "cat")
   # => @[]
 
-  (meg/match ~(set "act!")
+  (peg/match ~(set "act!")
              "cat!")
   # => @[]
 
-  (meg/match ~(set "bo")
+  (peg/match ~(set "bo")
              "bob")
   # => @[]
 
-  (meg/match ~(capture (set "act"))
+  (peg/match ~(capture (set "act"))
              "cat")
   # => @["c"]
 

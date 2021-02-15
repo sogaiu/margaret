@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(lenprefix n patt)`
 
@@ -18,13 +18,13 @@
          1)
        -1))
 
-  (meg/match lenprefix-peg "5:abcde")
+  (peg/match lenprefix-peg "5:abcde")
   # => @[]
 
-  (meg/match lenprefix-peg "5:abcdef")
+  (peg/match lenprefix-peg "5:abcdef")
   # => nil
 
-  (meg/match lenprefix-peg "5:abcd")
+  (peg/match lenprefix-peg "5:abcd")
   # => nil
 
 )

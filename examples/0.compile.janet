@@ -1,29 +1,29 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 (comment
 
-  (type (meg/compile ~(capture 1)))
+  (type (peg/compile ~(capture 1)))
   # => :function
 
-  (meg/match
-    (meg/compile ~(capture 1))
+  (peg/match
+    (peg/compile ~(capture 1))
     "xy"
     0)
   # => @["x"]
 
-  (type (comptime (meg/compile ~(capture 1))))
+  (type (comptime (peg/compile ~(capture 1))))
   # => :function
 
-  (meg/match
+  (peg/match
     (comptime
-      (meg/compile ~(capture 1)))
+      (peg/compile ~(capture 1)))
     "xy"
     0)
   # => @["x"]
 
   (try
-    (let [compiled-peg (meg/compile ~(capture 1))]
-      (meg/match compiled-peg "xy" -4))
+    (let [compiled-peg (peg/compile ~(capture 1))]
+      (peg/match compiled-peg "xy" -4))
     ([err]
       err))
   # => "start argument out of range"

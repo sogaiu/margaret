@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(at-least n patt)`
 
@@ -6,11 +6,11 @@
 
 (comment
 
-  (meg/match ~(at-least 3 "z")
+  (peg/match ~(at-least 3 "z")
              "zz")
   # => nil
 
-  (meg/match ~(at-least 3 "z")
+  (peg/match ~(at-least 3 "z")
              "zzz")
   # => @[]
 

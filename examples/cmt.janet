@@ -1,4 +1,4 @@
-(import ../margaret/meg :fresh true)
+(import ../margaret/meg :as peg)
 
 # `(cmt patt fun ?tag)`
 
@@ -11,25 +11,25 @@
 
 (comment
 
-  (meg/match ~(cmt (capture 1)
+  (peg/match ~(cmt (capture 1)
                    ,(fn [cap]
                       (= cap "a")))
              "a")
   # => @[true]
 
-  (meg/match ~(cmt (capture 1)
+  (peg/match ~(cmt (capture 1)
                    ,(fn [cap]
                       (= cap "a")))
              "b")
   # => nil
 
-  (meg/match ~(cmt (capture "hello")
+  (peg/match ~(cmt (capture "hello")
                    ,(fn [cap]
                       (string cap "!")))
              "hello")
   # => @["hello!"]
 
-  (meg/match ~(cmt (sequence (capture "hello")
+  (peg/match ~(cmt (sequence (capture "hello")
                              (some (set " ,"))
                              (capture "world"))
                    ,(fn [cap1 cap2]
@@ -37,7 +37,7 @@
              "hello, world")
   # => @["world: yes, hello!"]
 
-  (meg/match ~{:main :pair
+  (peg/match ~{:main :pair
                :pair (sequence (cmt (capture :key)
                                     ,identity)
                                "="

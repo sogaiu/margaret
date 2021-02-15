@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(thru patt)`
 
@@ -9,24 +9,24 @@
 
 (comment
 
-  (meg/match ~(thru "\n")
+  (peg/match ~(thru "\n")
              "this is a nice line\n")
   # => @[]
 
-  (meg/match ~(sequence (thru "\n")
+  (peg/match ~(sequence (thru "\n")
                         "\n")
              "this is a nice line\n")
   # => nil
 
-  (meg/match ~(sequence "(" (thru ")"))
+  (peg/match ~(sequence "(" (thru ")"))
              "(12345)")
   # => @[]
 
-  (meg/match ~(sequence "(" (thru ")"))
+  (peg/match ~(sequence "(" (thru ")"))
              " (12345)")
   # => nil
 
-  (meg/match ~(sequence "(" (thru ")"))
+  (peg/match ~(sequence "(" (thru ")"))
              "(12345")
   # => nil
 

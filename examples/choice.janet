@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(choice a b ...)`
 
@@ -11,33 +11,33 @@
 
 (comment
 
-  (meg/match ~(choice) "")
+  (peg/match ~(choice) "")
   # => nil
 
-  (meg/match ~(choice) "a")
+  (peg/match ~(choice) "a")
   # => nil
   
-  (meg/match ~(choice 1)
+  (peg/match ~(choice 1)
              "a")
   # => @[]
 
-  (meg/match ~(choice (capture 1))
+  (peg/match ~(choice (capture 1))
              "a")
   # => @["a"]
 
-  (meg/match ~(choice "a" "b")
+  (peg/match ~(choice "a" "b")
              "a")
   # => @[]
 
-  (meg/match ~(choice "a" "b")
+  (peg/match ~(choice "a" "b")
              "b")
   # => @[]
 
-  (meg/match ~(choice "a" "b")
+  (peg/match ~(choice "a" "b")
              "c")
   # => nil
 
-  (meg/match ~(+ "a" "b")
+  (peg/match ~(+ "a" "b")
              "a")
   # => @[]
 

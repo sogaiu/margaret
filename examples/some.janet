@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(some patt)`
 
@@ -7,19 +7,18 @@
 (comment
 
   # some with empty string
-  (meg/match ~(some "a") 
+  (peg/match ~(some "a")
              "")
   # => nil
 
   # some
-  (meg/match ~(some "a") 
+  (peg/match ~(some "a")
              "aa")
   # => @[]
 
   # some with capture
-  (meg/match ~(capture (some "a"))
+  (peg/match ~(capture (some "a"))
              "aa")
   # => @["aa"]
 
 )
-

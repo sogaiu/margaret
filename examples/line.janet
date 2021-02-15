@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(line ?tag)`
 
@@ -6,16 +6,16 @@
 
 (comment
 
-  (meg/match ~(line) 
+  (peg/match ~(line)
              "a")
   # => @[1]
 
-  (meg/match ~(sequence "a\n"
+  (peg/match ~(sequence "a\n"
                         (line))
              "a\nb")
   # => @[2]
 
-  (meg/match ~(sequence "a"
+  (peg/match ~(sequence "a"
                         (line)
                         (capture "b"))
              "ab")

@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `{:main <rule> ...}` -- where <rule> is a peg (see below for ...)
 
@@ -16,10 +16,10 @@
 
 (comment
 
-  (meg/match '{:main 1} "a")
+  (peg/match '{:main 1} "a")
   # => @[]
 
-  (meg/match '{:main :fun
+  (peg/match '{:main :fun
                :fun 1}
              "a")
   # => @[]
@@ -45,15 +45,15 @@
                    "a")})
 
   # simplest match
-  (meg/match my-grammar-alt "(bb)")
+  (peg/match my-grammar-alt "(bb)")
   # => @[]
 
   # next simplest match
-  (meg/match my-grammar-alt "(babbab)")
+  (peg/match my-grammar-alt "(babbab)")
   # => @[]
 
   # non-match
-  (meg/match my-grammar-alt "(baab)")
+  (peg/match my-grammar-alt "(baab)")
   # => nil
 
 )

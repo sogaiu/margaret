@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(drop patt)`
 
@@ -6,11 +6,11 @@
 
 (comment
 
-  (meg/match ~(drop (capture 1))
+  (peg/match ~(drop (capture 1))
              "a")
   # => @[]
 
-  (meg/match ~(drop (capture 1))
+  (peg/match ~(drop (capture 1))
              "a")
   # => @[]
 

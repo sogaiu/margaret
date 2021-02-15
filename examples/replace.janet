@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(replace patt subst ?tag)`
 
@@ -16,51 +16,51 @@
 
 (comment
 
-  (meg/match ~(replace (capture "cat")
+  (peg/match ~(replace (capture "cat")
                        {"cat" "tiger"})
              "cat")
   # => @["tiger"]
 
-  (meg/match ~(replace (capture "cat")
+  (peg/match ~(replace (capture "cat")
                        ,(fn [original]
                           (string original "alog")))
              "cat")
   # => @["catalog"]
 
-  (meg/match ~(replace (sequence (capture "ca")
+  (peg/match ~(replace (sequence (capture "ca")
                                  (capture "t"))
                        ,(fn [one two]
                           (string one two "alog")))
              "cat")
   # => @["catalog"]
 
-  (meg/match ~(replace (capture "cat")
+  (peg/match ~(replace (capture "cat")
                        "dog")
              "cat")
   # => @["dog"]
 
-  (meg/match ~(replace (capture "cat")
+  (peg/match ~(replace (capture "cat")
                        :hi)
              "cat")
   # => @[:hi]
 
-  (meg/match ~(capture (replace (capture "cat")
+  (peg/match ~(capture (replace (capture "cat")
                                 :hi))
              "cat")
   # => @[:hi "cat"]
 
-  (meg/match ~(/ (capture "cat")
+  (peg/match ~(/ (capture "cat")
                  {"cat" "tiger"})
              "cat")
   # => @["tiger"]
 
-  (meg/match ~(/ (capture "cat")
+  (peg/match ~(/ (capture "cat")
                  ,(fn [original]
                     (string original "alog")))
              "cat")
   # => @["catalog"]
 
-  (meg/match ~(/ (capture "cat")
+  (peg/match ~(/ (capture "cat")
                  "dog")
              "cat")
   # => @["dog"]

@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(look offset patt)`
 
@@ -13,39 +13,39 @@
 
 (comment
 
-  (meg/match ~(look 3 "cat")
+  (peg/match ~(look 3 "cat")
              "my cat")
   # => @[]
 
-  (meg/match ~(look 3 (capture "cat"))
+  (peg/match ~(look 3 (capture "cat"))
              "my cat")
   # => @["cat"]
 
-  (meg/match ~(look -4 (capture "cat"))
+  (peg/match ~(look -4 (capture "cat"))
              "my cat")
   # => nil
 
-  (meg/match ~(sequence (look 3 "cat")
+  (peg/match ~(sequence (look 3 "cat")
                         "my")
              "my cat")
   # => @[]
 
-  (meg/match ~(sequence "my"
+  (peg/match ~(sequence "my"
                         (look -2 "my")
                         " "
                         (capture "cat"))
              "my cat")
   # => @["cat"]
 
-  (meg/match ~(capture (look 3 "cat"))
+  (peg/match ~(capture (look 3 "cat"))
              "my cat")
   # => @[""]
 
-  (meg/match ~(> 3 "cat")
+  (peg/match ~(> 3 "cat")
              "my cat")
   # => @[]
 
-  (meg/match ~(sequence (> 3 "cat")
+  (peg/match ~(sequence (> 3 "cat")
                         "my")
              "my cat")
   # => @[]

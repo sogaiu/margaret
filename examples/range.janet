@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(range r1 ?r1 .. ?rn)`
 
@@ -6,26 +6,26 @@
 
 (comment
 
-  (meg/match ~(range "aa")
+  (peg/match ~(range "aa")
              "a")
   # => @[]
 
-  (meg/match ~(capture (range "az"))
+  (peg/match ~(capture (range "az"))
              "c")
   # => @["c"]
 
-  (meg/match ~(capture (range "az" "AZ"))
+  (peg/match ~(capture (range "az" "AZ"))
              "J")
   # => @["J"]
 
-  (meg/match ~(capture (range "09"))
+  (peg/match ~(capture (range "09"))
              "123")
   # => @["1"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")]
-    (meg/match ~(range "ac" "xz")
+    (peg/match ~(range "ac" "xz")
                text))
   # => @[]
 

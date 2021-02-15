@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(sequence a b c ...)`
 
@@ -10,28 +10,28 @@
 
 (comment
 
-  (meg/match ~(sequence) "a")
+  (peg/match ~(sequence) "a")
   # => @[]
 
-  (meg/match ~(sequence "a" "b" "c")
+  (peg/match ~(sequence "a" "b" "c")
              "abc")
   # => @[]
 
-  (meg/match ~(sequence "a" "b" "c")
+  (peg/match ~(sequence "a" "b" "c")
              "abcd")
   # => @[]
 
-  (meg/match ~(sequence "a" "b" "c")
+  (peg/match ~(sequence "a" "b" "c")
              "abx")
   # => nil
 
-  (meg/match ~(sequence (capture 1 :a)
+  (peg/match ~(sequence (capture 1 :a)
                         (capture 1)
                         (capture 1 :c))
              "abc")
   # => @["a" "b" "c"]
 
-  (meg/match ~(* "a" "b" "c")
+  (peg/match ~(* "a" "b" "c")
              "abc")
   # => @[]
   

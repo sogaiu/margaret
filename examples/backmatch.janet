@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(backmatch ?tag)`
 
@@ -11,37 +11,37 @@
 
 (comment
 
-  (meg/match ~(sequence (capture "a")
+  (peg/match ~(sequence (capture "a")
                         "b"
                         (capture (backmatch)))
              "aba")
   # => @["a" "a"]
 
-  (meg/match ~(sequence (capture "a" :a)
+  (peg/match ~(sequence (capture "a" :a)
                         (capture "b")
                         (capture (backmatch)))
              "abb")
   # => @["a" "b" "b"]
 
-  (meg/match ~(sequence (capture "a" :a)
+  (peg/match ~(sequence (capture "a" :a)
                         (capture "b")
                         (capture (backmatch :a)))
              "aba")
   # => @["a" "b" "a"]
 
-  (meg/match ~(sequence (capture "a" :target)
+  (peg/match ~(sequence (capture "a" :target)
                         (capture (some "b"))
                         (capture (backmatch :target)))
              "abbba")
   # => @["a" "bbb" "a"]
 
-  (meg/match ~(sequence (capture "a")
+  (peg/match ~(sequence (capture "a")
                         (capture (some "b"))
                         (capture (backmatch))) # referring to captured "b"s
              "abbba")
   # => nil
 
-  (meg/match ~(sequence (capture "a")
+  (peg/match ~(sequence (capture "a")
                         (some "b")
                         (capture (backmatch))) # referring to captured "a"
              "abbba")
@@ -53,19 +53,19 @@
                (backmatch :1)
                -1))
 
-  (meg/match backmatcher-1 "y")
+  (peg/match backmatcher-1 "y")
   # => @[""]
 
-  (meg/match backmatcher-1 "xyx")
+  (peg/match backmatcher-1 "xyx")
   # => @["x"]
 
-  (meg/match backmatcher-1 "xxxxxxxyxxxxxxx")
+  (peg/match backmatcher-1 "xxxxxxxyxxxxxxx")
   # => @["xxxxxxx"]
 
-  (meg/match backmatcher-1 "xyxx")
+  (peg/match backmatcher-1 "xyxx")
   # => nil
 
-  (meg/match backmatcher-1
+  (peg/match backmatcher-1
              (string "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy"))
   # => nil
@@ -76,28 +76,28 @@
                (backmatch)
                -1))
 
-  (meg/match backmatcher-2 "y")
+  (peg/match backmatcher-2 "y")
   # => @[""]
 
-  (meg/match backmatcher-2 "xyx")
+  (peg/match backmatcher-2 "xyx")
   # => @["x"]
 
-  (meg/match backmatcher-2 "xxxxxxxyxxxxxxx")
+  (peg/match backmatcher-2 "xxxxxxxyxxxxxxx")
   # => @["xxxxxxx"]
 
-  (meg/match backmatcher-2 "xyxx")
+  (peg/match backmatcher-2 "xyxx")
   # => nil
 
-  (meg/match backmatcher-2
+  (peg/match backmatcher-2
              (string "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy"))
   # => nil
 
-  (meg/match backmatcher-2
+  (peg/match backmatcher-2
              (string (string/repeat "x" 1000) "y"))
   # => nil
 
-  (meg/match backmatcher-2
+  (peg/match backmatcher-2
              (string (string/repeat "x" 1000)
                      "y"
                      (string/repeat "x" 1000)))
@@ -109,25 +109,25 @@
                (backmatch)
                -1))
 
-  (meg/match longstring-2 "`john")
+  (peg/match longstring-2 "`john")
   # => nil
 
-  (meg/match longstring-2 "abc")
+  (peg/match longstring-2 "abc")
   # => nil
 
-  (meg/match longstring-2 "` `")
+  (peg/match longstring-2 "` `")
   # => @["`"]
 
-  (meg/match longstring-2 "`  `")
+  (peg/match longstring-2 "`  `")
   # => @["`"]
 
-  (meg/match longstring-2 "``  ``")
+  (peg/match longstring-2 "``  ``")
   # => @["``"]
 
-  (meg/match longstring-2 "``` `` ```")
+  (peg/match longstring-2 "``` `` ```")
   # => @["```"]
 
-  (meg/match longstring-2 "``  ```")
+  (peg/match longstring-2 "``  ```")
   # =>  nil
 
   )

@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(not patt)`
 
@@ -10,15 +10,15 @@
 
 (comment
 
-  (meg/match ~(not "cat") "dog")
+  (peg/match ~(not "cat") "dog")
   # => @[]
 
-  (meg/match ~(sequence (not "cat")
+  (peg/match ~(sequence (not "cat")
                         (set "dgo"))
              "dog")
   # => @[]
 
-  (meg/match ~(! "cat") "dog")
+  (peg/match ~(! "cat") "dog")
   # => @[]
 
   )

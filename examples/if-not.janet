@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(if-not cond patt)`
 
@@ -8,11 +8,11 @@
 
 (comment
 
-  (meg/match ~(if-not 2 "a")
+  (peg/match ~(if-not 2 "a")
              "a")
   # => @[]
 
-  (meg/match ~(if-not 5 (set "iknw"))
+  (peg/match ~(if-not 5 (set "iknw"))
              "wink")
   # => @[]
 

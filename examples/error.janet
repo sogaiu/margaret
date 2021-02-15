@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(error ?patt)`
 
@@ -10,7 +10,7 @@
 (comment
 
   # error with line and column values
-  (meg/match ~(sequence "a"
+  (peg/match ~(sequence "a"
                         "\n"
                         "b"
                         "\n"
@@ -20,17 +20,17 @@
   # !
 
   # error match failure
-  (meg/match ~(error "ho")
+  (peg/match ~(error "ho")
              "")
   # => nil
 
   # error with captured result in message
-  (meg/match ~(error (capture "a"))
+  (peg/match ~(error (capture "a"))
              "a")
   # !
 
   (try
-    (meg/match ~(sequence "a"
+    (peg/match ~(sequence "a"
                           (error (sequence (capture "b")
                                            (capture "c"))))
                "abc")
@@ -39,7 +39,7 @@
   # => "c"
 
   (try
-    (meg/match ~(choice "a"
+    (peg/match ~(choice "a"
                         "b"
                         (error ""))
                "c")
@@ -48,7 +48,7 @@
   # => "match error at line 1, column 1"
 
   (try
-    (meg/match ~(choice "a"
+    (peg/match ~(choice "a"
                         "b"
                         (error))
                "c")

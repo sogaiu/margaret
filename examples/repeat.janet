@@ -1,4 +1,4 @@
-(import ../margaret/meg)
+(import ../margaret/meg :as peg)
 
 # `(repeat n patt)`
 
@@ -8,19 +8,19 @@
 
 (comment
 
-  (meg/match ~(repeat 3 "m")
+  (peg/match ~(repeat 3 "m")
              "mmm")
   # => @[]
 
-  (meg/match ~(repeat 2 "m")
+  (peg/match ~(repeat 2 "m")
              "m")
   # => nil
 
-  (meg/match ~(3 "m")
+  (peg/match ~(3 "m")
              "mmm")
   # => @[]
 
-  (meg/match ~(2 "m")
+  (peg/match ~(2 "m")
              "m")
   # => nil
 
