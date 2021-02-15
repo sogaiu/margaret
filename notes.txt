@@ -14,9 +14,25 @@
 #      * try to think of and cover boundary cases
 #      * try to use specials in combination
 #      * consider how to exercise meg
-#        * janet-uri
-#        * spork/fmt
-#        * find other pegs to test and test
+#      * some candidate repositories to look for pegs and tests / usages of
+#        pegs:
+#        * andrewchambers' janet-httpkit
+#        * andrewchambers' janet-shlex
+#        * andrewchambers' janet-uri
+#        * bakpakin's mendoza
+#        * bakpakin's x43bot
+#        * bakpakin's spork/fmt, spork/temple, spork/regex
+#        * crocket's janet-utf8
+#        * Duncaen's dhall-janet
+#        * ikarius' bencode
+#        * MikeBeller's janet-benchmarksgame
+#        * pepe's chidi
+#        * pepe's neil (time-grammar, date-grammars)
+#        * pyrmont's tomlin
+#        * pyrmont's musty
+#        * staab's janet-schema (uuid-pattern and others?)
+#        * zenlor's janet-csv
+#      * find other pegs to test and test
 # XXX: go through source looking for XXX, and collect here
 # XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
 #      to use a non-integer for it?
