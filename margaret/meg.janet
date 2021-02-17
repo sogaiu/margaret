@@ -324,22 +324,23 @@
               (def ret
                 (label result
                   (when (= len 0)
-                    # XXX
-                    (return result 0)
-                    #(return result (- tot-len
-                    #                  (length text)))
-                    )
+                    (return result 0))
                   (var cur-text text)
                   (var res-idx nil)
                   (var acc-idx 0)
-                  (forv i 0 (dec len)
+                  (var i 0)
+                  (while (and cur-text
+                              (< i (dec len)))
                     (def sub-peg (get tail i))
                     (set res-idx (peg-match* sub-peg cur-text grammar))
-                    (when (nil? res-idx)
-                      (break))
-                    (+= acc-idx res-idx)
-                    (set cur-text (string/slice cur-text res-idx)))
-                  (when (nil? res-idx)
+                    # looks weird but makes it more similar to peg.c
+                    (if res-idx
+                      (do
+                        (set cur-text (string/slice cur-text res-idx))
+                        (+= acc-idx res-idx))
+                      (set cur-text nil))
+                    (++ i))
+                  (when (nil? cur-text)
                     (return result nil))
                   (when-let [last-idx
                              (peg-match* (get tail (dec len))

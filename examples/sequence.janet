@@ -34,5 +34,37 @@
   (peg/match ~(* "a" "b" "c")
              "abc")
   # => @[]
-  
+
+  (peg/match
+    ~(sequence (capture "a"))
+    "a")
+  # => @["a"]
+
+  (deep=
+    (peg/match
+      ~(capture "a")
+      "a")
+    (peg/match
+      ~(sequence (capture "a"))
+      "a")) # => true
+
+  (peg/match
+    ~(sequence (capture (choice "a" "b")))
+    "a")
+  # => @["a"]
+
+  (peg/match
+    ~(capture (+ "GET" "POST" "PATCH" "DELETE"))
+    "PATCH")
+  # => @["PATCH"]
+
+  # thanks pepe
+  (deep=
+    (peg/match
+      ~(capture (choice "GET" "POST" "PATCH" "DELETE"))
+      "PATCH")
+    (peg/match
+      ~(sequence (capture (choice "GET" "POST" "PATCH" "DELETE")))
+      "PATCH")) # => true
+
   )
