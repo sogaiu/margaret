@@ -1,5 +1,6 @@
-(import ./utils :fresh true)
+(import ./utils)
 (import ./jg)
+(import ./args-runner)
 (import ./vendor/jpm)
 (import ./vendor/path)
 
@@ -54,7 +55,10 @@
     (let [fpath (path/join results-dir
                   (string i "-" fname))]
       # note: create-dirs expects a path ending in a filename
-      (jpm/create-dirs fpath)
+      (try
+        (jpm/create-dirs fpath)
+        ([err]
+          (errorf "failed to create dir for path: " fpath)))
       fpath))
   (each path (os/dir dir)
     (def fpath (path/join dir path))
@@ -65,6 +69,8 @@
               (print "  " path)
               (def results-fpath
                 (make-results-fpath path count))
+              # XXX
+              #(eprintf "results path: %s" results-fpath)
               (def command (string/join
                             [(dyn :executable "janet")
                              "-e"
@@ -78,6 +84,8 @@
                                      ")"
                                      "'")] # avoid `main`
                             " "))
+              # XXX
+              #(eprintf "command: %s" command)
               (let [output (jpm/pslurp command)]
                 (when (not= output "")
                   (spit (path/join results-dir
@@ -198,3 +206,15 @@
 
  )
 
+# XXX: imitate jg's main?
+(defn main
+  [& args]
+  (def opts (args-runner/parse))
+  (unless opts
+    (os/exit 1))
+  (cond
+    (opts :version)
+    (print "jg-runner alpha")
+    #
+    (handle-one opts)
+    true))

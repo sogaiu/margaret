@@ -1,22 +1,18 @@
-(import ./pegs :fresh true)
+(import ./pegs)
 
+# XXX: simplify?
 (defn rewrite-tagged
   [tagged-item last-form]
   (let [[tag value] tagged-item]
     (match [tag value]
       [:returns value]
       (string "(_verify/is " last-form " " value ")\n\n")
-      [:throws _]
-      (string "(_verify/is-error " last-form ")\n\n")
       nil)))
 
 (comment
 
   (rewrite-tagged [:returns true] "(= 1 1)")
   # => "(_verify/is (= 1 1) true)\n\n"
-
-  (rewrite-tagged [:throws "yuck"] "(error \"yuck\")")
-  # => "(_verify/is-error (error \"yuck\"))\n\n"
 
  )
 
@@ -52,21 +48,6 @@
                     :type :is})
        ,name)))
 
-(defmacro _verify/is-error
-  [form &opt name]
-  (default name
-    (string "test-" (inc (length _verify/test-results))))
-  (with-syms [$s $r]
-    ~(do
-       (def [,$s ,$r] (protect ,form))
-       (array/push _verify/test-results
-                   {:name ,name
-                    :passed (if ,$s false true)
-                    :test-form ',form
-                    :test-value ,$r
-                    :type :is-error})
-       ,name)))
-
 (defn _verify/start-tests
   []
   (set _verify/start-time (os/clock))
@@ -93,15 +74,7 @@
         (print "--------"))))
   (printf "\n\nTests finished in %.3f seconds"
           (- _verify/end-time _verify/start-time))
-  (def color
-    (if (= passed
-           (length _verify/test-results))
-      "\e[32m"   # green
-      "\e[31m")) # red
-  (def no-color "\e[0m")
-  (print color passed no-color 
-         " of "
-         (length _verify/test-results) " tests passed.\n"))
+  (print passed " of " (length _verify/test-results) " tests passed.\n"))
 
 (defn _verify/dump-results
   []
@@ -113,28 +86,23 @@
 
 (defn has-tests
   [forms]
-  # XXX: atm, if one of forms is [:returns val] or [:throws val]
-  #      there is potentially at least one test.  the only other
-  #      type of thing in forms should be a string
-  (not (all |(not (tuple? $))
-            forms)))
+  (when forms
+    (some |(tuple? $)
+          forms)))
 
 (comment
 
   (has-tests @["(+ 1 1)\n  " [:returns "2"]])
   # => true
 
-  (has-tests @["(error \"2\")\n  " [:throws "2"]])
-  # => true
-
   (has-tests @["(comment \"2\")\n  "])
-  # => false
+  # => nil
 
-  )
+)
 
 (defn rewrite-block-with-verify
   [blk]
-  (var rewritten-forms @[])
+  (def rewritten-forms @[])
   # parse the comment block and rewrite some parts
   (set pegs/in-comment 0)
   (let [parsed (peg/match pegs/inner-forms blk)]
@@ -143,37 +111,29 @@
         (when (not= cmt-or-frm "")
           (if (empty? rewritten-forms)
             (array/push rewritten-forms cmt-or-frm)
-            (let [last-form (array/pop rewritten-forms)]
-              (if (= (type cmt-or-frm) :tuple)
-                # tuple requires special handling
-                (let [rewritten
-                      (rewrite-tagged cmt-or-frm last-form)]
-                  (assert rewritten (string "match failed for: " cmt-or-frm))
-                  (array/push rewritten-forms rewritten))
-                # long-bytes require special handling
-                (let [maybe-long-bytes (peg/match pegs/long-bytes cmt-or-frm)]
-                  (if-not maybe-long-bytes
-                    (do
-                      (array/push rewritten-forms last-form)
-                      (array/push rewritten-forms cmt-or-frm))
-                    # long-bytes are handled like tuples
-                    (let [rewritten
-                          (rewrite-tagged (first maybe-long-bytes) last-form)]
-                      (assert rewritten (string "match failed on long-string"))
-                      (array/push rewritten-forms rewritten))))))))
-        (set pegs/in-comment 0)))
-    rewritten-forms))
+            # is `cmt-or-frm` an expected value
+            (if (= (type cmt-or-frm) :tuple)
+              # looks like an expected value, handle rewriting as test
+              (let [last-form (array/pop rewritten-forms)
+                    rewritten (rewrite-tagged cmt-or-frm last-form)]
+                (assert rewritten (string "match failed for: " cmt-or-frm))
+                (array/push rewritten-forms rewritten))
+              # not an expected value, continue
+              (array/push rewritten-forms cmt-or-frm))))
+        (set pegs/in-comment 0))))
+  rewritten-forms)
 
 (comment
 
-  (def comment-str `
-(comment
+  (def comment-str
+    ``
+    (comment
 
-  (+ 1 1)
-  # => 2
+      (+ 1 1)
+      # => 2
 
-)
-`)
+    )
+    ``)
 
   (rewrite-block-with-verify comment-str)
   # => @["(_verify/is (+ 1 1)\n   2)\n\n"]
@@ -183,28 +143,30 @@
     (peg/match pegs/inner-forms comment-str))
   # => @["(+ 1 1)\n  " [:returns "2"]]
 
-  (def comment-with-no-test-str `
-(comment
+  (def comment-with-no-test-str
+    ``
+    (comment
 
-  (+ 1 1)
+      (+ 1 1)
 
-)
-`)
+    )
+    ``)
 
   (rewrite-block-with-verify comment-with-no-test-str)
   # => @[]
 
-  (def comment-in-comment-str `
-(comment
+  (def comment-in-comment-str
+    ``
+    (comment
 
-  (comment
+      (comment
 
-     (+ 1 1)
-     # => 2
+         (+ 1 1)
+         # => 2
 
-   )
-)
-`)
+       )
+    )
+    ``)
 
   (do
     (set pegs/in-comment 0)
@@ -248,49 +210,50 @@
 
    # XXX: expected values are all large here -- not testing
 
-  (def sample `
-(comment
+  (def sample
+    ``
+    (comment
 
-  (= 1 1)
-  # => true
+      (= 1 1)
+      # => true
 
-  )`)
+    )
+    ``)
 
   (rewrite-with-verify [sample] "text")
 
-  (def sample-comment-form `
-(comment
+  (def sample-comment-form
+    ``
+    (comment
 
-  (def a 1)
+      (def a 1)
 
-  # this is just a comment
+      # this is just a comment
 
-  (def b 2)
+      (def b 2)
 
-  (= 1 (- b a))
-  # => true
+      (= 1 (- b a))
+      # => true
 
-  (error "ouch")
-  # !
-
-)
-`)
+    )
+    ``)
 
   (rewrite-with-verify [sample-comment-form] "jdn")
 
- (def comment-in-comment `
-(comment
+  (def comment-in-comment
+    ``
+    (comment
 
-  (comment
+      (comment
 
-    (+ 1 1)
-    # => 2
+        (+ 1 1)
+        # => 2
 
-  )
+      )
 
-)
-`)
+    )
+    ``)
 
- (rewrite-with-verify [comment-in-comment] "jdn")
+  (rewrite-with-verify [comment-in-comment] "jdn")
 
  )
