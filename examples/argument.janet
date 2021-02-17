@@ -23,5 +23,4 @@
              :zero :one :two)
   # => @[:two]
 
-
   )

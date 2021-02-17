@@ -21,8 +21,7 @@
     (peg/match ~(capture 1)
                "xy"
                3)
-    ([err]
-      err))
+    ([e] e))
   # => "start argument out of range"
 
   (peg/match ~(capture 1)
@@ -44,8 +43,7 @@
     (peg/match ~(capture 1)
                "xy"
                -4)
-    ([err]
-      err))
+    ([e] e))
   # => "start argument out of range"
 
 )

@@ -9,25 +9,27 @@
 
 (comment
 
-  # error with line and column values
-  (peg/match ~(sequence "a"
-                        "\n"
-                        "b"
-                        "\n"
-                        "c"
-                        (error))
-             "a\nb\nc")
-  # !
+  (try
+    (peg/match ~(sequence "a"
+                          "\n"
+                          "b"
+                          "\n"
+                          "c"
+                          (error))
+               "a\nb\nc")
+    ([e] e))
+  # => "match error at line 3, column 2"
 
   # error match failure
   (peg/match ~(error "ho")
              "")
   # => nil
 
-  # error with captured result in message
-  (peg/match ~(error (capture "a"))
-             "a")
-  # !
+  (try
+    (peg/match ~(error (capture "a"))
+               "a")
+    ([e] e))
+  # => "a"
 
   (try
     (peg/match ~(sequence "a"

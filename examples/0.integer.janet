@@ -4,7 +4,6 @@
 
 # Matches a number of characters, and advances that many characters.
 
-
 # If negative, matches if not that many characters and does not advance.
 
 # For example, -1 will match the end of a string because the length of
