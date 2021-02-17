@@ -9,6 +9,8 @@
 # notes
 #
 # XXX: think about how to improve tests
+#      * is there a way to run the tests of other projects in a way that
+#        uses meg without having to modify those existing projects?
 #      * adapt from janet suite
 #      * look elsewhere?
 #      * try to think of and cover boundary cases
@@ -19,12 +21,10 @@
 #        * andrewchambers' janet-httpkit
 #        * andrewchambers' janet-shlex
 #        * andrewchambers' janet-uri
-#        * bakpakin's mendoza
 #        * bakpakin's x43bot
-#        * bakpakin's spork/fmt, spork/regex, spork/temple (need too much?)
 #        * crocket's janet-utf8
-#        * Duncaen's dhall-janet
 #        * ikarius' bencode
+#        * janet-lang spork/fmt, spork/regex
 #        * MikeBeller's janet-benchmarksgame
 #        * pepe's chidi
 #        * pepe's neil (time-grammar, date-grammars)
@@ -32,6 +32,10 @@
 #        * pyrmont's musty
 #        * staab's janet-schema (uuid-pattern and others?)
 #        * zenlor's janet-csv
+#      * more than a little work
+#        * bakpakin's mendoza (essentially need whole program?)
+#        * Duncaen's dhall-janet (incomplete)
+#        * janet-lang spork/temple (essentially need whole program?)
 #      * find other pegs to test and test
 # XXX: go through source looking for XXX, and collect here
 # XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
