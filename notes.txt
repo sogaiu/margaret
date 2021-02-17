@@ -27,6 +27,7 @@
 #        * janet-lang spork/fmt, spork/regex
 #        * MikeBeller's janet-benchmarksgame
 #        * pepe's chidi
+#        * pepe's jesty
 #        * pepe's neil (time-grammar, date-grammars)
 #        * pyrmont's tomlin
 #        * pyrmont's musty
