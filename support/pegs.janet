@@ -28,22 +28,24 @@
                                    (choice ")" (error "")))))
    # classify certain comments
    (put :comment ~(sequence
-                   (any :ws)
-                   (choice
-                    (cmt (sequence
-                          "#" (any :ws) "=>"
-                          (capture (sequence
-                                    (any (if-not (choice "\n" -1) 1))
-                                    (any "\n"))))
-                         ,|(if (zero? in-comment)
-                             [:returns (string/trim $)]
-                             ""))
-                    (cmt (capture (sequence
-                                    "#"
-                                    (any (if-not (+ "\n" -1) 1))
-                                    (any "\n")))
-                         ,|(identity $))
-                    (any :ws))))
+                    (any :ws)
+                    (choice
+                      (cmt (sequence
+                             (line)
+                             "#" (any :ws) "=>"
+                             (capture (sequence
+                                        (any (if-not (choice "\n" -1) 1))
+                                        (any "\n"))))
+                           ,|(if (zero? in-comment)
+                               # record value and line
+                               [:returns (string/trim $1) $0]
+                               ""))
+                      (cmt (capture (sequence
+                                      "#"
+                                      (any (if-not (+ "\n" -1) 1))
+                                      (any "\n")))
+                           ,|(identity $))
+                      (any :ws))))
    # tried using a table with a peg but had a problem, so use a struct
    table/to-struct))
 
@@ -76,7 +78,7 @@
       ``)
     #
     @["(- 1 1)\n  "
-      [:returns "0"]])
+      [:returns "0" 3]])
   # => true
 
   (deep=
@@ -102,7 +104,7 @@
       "# this is just a comment\n\n"
       "(def b 2)\n\n  "
       "(= 1 (- b a))\n  "
-      [:returns "true"]])
+      [:returns "true" 10]])
   # => true
 
   )
@@ -115,19 +117,27 @@
    (table ;(kvs grammar/jg))
    # also record location and type information, instead of just recognizing
    (put :main ~(choice (cmt (sequence
-                              (position) (capture :value) (position))
+                              (position)
+                              (line)
+                              (capture :value)
+                              (position))
                             ,|(do
-                                (def [start value end] $&)
+                                (def [start s-line value end] $&)
                                 {:end end
                                  :start start
+                                 :s-line s-line
                                  :type :value
                                  :value value}))
                        (cmt (sequence
-                              (position) (capture :comment) (position))
+                              (position)
+                              (line)
+                              (capture :comment)
+                              (position))
                             ,|(do
-                                (def [start value end] $&)
+                                (def [start s-line value end] $&)
                                 {:end end
                                  :start start
+                                 :s-line s-line
                                  :type :comment
                                  :value value}))))
    # tried using a table with a peg but had a problem, so use a struct
@@ -147,6 +157,7 @@
     @[{:type :comment
        :value "# \"my test\"\n"
        :start 0
+       :s-line 1
        :end 12}]) # => true
 
   (deep=
@@ -156,6 +167,7 @@
     @[{:type :value
        :value "(+ 1 1)\n"
        :start 12
+       :s-line 2
        :end 20}]) # => true
 
   (string/slice sample-source 12 20)
@@ -168,6 +180,7 @@
     @[{:type :comment
        :value "# => 2\n"
        :start 20
+       :s-line 3
        :end 27}]) # => true
 
 )
@@ -204,6 +217,7 @@
     @[{:type :value
        :value "(def a 1)\n\n"
        :start 0
+       :s-line 1
        :end 11}]
     ) # => true
 
@@ -215,6 +229,7 @@
        :value
        "(comment\n\n  (+ 1 1)\n\n  # hi there\n\n  (comment :a )\n\n)\n\n"
        :start 11
+       :s-line 3
        :end 66}]
     ) # => true
 
@@ -225,6 +240,7 @@
     @[{:type :value
        :value "(def x 0)\n\n"
        :start 66
+       :s-line 13
        :end 77}]
     ) # => true
 
@@ -235,6 +251,7 @@
     @[{:type :value
        :value "(comment\n\n  (= a (+ x 1))\n\n)"
        :start 77
+       :s-line 15
        :end 105}]
     ) # => true
 

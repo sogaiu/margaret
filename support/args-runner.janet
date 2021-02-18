@@ -38,7 +38,7 @@
       "judge-dir-name" "judge"
       :order @["project-root" "source-root"]
       "project-root" ".."
-      "source-root" "."}) # =? true
+      "source-root" "."}) # => true
 
  )
 

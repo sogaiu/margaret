@@ -2,17 +2,19 @@
 
 # XXX: simplify?
 (defn rewrite-tagged
-  [tagged-item last-form]
-  (let [[tag value] tagged-item]
-    (match [tag value]
-      [:returns value]
-      (string "(_verify/is " last-form " " value ")\n\n")
-      nil)))
+  [tagged-item last-form offset]
+  (match tagged-item
+    [:returns value line]
+    (string "(_verify/is "
+            last-form " "
+            value " "
+            (string "\"" "line-" (dec (+ line offset)) "\"") ")\n\n")
+    nil))
 
 (comment
 
-  (rewrite-tagged [:returns true] "(= 1 1)")
-  # => "(_verify/is (= 1 1) true)\n\n"
+  (rewrite-tagged [:returns true 1] "(= 1 1)" 1)
+  # => "(_verify/is (= 1 1) true \"line-1\")\n\n"
 
  )
 
@@ -92,7 +94,7 @@
 
 (comment
 
-  (has-tests @["(+ 1 1)\n  " [:returns "2"]])
+  (has-tests @["(+ 1 1)\n  " [:returns "2" 1]])
   # => true
 
   (has-tests @["(comment \"2\")\n  "])
@@ -103,9 +105,11 @@
 (defn rewrite-block-with-verify
   [blk]
   (def rewritten-forms @[])
+  (def {:value blk-str
+        :s-line offset} blk)
   # parse the comment block and rewrite some parts
   (set pegs/in-comment 0)
-  (let [parsed (peg/match pegs/inner-forms blk)]
+  (let [parsed (peg/match pegs/inner-forms blk-str)]
     (when (has-tests parsed)
       (each cmt-or-frm parsed
         (when (not= cmt-or-frm "")
@@ -115,7 +119,7 @@
             (if (= (type cmt-or-frm) :tuple)
               # looks like an expected value, handle rewriting as test
               (let [last-form (array/pop rewritten-forms)
-                    rewritten (rewrite-tagged cmt-or-frm last-form)]
+                    rewritten (rewrite-tagged cmt-or-frm last-form offset)]
                 (assert rewritten (string "match failed for: " cmt-or-frm))
                 (array/push rewritten-forms rewritten))
               # not an expected value, continue
@@ -135,13 +139,17 @@
     )
     ``)
 
-  (rewrite-block-with-verify comment-str)
-  # => @["(_verify/is (+ 1 1)\n   2)\n\n"]
+  (def comment-blk
+    {:value comment-str
+     :s-line 3})
+
+  (rewrite-block-with-verify comment-blk)
+  # => @["(_verify/is (+ 1 1)\n   2 \"line-6\")\n\n"]
 
   (do
     (set pegs/in-comment 0)
     (peg/match pegs/inner-forms comment-str))
-  # => @["(+ 1 1)\n  " [:returns "2"]]
+  # => @["(+ 1 1)\n  " [:returns "2" 4]]
 
   (def comment-with-no-test-str
     ``
@@ -152,9 +160,14 @@
     )
     ``)
 
-  (rewrite-block-with-verify comment-with-no-test-str)
+  (def comment-blk-with-no-test-str
+    {:value comment-with-no-test-str
+     :s-line 1})
+
+  (rewrite-block-with-verify comment-blk-with-no-test-str)
   # => @[]
 
+  # comment block in comment block shields inner content
   (def comment-in-comment-str
     ``
     (comment
@@ -168,12 +181,16 @@
     )
     ``)
 
+  (def comment-blk-in-comment-blk
+    {:value comment-in-comment-str
+     :s-line 10})
+
   (do
     (set pegs/in-comment 0)
     (peg/match pegs/inner-forms comment-in-comment-str))
   # => @["" "(comment\n\n     (+ 1 1)\n     # => 2\n\n   )\n"]
 
-  (rewrite-block-with-verify comment-in-comment-str)
+  (rewrite-block-with-verify comment-blk-in-comment-blk)
   # => @[]
 
   )
