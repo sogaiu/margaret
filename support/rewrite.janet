@@ -16,7 +16,7 @@
   (rewrite-tagged [:returns true 1] "(= 1 1)" 1)
   # => "(_verify/is (= 1 1) true \"line-1\")\n\n"
 
- )
+  )
 
 # XXX: tried putting the following into a file, but kept having
 #      difficulty getting it to work out
@@ -81,7 +81,7 @@
 (defn _verify/dump-results
   []
   (if-let [test-out (dyn :judge-gen/test-out)]
-    (spit test-out (string/format "%j" _verify/test-results))
+    (spit test-out (marshal _verify/test-results))
     (printf "%j" _verify/test-results)))
 
 ``)
@@ -100,7 +100,7 @@
   (has-tests @["(comment \"2\")\n  "])
   # => nil
 
-)
+  )
 
 (defn rewrite-block-with-verify
   [blk]
@@ -204,28 +204,28 @@
     (array/concat rewritten-forms (rewrite-block-with-verify blk)))
   # assemble pieces
   (var forms
-       (array/concat @[]
-                     @["\n\n"
-                       "(_verify/start-tests)\n\n"]
-                     rewritten-forms
-                     @["\n(_verify/end-tests)\n"
-                     (cond
-                       (= format "jdn")
-                       "\n(_verify/dump-results)\n"
-                       #
-                       (= format "text")
-                       "\n(_verify/summarize)\n"
-                       # XXX: is this appropriate?
-                       (do
-                         (eprint "warning: unrecognized format: " format)
-                         "\n(_verify/dump-results)\n"))]))
+    (array/concat @[]
+                  @["\n\n"
+                    "(_verify/start-tests)\n\n"]
+                  rewritten-forms
+                  @["\n(_verify/end-tests)\n"
+                    (cond
+                      (= format "jdn")
+                      "\n(_verify/dump-results)\n"
+                      #
+                      (= format "text")
+                      "\n(_verify/summarize)\n"
+                      # XXX: is this appropriate?
+                      (do
+                        (eprint "warning: unrecognized format: " format)
+                        "\n(_verify/dump-results)\n"))]))
   (string verify-as-string
           (string/join forms "")))
 
 # XXX: since there are no tests in this comment block, nothing will execute
 (comment
 
-   # XXX: expected values are all large here -- not testing
+  # XXX: expected values are all large here -- not testing
 
   (def sample
     ``
@@ -273,4 +273,4 @@
 
   (rewrite-with-verify [comment-in-comment] "jdn")
 
- )
+  )
