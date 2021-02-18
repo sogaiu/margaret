@@ -40,7 +40,7 @@
       "project-root" ".."
       "source-root" "."}) # => true
 
- )
+  )
 
 (defn parse
   []

@@ -39,7 +39,6 @@
     (parse-buffer code-buf)
     #
     @[{:value "    (def a 1)\n\n    "
-       :start 0
        :s-line 1
        :type :value
        :end 19}
@@ -50,7 +49,6 @@
                       "(- b a)\n      "
                       "# => 2\n\n    "
                       ")\n    ")
-       :start 19
        :s-line 3
        :type :value
        :end 112}]
@@ -72,7 +70,6 @@
 
   (def segments
     @[{:value "    (def a 1)\n\n    "
-       :start 0
        :s-line 1
        :type :value
        :end 19}
@@ -83,7 +80,6 @@
                       "(- b a)\n      "
                       "# => 2\n\n    "
                       ")\n    ")
-       :start 19
        :s-line 3
        :type :value
        :end 112}])
@@ -98,11 +94,10 @@
                       "(- b a)\n      "
                       "# => 2\n\n    "
                       ")\n    ")
-       :start 19
        :s-line 3
        :type :value
        :end 112}]
     )
   # => true
 
-)
+  )

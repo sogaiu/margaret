@@ -23,7 +23,7 @@
 
 (comment
 
- (def file-path "./jg.janet")
+  (def file-path "./jg.janet")
 
   (deep=
     (do
@@ -36,7 +36,7 @@
       "format" "jdn"
       :default file-path}) # => true
 
- )
+  )
 
 (defn parse
   []

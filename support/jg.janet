@@ -43,7 +43,7 @@
                :output ""
                :single true})
 
- )
+  )
 
 (defn main
   [& args]

@@ -22,69 +22,52 @@
 #      difficulty getting it to work out
 # XXX: an advantage of it being in a separate file is that testing
 #      the contained code might be easier...
-(def verify-as-string ``
-# influenced by janet's tools/helper.janet
+(def verify-as-string
+  ``
+  # influenced by janet's tools/helper.janet
 
-(var _verify/start-time 0)
-(var _verify/end-time 0)
-(var _verify/test-results @[])
+  (var _verify/start-time 0)
+  (var _verify/end-time 0)
+  (var _verify/test-results @[])
 
-(defmacro _verify/is
-  [t-form e-form &opt name]
-  (default name
-    (string "test-" (inc (length _verify/test-results))))
-  (with-syms [$ts $tr
-              $es $er]
-    ~(do
-       (def [,$ts ,$tr] (protect ,t-form))
-       (def [,$es ,$er] (protect ,e-form))
-       (array/push _verify/test-results
-                   {:expected-form ',e-form
-                    :expected-value ,$er
-                    :name ,name
-                    :passed (if (and ,$ts ,$es)
+  (defmacro _verify/is
+    [t-form e-form &opt name]
+    (default name
+      (string "test-" (inc (length _verify/test-results))))
+    (with-syms [$ts $tr
+                $es $er]
+      ~(do
+         (def [,$ts ,$tr] (protect ,t-form))
+         (def [,$es ,$er] (protect ,e-form))
+         (array/push _verify/test-results
+                     {:expected-form ',e-form
+                      :expected-value ,$er
+                      :name ,name
+                      :passed (if (and ,$ts ,$es)
                                 (deep= ,$tr ,$er)
                                 nil)
-                    :test-form ',t-form
-                    :test-value ,$tr
-                    :type :is})
-       ,name)))
+                      :test-form ',t-form
+                      :test-value ,$tr
+                      :type :is})
+         ,name)))
 
-(defn _verify/start-tests
-  []
-  (set _verify/start-time (os/clock))
-  (set _verify/test-results @[]))
+  (defn _verify/start-tests
+    []
+    (set _verify/start-time (os/clock))
+    (set _verify/test-results @[]))
 
-(defn _verify/end-tests
-  []
-  (set _verify/end-time (os/clock)))
+  (defn _verify/end-tests
+    []
+    (set _verify/end-time (os/clock)))
 
-(defn _verify/summarize
-  []
-  (var passed 0)
-  (each result _verify/test-results
-    (def {:name test-name
-          :passed test-passed
-          :test-form test-form
-          :test-value test-value} result)
-    (if test-passed
-      (++ passed)
-      (do
-        (print "failed: " test-name)
-        (printf "  form: %j" test-form)
-        (printf " value: %j" test-value)
-        (print "--------"))))
-  (printf "\n\nTests finished in %.3f seconds"
-          (- _verify/end-time _verify/start-time))
-  (print passed " of " (length _verify/test-results) " tests passed.\n"))
+  (defn _verify/dump-results
+    []
+    (if-let [test-out (dyn :judge-gen/test-out)]
+      (spit test-out (marshal _verify/test-results))
+      # XXX: could this sometimes have problems?
+      (printf "%p" _verify/test-results)))
 
-(defn _verify/dump-results
-  []
-  (if-let [test-out (dyn :judge-gen/test-out)]
-    (spit test-out (marshal _verify/test-results))
-    (printf "%j" _verify/test-results)))
-
-``)
+  ``)
 
 (defn has-tests
   [forms]
