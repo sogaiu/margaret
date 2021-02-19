@@ -183,6 +183,7 @@ Thanks to (at least) the following folks:
 * pepe
 * pyrmont
 * Saikyun
+* skuza
 * subsetpark
 * swlkr
 * tami5
