@@ -30,4 +30,14 @@
              "(12345")
   # => nil
 
+  # issue #640 in janet
+  (peg/match '(thru -1) "aaaa")
+  # => @[]
+
+  (peg/match ''(thru -1) "aaaa")
+  # => @["aaaa"]
+
+  (peg/match '(thru "b") "aaaa")
+  # => nil
+
   )
