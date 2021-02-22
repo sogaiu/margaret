@@ -1,8 +1,8 @@
 # configuration
 
-# highly likely will want to tweak this
+# this takes precendence over the file name if non-empty
 (def src-dir-name
-  "examples")
+  "")
 
 # only tweak if trying to prevent collision with existing dir
 (def judge-dir-name
@@ -279,9 +279,7 @@
   [& args]
   (if (dyn :verbose)
     (print ;(interpose " " args)))
-  (def res (os/execute args :p))
-  (unless (zero? res)
-    (error (string "command exited with status " res))))
+  (os/execute args :px))
 
 (defn jpm/copy
   "Copy a file or directory recursively from one location to another."
@@ -309,279 +307,6 @@
     (def path (string/join (slice segs 0 i) jpm/sep))
     (unless (empty? path) (os/mkdir path))))
 
-### argparse.janet
-###
-### A library for parsing command-line arguments
-###
-### Copyright 2019 © Calvin Rose
-
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included
-# in all copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-(defn- argparse/pad-right
-  "Pad a string on the right with some spaces."
-  [str n]
-  (def len (length str))
-  (if (>= len n)
-    str
-    (string str (string/repeat " " (- n len)))))
-
-(defn argparse/argparse
-  "Parse (dyn :args) according to options. If the arguments are incorrect,
-  will return nil and print usage information.
-
-  Each option is a table or struct that specifies a flag or option
-  for the script. The name of the option should be a string, specified
-  via (argparse/argparse \"...\" op1-name {...} op2-name {...} ...). A help option
-  and usage text is automatically generated for you.\n\n
-
-  The keys in each option table are as follows:\n\n
-
-  \t:kind - What kind of option is this? One of :flag, :multi, :option, or
-  :accumulate. A flag can either be on or off, a multi is a flag that can be provided
-  multiple times, each time adding 1 to a returned integer, an option is a key that
-  will be set in the returned table, and accumulate means an option can be specified
-  0 or more times, each time appending a value to an array.\n
-  \t:short - Single letter for shorthand access.\n
-  \t:help - Help text for the option, explaining what it is.\n
-  \t:default - Default value for the option.\n
-  \t:required - Whether or not an option is required.\n
-  \t:short-circuit - Whether or not to stop parsing and fail if this option is hit.\n
-  \t:action - A function that will be invoked when the option is parsed.\n\n
-
-  There is also a special option :default that will be invoked on arguments
-  that do not start with a -- or -. Use this option to collect unnamed
-  arguments to your script.\n\n
-
-  Once parsed, values are accessible in the returned table by the name
-  of the option. For example (result \"verbose\") will check if the verbose
-  flag is enabled."
-  [description &keys options]
-
-  # Add default help option
-  (def options (merge
-                 @{"help" {:kind :flag
-                           :short "h"
-                           :help "Show this help message."
-                           :action :help
-                           :short-circuit true}}
-                 options))
-
-  # Create shortcodes
-  (def shortcodes @{})
-  (loop [[k v] :pairs options :when (string? k)]
-    (if-let [code (v :short)]
-      (put shortcodes (code 0) {:name k :handler v})))
-
-  # Results table and other things
-  (def res @{:order @[]})
-  (def args (dyn :args))
-  (def arglen (length args))
-  (var scanning true)
-  (var bad false)
-  (var i 1)
-
-  # Show usage
-  (defn usage
-    [& msg]
-    # Only show usage once.
-    (if bad (break))
-    (set bad true)
-    (set scanning false)
-    (unless (empty? msg)
-      (print "usage error: " ;msg))
-    (def flags @"")
-    (def opdoc @"")
-    (def reqdoc @"")
-    (loop [[name handler] :in (sort (pairs options))]
-      (def short (handler :short))
-      (when short (buffer/push-string flags short))
-      (when (string? name)
-        (def kind (handler :kind))
-        (def usage-prefix
-          (string
-            ;(if short [" -" short ", "] ["     "])
-            "--" name
-            ;(if (or (= :option kind) (= :accumulate kind))
-               [" " (or (handler :value-name) "VALUE")
-                ;(if-let [d (handler :default)]
-                   ["=" d]
-                   [])]
-               [])))
-        (def usage-fragment
-          (string
-            (argparse/pad-right (string usage-prefix " ") 45)
-            (if-let [h (handler :help)] h "")
-            "\n"))
-        (buffer/push-string (if (handler :required) reqdoc opdoc)
-                            usage-fragment)))
-    (print "usage: " (get args 0) " [option] ... ")
-    (print)
-    (print description)
-    (print)
-    (unless (empty? reqdoc)
-      (print " Required:")
-      (print reqdoc))
-    (unless (empty? opdoc)
-      (print " Optional:")
-      (print opdoc)))
-
-  # Handle an option
-  (defn handle-option
-    [name handler]
-    (array/push (res :order) name)
-    (case (handler :kind)
-      :flag (put res name true)
-      :multi (do
-               (var count (or (get res name) 0))
-               (++ count)
-               (put res name count))
-      :option (if-let [arg (get args i)]
-                (do
-                  (put res name arg)
-                  (++ i))
-                (usage "missing argument for " name))
-      :accumulate (if-let [arg (get args i)]
-                    (do
-                      (def arr (or (get res name) @[]))
-                      (array/push arr arg)
-                      (++ i)
-                      (put res name arr))
-                    (usage "missing argument for " name))
-      # default
-      (usage "unknown option kind: " (handler :kind)))
-
-    # Allow actions to be dispatched while scanning
-    (when-let [action (handler :action)]
-              (cond
-                (= action :help) (usage)
-                (function? action) (action)))
-
-    # Early exit for things like help
-    (when (handler :short-circuit)
-      (set scanning false)))
-
-  # Iterate command line arguments and parse them
-  # into the run table.
-  (while (and scanning (< i arglen))
-    (def arg (get args i))
-    (cond
-
-      # long name (--name)
-      (string/has-prefix? "--" arg)
-      (let [name (string/slice arg 2)
-            handler (get options name)]
-        (++ i)
-        (if handler
-          (handle-option name handler)
-          (usage "unknown option " name)))
-
-      # short names (-flags)
-      (string/has-prefix? "-" arg)
-      (let [flags (string/slice arg 1)]
-        (++ i)
-        (each flag flags
-          (if-let [x (get shortcodes flag)]
-            (let [{:name name :handler handler} x]
-              (handle-option name handler))
-            (usage "unknown flag " arg))))
-
-      # default
-      (if-let [handler (options :default)]
-        (handle-option :default handler)
-        (usage "could not handle option " arg))))
-
-  # Handle defaults, required options
-  (loop [[name handler] :pairs options]
-    (when (nil? (res name))
-      (when (handler :required)
-        (usage "option " name " is required"))
-      (put res name (handler :default))))
-
-  (if-not bad res))
-
-
-(def args-runner/params
-  ["Comment block test runner."
-   "debug" {:help "Debug output."
-            :kind :flag
-            :short "d"}
-   "judge-file-prefix" {:default "judge-"
-                        :help "Prefix for test files."
-                        :kind :option
-                        :short "f"}
-   "judge-dir-name" {:default "judge"
-                     :help "Name of judge directory."
-                     :kind :option
-                     :short "j"}
-   "project-root" {:help "Project root."
-                   :kind :option
-                   :short "p"}
-   "source-root" {:help "Source root."
-                  :kind :option
-                  :short "s"}
-   "version" {:default false
-              :help "Version output."
-              :kind :flag
-              :short "v"}])
-
-(comment
-
-  (deep=
-    (do
-      (setdyn :args ["jg-verdict"
-                     "-p" ".."
-                     "-s" "."])
-      (argparse/argparse ;args-runner/params))
-
-    @{"version" false
-      "judge-file-prefix" "judge-"
-      "judge-dir-name" "judge"
-      :order @["project-root" "source-root"]
-      "project-root" ".."
-      "source-root" "."}) # => true
-
-  )
-
-(defn args-runner/parse
-  []
-  (def res (argparse/argparse ;args-runner/params))
-  (unless res
-    (break nil))
-  (let [judge-dir-name (res "judge-dir-name")
-        judge-file-prefix (res "judge-file-prefix")
-        proj-root (or (res "project-root") "")
-        src-root (or (res "source-root") "")
-        version (res "version")]
-    # XXX: work on this
-    (when version
-      (print "jg-verdict pre-release")
-      (break nil))
-    (setdyn :debug (res "debug"))
-    (assert (os/stat proj-root)
-            (string "Project root not detected: " proj-root))
-    (assert (os/stat src-root)
-            (string "Source root not detected: " src-root))
-    {:judge-dir-name judge-dir-name
-     :judge-file-prefix judge-file-prefix
-     :proj-root proj-root
-     :src-root src-root
-     :version version}))
 # adapted from:
 #   https://janet-lang.org/docs/syntax.html
 
@@ -1333,10 +1058,11 @@
     (when (dyn :debug)
       (eprintf "parsed: %j" parsed))
     (when (not parsed)
-      (break))
+      (break nil))
     (def segment (first parsed))
-    (assert segment
-            (string "Unexpectedly did not find segment in: " parsed))
+    (when (not segment)
+      (eprint "Unexpectedly did not find segment in: " parsed)
+      (break nil))
     (array/push segments segment)
     (set from (segment :end)))
   segments)
@@ -1669,77 +1395,56 @@
 (defn input/slurp-input
   [input]
   (var f nil)
-  (if (= input "-")
-    (set f stdin)
-    (if (os/stat input)
-      # XXX: handle failure?
-      (set f (file/open input :rb))
-      (do
-        (eprint "path not found: " input)
-        (break [nil nil]))))
-  (file/read f :all))
+  (try
+    (if (= input "-")
+      (set f stdin)
+      (if (os/stat input)
+        (set f (file/open input :rb))
+        (do
+          (eprint "path not found: " input)
+          (break nil))))
+    ([err]
+      (eprintf "slurp-input failed")
+      (error err)))
+  #
+  (var buf nil)
+  (defer (file/close f)
+    (set buf @"")
+    (file/read f :all buf))
+  buf)
 
-(def args/params
-  ["Rewrite comment blocks as tests."
-   "debug" {:help "Debug output."
-            :kind :flag
-            :short "d"}
-   "output" {:default ""
-             :help "Path to store output to."
-             :kind :option
-             :short "o"}
-   "version" {:default false
-              :help "Version output."
-              :kind :flag
-              :short "v"}
-   :default {:default "-"
-             :help "Source path or - for STDIN."
-             :kind :option}])
-
-(comment
-
-  (def file-path "./jg.janet")
-
-  (deep=
-    (do
-      (setdyn :args ["jg" file-path])
-      (argparse/argparse ;args/params))
-    #
-    @{"version" false
-      "output" ""
-      :order @[:default]
-      :default file-path}) # => true
-
-  )
-
-(defn args/parse
-  []
-  (when-let [res (argparse/argparse ;args/params)]
-    (let [input (res :default)
-          # XXX: overwrites...dangerous?
-          output (res "output")
-          version (res "version")]
-      (setdyn :debug (res "debug"))
-      (assert input "Input should be filepath or -")
-      {:input input
-       :output output
-       :version version})))
-
-# XXX: consider `(break false)` instead of just `assert`?
 (defn jg/handle-one
   [opts]
   (def {:input input
-        :output output
-        :version version} opts)
-  # XXX: review
-  (when version
-    (break true))
+        :lint lint
+        :output output} opts)
   # read in the code
   (def buf (input/slurp-input input))
-  (assert buf (string "Failed to read input for:" input))
+  (when (not buf)
+    (eprint "Failed to read input for:" input)
+    (break false))
+  # lint if requested
+  (when lint
+    (def lint-res @"")
+    (if (os/stat input)
+      (do
+        (with-dyns [:err lint-res]
+          (flycheck input)))
+      (do
+        (with [f (file/temp)]
+          (file/write f buf)
+          (file/flush f) # XXX: needed?
+          (file/seek f :set 0)
+          (with-dyns [:err lint-res]
+            (flycheck f)))))
+    (when (pos? (length lint-res))
+      (eprint "linting failed:\n" lint-res)
+      (break false)))
   # slice the code up into segments
   (def segments (segments/parse-buffer buf))
-  (assert segments (string "Failed to parse input:" input))
+  (when (not segments)
+    (eprint "Failed to parse input:" input)
+    (break false))
   # find comment blocks
   (def comment-blocks (segments/find-comment-blocks segments))
   (when (empty? comment-blocks)
@@ -1760,16 +1465,15 @@
 
   # output to stdout
   (jg/handle-one {:input file-path
-               :output ""
-               :single true})
+                  :output ""
+                  :single true})
 
   # output to file
   (jg/handle-one {:input file-path
-               :output "/tmp/judge-gen-test-output.txt"
-               :single true})
+                  :output "/tmp/judge-gen-test-output.txt"
+                  :single true})
 
   )
-
 (defn utils/print-color
   [msg color]
   (let [color-num (match color
@@ -1814,22 +1518,29 @@
   )
 
 (defn jg-runner/make-judges
-  [dir subdirs judge-root judge-file-prefix]
-  (each path (os/dir dir)
-    (def fpath (path/join dir path))
-    (case (os/stat fpath :mode)
-      :directory (do
-                   (jg-runner/make-judges fpath (array/push subdirs path)
-                                          judge-root judge-file-prefix)
-                   (array/pop subdirs))
-      :file (when (string/has-suffix? ".janet" fpath)
-              (jg/handle-one {:input fpath
-                              :line 0
-                              :output (path/join judge-root
-                                                 ;subdirs
-                                                 (string
-                                                   judge-file-prefix path))
-                              :prepend true})))))
+  [src-root judge-root judge-file-prefix]
+  (def subdirs @[])
+  (defn helper
+    [src-root subdirs judge-root judge-file-prefix]
+    (each path (os/dir src-root)
+      (def fpath (path/join src-root path))
+      (case (os/stat fpath :mode)
+        :directory
+        (do
+          (helper fpath (array/push subdirs path)
+                  judge-root judge-file-prefix)
+          (array/pop subdirs))
+        #
+        :file
+        (when (string/has-suffix? ".janet" fpath)
+          (jg/handle-one {:input fpath
+                          :lint true # XXX: make optional?
+                          :output (path/join judge-root
+                                             ;subdirs
+                                             (string
+                                               judge-file-prefix path))})))))
+  #
+  (helper src-root subdirs judge-root judge-file-prefix))
 
 # XXX: since there are no tests in this comment block, nothing will execute
 (comment
@@ -1846,19 +1557,42 @@
 
   (os/mkdir judge-root)
 
-  (jg-runner/make-judges src-root @[] judge-root "judge-")
+  (jg-runner/make-judges src-root judge-root "judge-")
 
   )
 
+(defn jg-runner/find-judge-files
+  [dir judge-file-prefix]
+  (def file-paths @[])
+  (defn helper
+    [dir judge-file-prefix file-paths]
+    (each path (os/dir dir)
+      (def full-path (path/join dir path))
+      (case (os/stat full-path :mode)
+        :directory
+        (helper full-path judge-file-prefix file-paths)
+        #
+        :file
+        (when (and (string/has-prefix? judge-file-prefix path)
+                   (string/has-suffix? ".janet" path))
+          (array/push file-paths [full-path path]))))
+    file-paths)
+  #
+  (helper dir judge-file-prefix file-paths))
+
 (defn jg-runner/judge
-  [dir results judge-root judge-file-prefix]
+  [judge-root judge-file-prefix]
+  (def results @{})
+  (def file-paths
+    (jg-runner/find-judge-files judge-root judge-file-prefix))
   (var count 0)
   (def results-dir
     # XXX: what about windows...
-    (path/join "/tmp"
-               (string "judge-gen-"
+    (path/join judge-root
+               (string "."
                        (os/time) "-"
-                       (utils/rand-string 8))))
+                       (utils/rand-string 8) "-"
+                       "judge-gen")))
   (defn make-results-fpath
     [fname i]
     (let [fpath (path/join results-dir
@@ -1869,65 +1603,61 @@
         ([err]
           (errorf "failed to create dir for path: " fpath)))
       fpath))
-  (each path (os/dir dir)
-    (def fpath (path/join dir path))
-    (case (os/stat fpath :mode)
-      :directory (jg-runner/judge fpath results judge-root judge-file-prefix)
-      :file (when (and (string/has-prefix? judge-file-prefix path)
-                       (string/has-suffix? ".janet" fpath))
-              (print "  " path)
-              (def results-fpath
-                (make-results-fpath path count))
-              # XXX
-              #(eprintf "results path: %s" results-fpath)
-              (def command (string/join
-                             [(dyn :executable "janet")
-                              "-e"
-                              (string "'(os/cd \"" judge-root "\")'")
-                              "-e"
-                              (string "'"
-                                      "(do "
-                                      "  (setdyn :judge-gen/test-out "
-                                      "          \"" results-fpath "\") "
-                                      "  (dofile \"" fpath "\") "
-                                      ")"
-                                      "'")] # avoid `main`
-                             " "))
-              # XXX
-              #(eprintf "command: %s" command)
-              (let [output (try
-                             (jpm/pslurp command)
-                             ([err]
-                               (eprint err)
-                               (errorf "command failed: %s" command)))]
-                (when (not= output "")
-                  (spit (path/join results-dir
-                                   (string "stdout-" count "-" path ".txt"))
-                        output)))
-              (def marshalled-results
-                (try
-                  (slurp results-fpath)
-                  ([err]
-                    (eprint err)
-                    (errorf "failed to read in marshalled results from: %s"
-                            results-fpath))))
-              (def results-for-path
-                (try
-                  (unmarshal (buffer marshalled-results))
-                  ([err]
-                    (eprintf err)
-                    (errorf "failed to unmarshal content from: %s"
-                            results-fpath))))
-              (put results
-                   fpath results-for-path)
-              (++ count)))))
+  #
+  (each [full-path path] file-paths
+    (print "  " path)
+    (def results-fpath
+      (make-results-fpath path count))
+    # XXX
+    #(eprintf "results path: %s" results-fpath)
+    # using backticks below seemed to help make things work on multiple
+    # platforms
+    (def command [(dyn :executable "janet")
+                  "-e"
+                  (string "(os/cd `" judge-root "`)")
+                  "-e"
+                  (string "(do "
+                          "  (setdyn :judge-gen/test-out "
+                          "          `" results-fpath "`) "
+                          "  (dofile `" full-path "`) "
+                          ")")])
+    # XXX
+    #(eprintf "command: %p" command)
+    (let [out-path
+          (path/join results-dir
+                     (string "stdout-" count "-" path ".txt"))]
+      (try
+        (with [f (file/open out-path :w)]
+          (os/execute command :px {:out f})
+          (file/flush f))
+        ([err]
+          (eprint err)
+          (errorf "command failed: %p" command))))
+    (def marshalled-results
+      (try
+        (slurp results-fpath)
+        ([err]
+          (eprint err)
+          (errorf "failed to read in marshalled results from: %s"
+                  results-fpath))))
+    (def results-for-path
+      (try
+        (unmarshal (buffer marshalled-results))
+        ([err]
+          (eprintf err)
+          (errorf "failed to unmarshal content from: %s"
+                  results-fpath))))
+    (put results
+         full-path results-for-path)
+    (++ count))
+  results)
 
 (defn jg-runner/summarize
   [results]
   (when (empty? results)
     # XXX: somehow messes things up?
     #(print "No test results")
-    (break))
+    (break nil))
   (var total-tests 0)
   (var total-passed 0)
   (def failures @{})
@@ -1973,7 +1703,7 @@
       (printf "%M" test-value)))
   (when (= 0 total-tests)
     (print "No tests found, so no judgements made.")
-    (break))
+    (break nil))
   (if (not= total-passed total-tests)
     (do
       (utils/print-dashes)
@@ -1993,7 +1723,6 @@
 
   )
 
-# XXX: consider `(break false)` instead of just `assert`?
 (defn jg-runner/handle-one
   [opts]
   (def {:judge-dir-name judge-dir-name
@@ -2002,24 +1731,42 @@
         :src-root src-root} opts)
   (def judge-root
     (path/join proj-root judge-dir-name))
-  # remove old judge directory
-  (print (string "cleaning out: " judge-root))
-  (jpm/rm judge-root)
-  # XXX
-  (print "removed judge dir")
-  # copy source files
-  (jpm/copy src-root judge-root)
-  (utils/print-dashes)
-  # create judge files
-  (jg-runner/make-judges src-root @[] judge-root judge-file-prefix)
-  # judge
-  (print "judging...")
-  (var results @{})
-  (jg-runner/judge judge-root results judge-root judge-file-prefix)
-  (utils/print-dashes)
-  (print)
-  # summarize results
-  (jg-runner/summarize results))
+  (try
+    (do
+      # remove old judge directory
+      (prin "cleaning out: " judge-root " ... ")
+      (jpm/rm judge-root)
+      # make a fresh judge directory
+      (os/mkdir judge-root)
+      (print "done")
+      # copy source files
+      (prin "copying source files... ")
+      # shhhhh
+      (with-dyns [:out @""]
+        # each item copied separately for platform consistency
+        (each item (os/dir src-root)
+          (def full-path (path/join src-root item))
+          (jpm/copy full-path judge-root)))
+      (print "done")
+      # create judge files
+      (prin "creating tests files... ")
+      (jg-runner/make-judges src-root judge-root judge-file-prefix)
+      (print "done")
+      #
+      (utils/print-dashes)
+      # judge
+      (print "judging...")
+      (def results
+        (jg-runner/judge judge-root judge-file-prefix))
+      (utils/print-dashes)
+      (print)
+      # summarize results
+      (jg-runner/summarize results))
+    #
+    ([err]
+      (eprint "judge-gen runner failed")
+      (eprint err)
+      nil)))
 
 # XXX: since there are no tests in this comment block, nothing will execute
 (comment
@@ -2038,7 +1785,6 @@
 
   )
 
-
 # from the perspective of `jpm test`
 (def proj-root
   (path/abspath "."))
@@ -2047,11 +1793,34 @@
   [src-dir-name]
   (path/join proj-root src-dir-name))
 
-(let [all-passed (jg-runner/handle-one
-                   {:judge-dir-name judge-dir-name
-                    :judge-file-prefix judge-file-prefix
-                    :proj-root proj-root
-                    :src-root (src-root src-dir-name)})]
+(defn base-no-ext
+  [file-path]
+  (when file-path
+    (when-let [base (path/basename file-path)
+               rev (string/reverse base)
+               dot (string/find "." rev)]
+      (string/reverse (string/slice rev (inc dot))))))
+
+(defn deduce-src-root
+  [src-dir-name]
+  (when (not= src-dir-name "")
+    (break src-dir-name))
+  (let [current-file (dyn :current-file)]
+    (assert current-file
+            "src-dir-name is empty but :current-file is nil")
+    (when-let [cand-name (base-no-ext current-file)]
+      (assert (and cand-name
+                   (not= cand-name ""))
+              (string "failed to deduce name for: "
+                      current-file))
+      cand-name)))
+
+(let [all-passed
+      (jg-runner/handle-one
+        {:judge-dir-name judge-dir-name
+         :judge-file-prefix judge-file-prefix
+         :proj-root proj-root
+         :src-root (deduce-src-root src-dir-name)})]
   (when (not all-passed)
     (os/exit 1))
   (when silence-jpm-test
