@@ -1,22 +1,37 @@
-# configuration
+# Configuration
 
-# this takes precendence over the file name if non-empty
+# If non-empty, should be the name of a direct subdirectory of the
+# project directory.  Leaving the value as an empty string should lead
+# to the name (non-extension portion) of this runner file being used
+# to determine which direct subdirectory of the project directory to
+# copy source files from.
+#
+# This takes precendence over the file name if non-empty.
 (def src-dir-name
   "")
 
-# only tweak if trying to prevent collision with existing dir
+# Only change if trying to prevent collision with an existing direct
+# subdirectory of the project directory.
 (def judge-dir-name
-  "judge")
+  ".judge")
 
-# only tweak if trying to prevent collision with existing source
+# Only change if trying to prevent collision with source files that have
+# names that begin with "judge-".
 (def judge-file-prefix
   "judge-")
 
-# disable "All tests passed." message from `jpm test` if true
+# Only change if you really know what you are doing.
+#
+# Disable "All tests passed." message from `jpm test` if true.  This is
+# achieved by making this test runner exit with error code 1.  That
+# communicates to `jpm test` that the runner itself has failed.  It is a hack.
+#
+# Changing this to true may cause some tests in the `test` directory (e.g.
+# non-judge-gen tests) to not execute.
 (def silence-jpm-test
   false)
 
-# configuration ends here
+# End of Configuration
 
 ### path.janet
 ###
@@ -1246,20 +1261,30 @@
   # parse the comment block and rewrite some parts
   (let [parsed (pegs/parse-comment-block blk-str)]
     (when (rewrite/has-tests parsed)
+      (var just-saw-ev false)
       (each cmt-or-frm parsed
         (when (not= cmt-or-frm "")
           (if (empty? rewritten-forms)
             (array/push rewritten-forms cmt-or-frm)
             # is `cmt-or-frm` an expected value
             (if (= (type cmt-or-frm) :tuple)
-              # looks like an expected value, handle rewriting as test
+              # looks like an expected value, may be rewrite as test
               (let [last-form (array/pop rewritten-forms)
                     rewritten (rewrite/rewrite-tagged cmt-or-frm
                                                       last-form offset)]
-                (assert rewritten (string "match failed for: " cmt-or-frm))
+                (assert (not just-saw-ev)
+                        (string/format
+                          "unexpected expected value comment beyond line: %d"
+                          offset))
+                (assert rewritten
+                        (string "failed to rewrite expected value: "
+                                cmt-or-frm))
+                (set just-saw-ev true)
                 (array/push rewritten-forms rewritten))
               # not an expected value, continue
-              (array/push rewritten-forms cmt-or-frm)))))))
+              (do
+                (set just-saw-ev false)
+                (array/push rewritten-forms cmt-or-frm))))))))
   rewritten-forms)
 
 (comment
