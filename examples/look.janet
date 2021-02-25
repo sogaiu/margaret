@@ -6,7 +6,7 @@
 
 # `offset` can be any integer.
 
-# `patt` will not produce captures [*] and the peg will not advance any
+# `patt` will not produce captures and the peg will not advance any
 # characters.
 
 # `(> offset patt)` is an alias for `(look offset patt)`
