@@ -8,6 +8,11 @@
 
 # notes
 #
+# XXX: try to see if the recent fix for `to/thru` needs to be applied
+#      to other specials
+# XXX: go through source looking for XXX, and collect here
+# XXX: consider rewriting some parts to more closely resemble peg.c
+#      * names of identifiers, e.g. patt -> rule_a
 # XXX: think about how to improve tests
 #      * is there a way to run the tests of other projects in a way that
 #        uses meg without having to modify those existing projects?
@@ -38,18 +43,17 @@
 #        * Duncaen's dhall-janet (incomplete)
 #        * janet-lang spork/temple (essentially need whole program?)
 #      * find other pegs to test and test
-# XXX: go through source looking for XXX, and collect here
-# XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
-#      to use a non-integer for it?
 # XXX: try to improve log-entry and log-exit -- should there just be a
 #      single dictionary argument?
 # XXX: tco
+# XXX: RULE_BETWEEN's max value is not currently correct.  is it ok
+#      to use a non-integer for it?
+# XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
 # XXX: consider an introspective / debugging repl
 #      * entry and exit points of each special seem possible to support
 #        without too much difficulty
 #      * how about other locations?
 # XXX: possibly support other peg/* functions?
-# XXX: support configurability of JANET_INT_TYPES processing for RULE_READINT
 # XXX: compilation idea
 #      * meg/compile generates something like meg/match, then
 #        meg/match just executes
@@ -80,8 +84,6 @@
 # XXX: consider rewriting
 #      * try to use non-internal definitions to ease testing / exploration
 #      * easier to use macros(?)
-# XXX: consider rewriting some parts to more closely resemble the c
-#      implementation (e.g. `range`, `set`, and other things?)
 # XXX: bounds checking for things like `look`
 # XXX: review the spec_* functions and compare with meg.janet
 # XXX: track current position in string?
