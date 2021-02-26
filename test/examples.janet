@@ -705,6 +705,32 @@
   # => @["# => 2\n"]
 
   )
+(defn validate/valid-bytes?
+  [form-bytes]
+  (let [p (parser/new)
+        p-len (parser/consume p form-bytes)]
+    (when (parser/error p)
+      (break false))
+    (let [_ (parser/eof p)
+          p-err (parser/error p)]
+      (and (= (length form-bytes) p-len)
+           (nil? p-err)))))
+
+(comment
+
+  (validate/valid-bytes? "true")
+  # => true
+
+  (validate/valid-bytes? "(")
+  # => false
+
+  (validate/valid-bytes? "()")
+  # => true
+
+  (validate/valid-bytes? "(]")
+  # => false
+
+  )
 
 # XXX: any way to avoid this?
 (var- pegs/in-comment 0)
@@ -733,25 +759,32 @@
                                     :root
                                     (choice ")" (error "")))))
     # classify certain comments
-    (put :comment ~(sequence
-                     (any :ws)
-                     (choice
-                       (cmt (sequence
-                              (line)
-                              "#" (any :ws) "=>"
-                              (capture (sequence
-                                         (any (if-not (choice "\n" -1) 1))
-                                         (any "\n"))))
-                            ,|(if (zero? pegs/in-comment)
-                                # record value and line
-                                [:returns (string/trim $1) $0]
-                                ""))
-                       (cmt (capture (sequence
-                                       "#"
-                                       (any (if-not (+ "\n" -1) 1))
-                                       (any "\n")))
-                            ,|(identity $))
-                       (any :ws))))
+    (put :comment
+         ~(sequence
+            (any :ws)
+            (choice
+              (cmt (sequence
+                     (line)
+                     "#" (any :ws) "=>"
+                     (capture (sequence
+                                (any (if-not (choice "\n" -1) 1))
+                                (any "\n"))))
+                   ,|(if (zero? pegs/in-comment)
+                       (let [ev-form (string/trim $1)
+                             line $0]
+                         (assert (validate/valid-bytes? ev-form)
+                                 {:ev-form ev-form
+                                  :line line})
+                         # record expected value form and line
+                         [:returns ev-form line])
+                       # XXX: is this right?
+                       ""))
+              (cmt (capture (sequence
+                              "#"
+                              (any (if-not (+ "\n" -1) 1))
+                              (any "\n")))
+                   ,|(identity $))
+              (any :ws))))
     # tried using a table with a peg but had a problem, so use a struct
     table/to-struct))
 
@@ -1259,7 +1292,10 @@
   (def {:value blk-str
         :s-line offset} blk)
   # parse the comment block and rewrite some parts
-  (let [parsed (pegs/parse-comment-block blk-str)]
+  (let [parsed (try
+                 (pegs/parse-comment-block blk-str)
+                 ([err]
+                   (error (merge err {:offset offset}))))]
     (when (rewrite/has-tests parsed)
       (var just-saw-ev false)
       (each cmt-or-frm parsed
@@ -1441,43 +1477,48 @@
 (defn jg/handle-one
   [opts]
   (def {:input input
-        :lint lint
         :output output} opts)
   # read in the code
   (def buf (input/slurp-input input))
   (when (not buf)
-    (eprint "Failed to read input for:" input)
+    (eprint)
+    (eprint "Failed to read input for: " input)
     (break false))
-  # lint if requested
-  (when lint
-    (def lint-res @"")
-    (if (os/stat input)
-      (do
-        (with-dyns [:err lint-res]
-          (flycheck input)))
-      (do
-        (with [f (file/temp)]
-          (file/write f buf)
-          (file/flush f) # XXX: needed?
-          (file/seek f :set 0)
-          (with-dyns [:err lint-res]
-            (flycheck f)))))
-    (when (pos? (length lint-res))
-      (eprint "linting failed:\n" lint-res)
-      (break false)))
+  # light sanity check
+  (when (not (validate/valid-bytes? buf))
+    (eprint)
+    (eprint "Failed to parse input as valid Janet code: " input)
+    (break false))
   # slice the code up into segments
   (def segments (segments/parse-buffer buf))
   (when (not segments)
-    (eprint "Failed to parse input:" input)
+    (eprint)
+    (eprint "Failed to find segments: " input)
     (break false))
   # find comment blocks
   (def comment-blocks (segments/find-comment-blocks segments))
   (when (empty? comment-blocks)
-    (break false))
+    (when (dyn :debug)
+      (eprint "no comment blocks found"))
+    (break true))
   (when (dyn :debug)
     (eprint "first comment block found was: " (first comment-blocks)))
   # output rewritten content
-  (buffer/blit buf (rewrite/rewrite-with-verify comment-blocks) -1)
+  (let [rewritten (try
+                    (rewrite/rewrite-with-verify comment-blocks)
+                    ([err]
+                      (def {:ev-form ev-form
+                            :line line
+                            :offset offset} err)
+                      (eprint)
+                      (eprintf "Mal-formed value: `%s` in: `%s` line: %d"
+                               ev-form
+                               input
+                               (dec (+ line offset)))
+                      nil))]
+    (when (nil? rewritten)
+      (break false))
+    (buffer/blit buf rewritten -1))
   (if (not= "" output)
     (spit output buf)
     (print buf))
@@ -1558,12 +1599,15 @@
         #
         :file
         (when (string/has-suffix? ".janet" fpath)
-          (jg/handle-one {:input fpath
-                          :lint true # XXX: make optional?
-                          :output (path/join judge-root
-                                             ;subdirs
-                                             (string
-                                               judge-file-prefix path))})))))
+          (unless (jg/handle-one
+                    {:input fpath
+                     :output (path/join judge-root
+                                        ;subdirs
+                                        (string
+                                          judge-file-prefix path))})
+            (eprintf "Test generation failed for: %s" fpath)
+            (eprintf "Please confirm validity of source file: %s" fpath)
+            (error nil))))))
   #
   (helper src-root subdirs judge-root judge-file-prefix))
 
@@ -1582,7 +1626,7 @@
 
   (os/mkdir judge-root)
 
-  (jg-runner/make-judges src-root judge-root "judge-")
+  (jg-runner/make-judges src-root judge-root "judge-" true)
 
   )
 
@@ -1605,84 +1649,135 @@
   #
   (helper dir judge-file-prefix file-paths))
 
+(defn jg-runner/execute-command
+  [opts]
+  (def {:command command
+        :count count
+        :judge-file-rel-path jf-rel-path
+        :results-dir results-dir
+        :results-full-path results-full-path} opts)
+  (when (dyn :debug)
+    (eprintf "command: %p" command))
+  (let [err-path
+        (path/join results-dir
+                   (string "stderr-" count "-" jf-rel-path ".txt"))
+        out-path
+        (path/join results-dir
+                   (string "stdout-" count "-" jf-rel-path ".txt"))]
+    (try
+      (with [ef (file/open err-path :w)]
+        (with [of (file/open out-path :w)]
+          (os/execute command :px {:err ef
+                                   :out of})
+          (file/flush ef)
+          (file/flush of)))
+      ([_]
+        (error {:out-path out-path
+                :err-path err-path
+                :type :command-failed}))))
+  (def marshalled-results
+    (try
+      (slurp results-full-path)
+      ([err]
+        (eprintf "Failed to read in marshalled results from: %s"
+                 results-full-path)
+        (error nil))))
+  # resurrect the results
+  (try
+    (unmarshal (buffer marshalled-results))
+    ([err]
+      (eprintf "Failed to unmarshal content from: %s"
+               results-full-path)
+      (error nil))))
+
+(defn jg-runner/make-results-dir-path
+  [judge-root]
+  # XXX: what about windows...
+  (path/join judge-root
+             (string "." (os/time) "-"
+                     (utils/rand-string 8) "-"
+                     "judge-gen")))
+
+(comment
+
+  (peg/match ~(sequence (choice "/" "\\")
+                        "."
+                        (some :d)
+                        "-"
+                        (some :h)
+                        "-"
+                        "judge-gen")
+    (jg-runner/make-results-dir-path ""))
+  # => @[]
+
+  )
+
+(defn jg-runner/ensure-results-full-path
+  [results-dir fname i]
+  (let [fpath (path/join results-dir (string i "-" fname))]
+    # note: create-dirs expects a path ending in a filename
+    (jpm/create-dirs fpath)
+    (unless (os/stat results-dir)
+      (eprintf "Failed to create dir for path: %s" fpath)
+      (error nil))
+    fpath))
+
 (defn jg-runner/judge
   [judge-root judge-file-prefix]
   (def results @{})
   (def file-paths
-    (jg-runner/find-judge-files judge-root judge-file-prefix))
+    (sort (jg-runner/find-judge-files judge-root judge-file-prefix)))
   (var count 0)
-  (def results-dir
-    # XXX: what about windows...
-    (path/join judge-root
-               (string "."
-                       (os/time) "-"
-                       (utils/rand-string 8) "-"
-                       "judge-gen")))
-  (defn make-results-fpath
-    [fname i]
-    (let [fpath (path/join results-dir
-                           (string i "-" fname))]
-      # note: create-dirs expects a path ending in a filename
-      (try
-        (jpm/create-dirs fpath)
-        ([err]
-          (errorf "failed to create dir for path: " fpath)))
-      fpath))
+  (def results-dir (jg-runner/make-results-dir-path judge-root))
   #
-  (each [full-path path] file-paths
-    (print "  " path)
-    (def results-fpath
-      (make-results-fpath path count))
-    # XXX
-    #(eprintf "results path: %s" results-fpath)
-    # using backticks below seemed to help make things work on multiple
-    # platforms
+  (each [jf-full-path jf-rel-path] file-paths
+    (print "  " jf-rel-path)
+    (def results-full-path
+      (jg-runner/ensure-results-full-path results-dir jf-rel-path count))
+    (when (dyn :debug)
+      (eprintf "results path: %s" results-full-path))
+    # backticks below for cross platform compatibility
     (def command [(dyn :executable "janet")
-                  "-e"
-                  (string "(os/cd `" judge-root "`)")
-                  "-e"
-                  (string "(do "
-                          "  (setdyn :judge-gen/test-out "
-                          "          `" results-fpath "`) "
-                          "  (dofile `" full-path "`) "
-                          ")")])
-    # XXX
-    #(eprintf "command: %p" command)
-    (let [out-path
-          (path/join results-dir
-                     (string "stdout-" count "-" path ".txt"))]
-      (try
-        (with [f (file/open out-path :w)]
-          (os/execute command :px {:out f})
-          (file/flush f))
-        ([err]
-          (eprint err)
-          (errorf "command failed: %p" command))))
-    (def marshalled-results
-      (try
-        (slurp results-fpath)
-        ([err]
-          (eprint err)
-          (errorf "failed to read in marshalled results from: %s"
-                  results-fpath))))
+                  "-e" (string "(os/cd `" judge-root "`)")
+                  "-e" (string "(do "
+                               "  (setdyn :judge-gen/test-out "
+                               "          `" results-full-path "`) "
+                               "  (dofile `" jf-full-path "`) "
+                               ")")])
+    (when (dyn :debug)
+      (eprintf "command: %p" command))
     (def results-for-path
       (try
-        (unmarshal (buffer marshalled-results))
+        (jg-runner/execute-command
+          {:command command
+           :count count
+           :judge-file-rel-path jf-rel-path
+           :results-dir results-dir
+           :results-full-path results-full-path})
         ([err]
-          (eprintf err)
-          (errorf "failed to unmarshal content from: %s"
-                  results-fpath))))
+          (when err
+            (if-let [err-type (err :type)]
+              # XXX: if more errors need to be handled, check err-type
+              (let [{:out-path out-path
+                     :err-path err-path} err]
+                (eprintf "Command failed:\n  %p" command)
+                (eprint "Potentially relevant paths:")
+                (eprintf "  %s" results-full-path)
+                (eprintf "  %s" out-path)
+                (eprintf "  %s" err-path)
+                (eprintf "  %s" jf-full-path))
+              (eprintf "Unknown error:\n %p" err)))
+          (error nil))))
     (put results
-         full-path results-for-path)
+         jf-full-path results-for-path)
     (++ count))
   results)
 
 (defn jg-runner/summarize
   [results]
   (when (empty? results)
-    # XXX: somehow messes things up?
-    #(print "No test results")
-    (break nil))
+    (eprint "No test results")
+    (break true))
   (var total-tests 0)
   (var total-passed 0)
   (def failures @{})
@@ -1702,6 +1797,8 @@
           (array/push fails test-result)))
       (when (not (empty? fails))
         (put failures fpath fails))))
+  (when (pos? (length failures))
+    (print))
   (eachp [fpath failed-tests] failures
     (print fpath)
     (each fail failed-tests
@@ -1710,35 +1807,38 @@
             :name test-name
             :passed test-passed
             :test-form test-form} fail)
-      (utils/print-color "  failed" :red)
-      (print ": " test-name)
-      (utils/print-color "    form" :red)
-      (printf ": %M" test-form)
-      (utils/print-color "expected" :red)
+      (print)
+      (utils/print-color (string "  failed: " test-name) :red)
+      (print)
+      (printf "    form: %M" test-form)
+      (prin "expected")
       # XXX: this could use some work...
       (if (< 30 (length (describe expected-value)))
         (print ":")
         (prin ": "))
-      (printf "%M" expected-value)
-      (utils/print-color "  actual" :red)
+      (printf "%m" expected-value)
+      (prin "  actual")
       # XXX: this could use some work...
       (if (< 30 (length (describe test-value)))
         (print ":")
         (prin ": "))
-      (printf "%M" test-value)))
+      (utils/print-color (string/format "%m" test-value) :blue)
+      (print)))
+  (when (zero? (length failures))
+    (print)
+    (print "No tests failed."))
+  (print)
+  (utils/print-dashes)
   (when (= 0 total-tests)
     (print "No tests found, so no judgements made.")
-    (break nil))
+    (break true))
   (if (not= total-passed total-tests)
-    (do
-      (utils/print-dashes)
-      (utils/print-color total-passed :red))
+    (utils/print-color total-passed :red)
     (utils/print-color total-passed :green))
   (prin " of ")
   (utils/print-color total-tests :green)
   (print " passed")
   (utils/print-dashes)
-  (print "all judgements made.")
   (= total-passed total-tests))
 
 # XXX: since there are no tests in this comment block, nothing will execute
@@ -1758,14 +1858,19 @@
     (path/join proj-root judge-dir-name))
   (try
     (do
+      (utils/print-dashes)
+      (print)
+      (print "judge-gen is starting...")
+      (print)
+      (utils/print-dashes)
       # remove old judge directory
-      (prin "cleaning out: " judge-root " ... ")
+      (prin "Cleaning out: " judge-root " ... ")
       (jpm/rm judge-root)
       # make a fresh judge directory
       (os/mkdir judge-root)
       (print "done")
       # copy source files
-      (prin "copying source files... ")
+      (prin "Copying source files... ")
       # shhhhh
       (with-dyns [:out @""]
         # each item copied separately for platform consistency
@@ -1774,23 +1879,31 @@
           (jpm/copy full-path judge-root)))
       (print "done")
       # create judge files
-      (prin "creating tests files... ")
+      (prin "Creating tests files... ")
+      (flush)
       (jg-runner/make-judges src-root judge-root judge-file-prefix)
       (print "done")
-      #
-      (utils/print-dashes)
       # judge
-      (print "judging...")
+      (print "Judging...")
       (def results
         (jg-runner/judge judge-root judge-file-prefix))
       (utils/print-dashes)
-      (print)
       # summarize results
-      (jg-runner/summarize results))
+      (def all-passed
+        (jg-runner/summarize results))
+      (print)
+      # XXX: if detecting that being run via `jpm test` is possible,
+      #      may be can show following only when run from `jpm test`
+      (print "judge-gen is done, later output may be from `jpm test`")
+      (print)
+      (utils/print-dashes)
+      all-passed)
     #
     ([err]
-      (eprint "judge-gen runner failed")
-      (eprint err)
+      (when err
+        (eprint "Unexpected error:\n")
+        (eprintf "\n%p" err))
+      (eprint "Runner stopped")
       nil)))
 
 # XXX: since there are no tests in this comment block, nothing will execute
