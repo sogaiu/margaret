@@ -987,6 +987,39 @@
                   width))
               (log-exit op ret {:peg peg :text text})
               ret)
+            # RULE_UNREF
+            (= 'unref op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def rule (first tail))
+              (def tag (when (> (length tail) 1)
+                         (in tail 1)))
+              (def tcap (length tags))
+              (def res-idx (peg-match* rule text grammar))
+              (def ret
+                (label result
+                  (when (nil? res-idx)
+                    (return result nil))
+                  (def final-tcap (length tags))
+                  (var w tcap)
+                  (when tag
+                    (forv i tcap final-tcap
+                      (when (= tag (get tags i))
+                        (put tags
+                             w (get tags i))
+                        (put tagged_captures
+                             w (get tagged_captures i))
+                        (++ w))))
+                  (set tags
+                       (array/slice tags 0 w))
+                  (set tagged_captures
+                       (array/slice tagged_captures 0 w))
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
             #
             (error (string "unknown tuple op: " op))))
         #
