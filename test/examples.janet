@@ -1,27 +1,3 @@
-# Configuration
-
-# If non-empty, should be the name of a direct subdirectory of the
-# project directory.  Leaving the value as an empty string should lead
-# to the name (non-extension portion) of this runner file being used
-# to determine which direct subdirectory of the project directory to
-# copy source files from.
-#
-# This takes precendence over the file name if non-empty.
-(def src-dir-name
-  "")
-
-# Only change if trying to prevent collision with an existing direct
-# subdirectory of the project directory.
-(def judge-dir-suffix
-  "")
-
-# Only change if trying to prevent collision with source files that have
-# names that begin with "judge-".
-(def judge-file-prefix
-  "judge-")
-
-# End of Configuration
-
 (defn input/slurp-input
   [input]
   (var f nil)
@@ -1560,32 +1536,39 @@
   )
 
 (defn jg-runner/make-judges
-  [src-root judge-root judge-file-prefix]
+  [src-root judge-root]
   (def subdirs @[])
+  (defn no-ext
+    [file-path]
+    (when file-path
+      (when-let [rev (string/reverse file-path)
+                 dot (string/find "." rev)]
+        (string/reverse (string/slice rev (inc dot))))))
   (defn helper
-    [src-root subdirs judge-root judge-file-prefix]
+    [src-root subdirs judge-root]
     (each path (os/dir src-root)
       (def fpath (path/join src-root path))
       (case (os/stat fpath :mode)
         :directory
         (do
           (helper fpath (array/push subdirs path)
-                  judge-root judge-file-prefix)
+                  judge-root)
           (array/pop subdirs))
         #
         :file
         (when (string/has-suffix? ".janet" fpath)
+          (def judge-file-name
+            (string (no-ext path) ".judge"))
           (unless (jg/handle-one
                     {:input fpath
                      :output (path/join judge-root
                                         ;subdirs
-                                        (string
-                                          judge-file-prefix path))})
+                                        judge-file-name)})
             (eprintf "Test generation failed for: %s" fpath)
             (eprintf "Please confirm validity of source file: %s" fpath)
             (error nil))))))
   #
-  (helper src-root subdirs judge-root judge-file-prefix))
+  (helper src-root subdirs judge-root))
 
 # XXX: since there are no tests in this comment block, nothing will execute
 (comment
@@ -1602,28 +1585,27 @@
 
   (os/mkdir judge-root)
 
-  (jg-runner/make-judges src-root judge-root "judge-" true)
+  (jg-runner/make-judges src-root judge-root true)
 
   )
 
 (defn jg-runner/find-judge-files
-  [dir judge-file-prefix]
+  [dir]
   (def file-paths @[])
   (defn helper
-    [dir judge-file-prefix file-paths]
+    [dir file-paths]
     (each path (os/dir dir)
       (def full-path (path/join dir path))
       (case (os/stat full-path :mode)
         :directory
-        (helper full-path judge-file-prefix file-paths)
+        (helper full-path file-paths)
         #
         :file
-        (when (and (string/has-prefix? judge-file-prefix path)
-                   (string/has-suffix? ".janet" path))
+        (when (string/has-suffix? ".judge" path)
           (array/push file-paths [full-path path]))))
     file-paths)
   #
-  (helper dir judge-file-prefix file-paths))
+  (helper dir file-paths))
 
 (defn jg-runner/execute-command
   [opts]
@@ -1699,10 +1681,10 @@
     fpath))
 
 (defn jg-runner/judge
-  [judge-root judge-file-prefix]
+  [judge-root]
   (def results @{})
   (def file-paths
-    (sort (jg-runner/find-judge-files judge-root judge-file-prefix)))
+    (sort (jg-runner/find-judge-files judge-root)))
   (var count 0)
   (def results-dir (jg-runner/make-results-dir-path judge-root))
   #
@@ -1827,7 +1809,6 @@
 (defn jg-runner/handle-one
   [opts]
   (def {:judge-dir-name judge-dir-name
-        :judge-file-prefix judge-file-prefix
         :proj-root proj-root
         :src-root src-root} opts)
   (def judge-root
@@ -1857,12 +1838,12 @@
       # create judge files
       (prin "Creating tests files... ")
       (flush)
-      (jg-runner/make-judges src-root judge-root judge-file-prefix)
+      (jg-runner/make-judges src-root judge-root)
       (print "done")
       # judge
       (print "Judging...")
       (def results
-        (jg-runner/judge judge-root judge-file-prefix))
+        (jg-runner/judge judge-root))
       (utils/print-dashes)
       # summarize results
       (def all-passed
@@ -1893,7 +1874,6 @@
     (path/join proj-root "judge-gen"))
 
   (jg-runner/handle-one {:judge-dir-name ".judge"
-                         :judge-file-prefix "judge-"
                          :proj-root proj-root
                          :src-root src-root})
 
@@ -1902,10 +1882,6 @@
 # from the perspective of `jpm test`
 (def proj-root
   (path/abspath "."))
-
-(defn src-root
-  [src-dir-name]
-  (path/join proj-root src-dir-name))
 
 (defn no-ext
   [file-path]
@@ -1937,12 +1913,10 @@
   )
 
 (defn deduce-src-root
-  [src-dir-name]
-  (when (not= src-dir-name "")
-    (break src-dir-name))
+  []
   (let [current-file (dyn :current-file)]
     (assert current-file
-            "src-dir-name is empty but :current-file is nil")
+            ":current-file is nil")
     (let [cand-name (base-no-ext current-file)]
       (assert (and cand-name
                    (not= cand-name ""))
@@ -1968,12 +1942,10 @@
     all-escaped))
 
 (defn deduce-judge-dir-name
-  [judge-dir-suffix]
-  (when (not= judge-dir-suffix "")
-    (break (string ".judge_" judge-dir-suffix)))
+  []
   (let [current-file (dyn :current-file)]
     (assert current-file
-            "judge-dir-suffix is empty but :current-file is nil")
+            ":current-file is nil")
     (let [suffix (suffix-for-judge-dir-name current-file)]
       (assert suffix
               (string "failed to determine suffix for: "
@@ -1984,9 +1956,8 @@
 (when (nil? (dyn :judge-gen/test-out))
   (let [all-passed
         (jg-runner/handle-one
-          {:judge-dir-name (deduce-judge-dir-name judge-dir-suffix)
-           :judge-file-prefix judge-file-prefix
+          {:judge-dir-name (deduce-judge-dir-name)
            :proj-root proj-root
-           :src-root (deduce-src-root src-dir-name)})]
+           :src-root (deduce-src-root)})]
     (when (not all-passed)
       (os/exit 1))))
