@@ -1,8 +1,8 @@
 (import ../margaret/meg :as peg)
 
-# `(undef rule ?tag)`
+# `(unref rule ?tag)`
 
-# The `undef` combinator lets a user "scope" tagged captures.
+# The `unref` combinator lets a user "scope" tagged captures.
 
 # After the rule has matched, all captures with `tag` can no longer be
 # referred to by their tag. However, such captures from outside the
