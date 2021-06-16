@@ -129,7 +129,7 @@ tests.  Specifically, that includes:
 .. link:examples/int-be.janet[int-be]
 .. link:examples/lenprefix.janet[lenprefix]
 .. link:examples/line.janet[line]
-.. link:examples/position.janet[position]
+.. link:examples/position.janet[position, $]
 .. link:examples/replace.janet[replace, /]
 .. link:examples/uint.janet[uint]
 .. link:examples/uint-be.janet[uint-be]
