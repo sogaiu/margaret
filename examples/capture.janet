@@ -30,6 +30,11 @@
   (peg/match ~(capture -1) "")
   # => @[""]
 
+  (peg/match ~(sequence (capture :d+ :a)
+                        (backref :a))
+             "78")
+  # => @["78" "78"]
+
   (peg/match ~(capture (range "ac")) "b")
   # => @["b"]
 
