@@ -8,11 +8,15 @@
 
 # notes
 #
+# XXX: consider trying to replace `label` / `return` with `break`
+#      (and `while`?) to avoid fiber creation
 # XXX: try to see if the recent fix for `to/thru` needs to be applied
 #      to other specials
 # XXX: go through source looking for XXX, and collect here
 # XXX: consider rewriting some parts to more closely resemble peg.c
 #      * names of identifiers, e.g. patt -> rule_a
+# XXX: should be possible to arrange for tests to be used by janet's
+#      built in peg system
 # XXX: think about how to improve tests
 #      * is there a way to run the tests of other projects in a way that
 #        uses meg without having to modify those existing projects?
