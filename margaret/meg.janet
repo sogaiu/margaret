@@ -682,6 +682,28 @@
                   res-idx))
               (log-exit op ret {:peg peg :text text})
               ret)
+            # RULE_CAPTURE_NUM
+            (= 'number op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (empty? tail))
+                      (string/format "`%s` requires at least 1 argument"
+                                     (string op)))
+              (def patt (first tail))
+              (def tag (when (< 1 (length tail))
+                         (in tail 1)))
+              (def res-idx (peg-match* patt text grammar))
+              (def ret
+                (when res-idx
+                  (let [cap (string/slice text 0 res-idx)]
+                    (when-let [num (scan-number cap)]
+                      (if (and (not has_backref)
+                               (= mode :peg_mode_accumulate))
+                        (buffer/push scratch cap)
+                        (pushcap num tag))))
+                  res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
             # RULE_ACCUMULATE
             (or (= 'accumulate op)
                 (= '% op))
