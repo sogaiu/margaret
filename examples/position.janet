@@ -30,4 +30,14 @@
              "ab")
   # => @[1]
 
+  (let [rand-int (math/rng-int (math/rng (os/cryptorand 3)) 80)
+        a-buf (buffer/new-filled rand-int 66)]
+    (= rand-int
+       (- (- ;(peg/match ~(sequence (position)
+                                    (some 1)
+                                    -1
+                                    (position))
+                         a-buf)))))
+  # => true
+
   )
