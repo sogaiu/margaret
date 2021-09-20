@@ -87,7 +87,7 @@ Some of the tests were adapted / copied from Janet's tests.
 
 == Specials Implementation Status
 
-Each of the 48 Janet PEG specials has an initial implementation with
+Each of the 49 Janet PEG specials has an initial implementation with
 tests.  Specifically, that includes:
 
 . Primitive Patterns
@@ -129,6 +129,7 @@ tests.  Specifically, that includes:
 .. link:examples/int-be.janet[int-be]
 .. link:examples/lenprefix.janet[lenprefix]
 .. link:examples/line.janet[line]
+.. link:examples/number.janet[number]
 .. link:examples/position.janet[position, $]
 .. link:examples/replace.janet[replace, /]
 .. link:examples/uint.janet[uint]
