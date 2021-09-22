@@ -1,3 +1,14 @@
+# XXX: perhaps janet's `scan-number` will eventually support a base
+(defn- scan-number-base
+  [num-str base]
+  (assert (or (<= 2 base 36)
+              (nil? base))
+          (string/format "`%s` is not nil or between 2 and 36 inclusive"
+                         base))
+  (if (nil? base)
+    (scan-number num-str)
+    (scan-number (string base "r" num-str))))
+
 (defn- peg-match
   [the-peg the-text &opt the-start & the-args]
   #
@@ -690,13 +701,15 @@
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
               (def patt (first tail))
-              (def tag (when (< 1 (length tail))
-                         (in tail 1)))
+              (def base (when (< 1 (length tail))
+                          (in tail 1)))
+              (def tag (when (< 2 (length tail))
+                         (in tail 2)))
               (def res-idx (peg-match* patt text grammar))
               (def ret
                 (when res-idx
                   (let [cap (string/slice text 0 res-idx)]
-                    (when-let [num (scan-number cap)]
+                    (when-let [num (scan-number-base cap base)]
                       (if (and (not has_backref)
                                (= mode :peg_mode_accumulate))
                         (buffer/push scratch cap)
