@@ -223,6 +223,7 @@
 
 (defn display/print-color
   [msg color]
+  # XXX: what if color doesn't match...
   (let [color-num (match color
                     :black 30
                     :blue 34
@@ -244,7 +245,19 @@
 (defn display/print-dashes
   [&opt n]
   (print (display/dashes n)))
-# XXX: useful bits from jpm
+
+(defn display/print-form
+  [form &opt color]
+  (def buf @"")
+  (with-dyns [:out buf]
+    (printf "%m" form))
+  (def msg (string/trimr buf))
+  (print ":")
+  (if color
+    (display/print-color msg color)
+    (prin msg))
+  (print))
+# some bits from jpm
 
 ### Copyright 2019 © Calvin Rose
 
@@ -306,11 +319,6 @@
                  "/y" "/s" "/e" "/i"))
     (jpm/shell "cp" "-rf" src dest)))
 
-(defn jpm/pslurp
-  [cmd]
-  (string/trim (with [f (file/popen cmd)]
-                     (:read f :all))))
-
 (defn jpm/create-dirs
   "Create all directories needed for a file (mkdir -p)."
   [dest]
@@ -319,6 +327,18 @@
     (def path (string/join (slice segs 0 i) jpm/sep))
     (unless (empty? path) (os/mkdir path))))
 
+(defn jpm/copy-continue
+  "Copy a file or directory recursively from one location to another."
+  [src dest]
+  (print "copying " src " to " dest "...")
+  (if jpm/is-win
+    (let [end (last (peg/match jpm/path-splitter src))
+          isdir (= (os/stat src :mode) :directory)]
+      (jpm/shell "C:\\Windows\\System32\\xcopy.exe"
+                 (string/replace "/" "\\" src)
+                 (string/replace "/" "\\" (if isdir (string dest "\\" end) dest))
+                 "/y" "/s" "/e" "/i" "/c"))
+    (jpm/shell "cp" "-rf" src dest)))
 (defn input/slurp-input
   [input]
   (var f nil)
@@ -339,6 +359,11 @@
     (set buf @"")
     (file/read f :all buf))
   buf)
+(def name/prog-name
+  "judge-gen")
+
+(def name/dot-dir-name
+  ".judge_judge-gen")
 # adapted from:
 #   https://janet-lang.org/docs/syntax.html
 
@@ -358,13 +383,13 @@
     :readermac (set "',;|~")
     #
     :raw-value (choice
-                :constant :number
-                :symbol :keyword
                 :string :buffer
                 :long-string :long-buffer
                 :parray :barray
                 :ptuple :btuple
-                :struct :table)
+                :struct :table
+                :constant :number
+                :symbol :keyword)
     #
     :comment (sequence (any :s)
                        "#"
@@ -497,10 +522,9 @@
         p-len (parser/consume p form-bytes)]
     (when (parser/error p)
       (break false))
-    (let [_ (parser/eof p)
-          p-err (parser/error p)]
-      (and (= (length form-bytes) p-len)
-           (nil? p-err)))))
+    (parser/eof p)
+    (and (= (length form-bytes) p-len)
+         (nil? (parser/error p)))))
 
 (comment
 
@@ -519,7 +543,20 @@
   )
 
 # XXX: any way to avoid this?
-(var- pegs/in-comment 0)
+(var- pegs/topish-level 0)
+
+(defn- pegs/track-top-level-peg
+  [l-delim r-delim]
+  ~(sequence (drop (cmt (capture ,l-delim)
+                        ,|(do
+                            (++ pegs/topish-level)
+                            $)))
+             :root
+             (choice (drop (cmt (capture ,r-delim)
+                                ,|(do
+                                    (-- pegs/topish-level)
+                                    $)))
+                     (error ""))))
 
 (def- pegs/comment-analyzer
   (->
@@ -527,23 +564,13 @@
     (table ;(kvs grammar/janet))
     (put :main '(choice (capture :value)
                         :comment))
-    #
-    (put :comment-block ~(sequence
-                           "("
-                           (any :s)
-                           (drop (cmt (capture "comment")
-                                      ,|(do
-                                          (++ pegs/in-comment)
-                                          $)))
-                           :root
-                           (drop (cmt (capture ")")
-                                      ,|(do
-                                          (-- pegs/in-comment)
-                                          $)))))
-    (put :ptuple ~(choice :comment-block
-                          (sequence "("
-                                    :root
-                                    (choice ")" (error "")))))
+    # tracking of "top-level"-ness (within a `comment`)
+    (put :ptuple
+         (pegs/track-top-level-peg "(" ")"))
+    (put :btuple
+         (pegs/track-top-level-peg "[" "]"))
+    (put :struct
+         (pegs/track-top-level-peg "{" "}"))
     # classify certain comments
     (put :comment
          ~(sequence
@@ -555,7 +582,7 @@
                      (capture (sequence
                                 (any (if-not (choice "\n" -1) 1))
                                 (any "\n"))))
-                   ,|(if (zero? pegs/in-comment)
+                   ,|(if (zero? pegs/topish-level)
                        (let [ev-form (string/trim $1)
                              line $0]
                          (assert (validate/valid-code? ev-form)
@@ -569,8 +596,11 @@
                               "#"
                               (any (if-not (+ "\n" -1) 1))
                               (any "\n")))
-                   ,|(identity $))
-              (any :s))))
+                   ,|(if (zero? pegs/topish-level)
+                       (identity $)
+                       # XXX: is this right?
+                       "")))
+            (any :s)))
     # tried using a table with a peg but had a problem, so use a struct
     table/to-struct))
 
@@ -650,14 +680,30 @@
 
     )
     ``)
-    # => result
+  # => result
+
+  # thanks Saikyun
+  (peg/match
+    pegs/inner-forms
+    ``
+    (comment
+
+      @{:bye 10 #hello
+       }
+
+      (+ 1 1)
+      # => 2
+
+    )
+    ``)
+  # => '@["" "@{:bye 10 #hello\n   }\n\n  " "(+ 1 1)\n  " (:returns "2" 7)]
 
   )
 
 (defn pegs/parse-comment-block
   [cmt-blk-str]
-  # mutating outer pegs/in-comment
-  (set pegs/in-comment 0)
+  # mutating outer pegs/topish-level
+  (set pegs/topish-level 0)
   (peg/match pegs/inner-forms cmt-blk-str))
 
 (comment
@@ -703,7 +749,24 @@
   (pegs/parse-comment-block comment-in-comment-str)
   # => @["" "(comment\n\n     (+ 1 1)\n     # => 2\n\n   )\n"]
 
-)
+  # thanks Saikyun
+  (def comment-in-struct-str
+    ``
+    (comment
+
+      @{:bye 10 #hello
+       }
+
+      (+ 1 1)
+      # => 2
+
+    )
+    ``)
+
+  (pegs/parse-comment-block comment-in-struct-str)
+  # => '@["" "@{:bye 10 #hello\n   }\n\n  " "(+ 1 1)\n  " (:returns "2" 7)]
+
+  )
 
 # recognize next top-level form, returning a map
 # modify a copy of grammar/janet
@@ -751,14 +814,14 @@
        :s-line 1
        :end 12}]) # => true
 
-  (deep=
-    #
-    (peg/match pegs/top-level sample-source 12)
-    #
+  (def result
     @[{:type :value
        :value "(+ 1 1)\n"
        :s-line 2
-       :end 20}]) # => true
+       :end 20}])
+
+  (peg/match pegs/top-level sample-source 12)
+  # => result
 
   (string/slice sample-source 12 20)
   # => "(+ 1 1)\n"
@@ -1073,7 +1136,7 @@
   (string rewrite/verify-as-string
           (string/join forms "")))
 
-# XXX: since there are no tests in this comment block, nothing will execute
+# since there are no tests in this comment block, nothing will execute
 (comment
 
   # XXX: expected values are all large here -- not testing
@@ -1150,38 +1213,37 @@
 
   (def code-buf
     @``
-    (def a 1)
+     (def a 1)
 
-    (comment
+     (comment
 
-      (+ a 1)
-      # => 2
+       (+ a 1)
+       # => 2
 
-      (def b 3)
+       (def b 3)
 
-      (- b a)
-      # => 2
+       (- b a)
+       # => 2
 
-    )
-    ``)
+     )
+     ``)
 
   (deep=
     (segments/parse code-buf)
     #
-    @[{:value "    (def a 1)\n\n    "
+    @[{:value "(def a 1)\n\n"
        :s-line 1
        :type :value
-       :end 19}
-      {:value (string "(comment\n\n      "
-                      "(+ a 1)\n      "
-                      "# => 2\n\n      "
-                      "(def b 3)\n\n      "
-                      "(- b a)\n      "
-                      "# => 2\n\n    "
-                      ")\n    ")
+       :end 11}
+      {:value (string "(comment\n\n  "
+                      "(+ a 1)\n  "
+                      "# => 2\n\n  "
+                      "(def b 3)\n\n  "
+                      "(- b a)\n  "
+                      "# => 2\n\n)")
        :s-line 3
        :type :value
-       :end 112}]
+       :end 75}]
     ) # => true
 
   )
@@ -1282,7 +1344,7 @@
     (print buf))
   true)
 
-# XXX: since there are no tests in this comment block, nothing will execute
+# since there are no tests in this comment block, nothing will execute
 (comment
 
   (def file-path "./generate.janet")
@@ -1293,7 +1355,9 @@
 
   # output to file
   (generate/handle-one {:input file-path
-                        :output "/tmp/judge-gen-test-output.txt"})
+                        :output (string "/tmp/"
+                                        name/prog-name
+                                        "-test-output.txt")})
 
   )
 (defn utils/rand-string
@@ -1318,9 +1382,10 @@
 (defn utils/no-ext
   [file-path]
   (when file-path
-    (when-let [rev (string/reverse file-path)
-               dot (string/find "." rev)]
-      (string/reverse (string/slice rev (inc dot))))))
+    (if-let [rev (string/reverse file-path)
+             dot (string/find "." rev)]
+      (string/reverse (string/slice rev (inc dot)))
+      file-path)))
 
 (comment
 
@@ -1330,52 +1395,54 @@
   (utils/no-ext "/etc/man_db.conf")
   # => "/etc/man_db"
 
-  (utils/no-ext "test/judge-gen.janet")
-  # => "test/judge-gen"
-
   )
 
 (defn judges/make-judges
   [src-root judge-root]
   (def subdirs @[])
+  (def out-in-tbl @{})
   (defn helper
     [src-root subdirs judge-root]
     (each path (os/dir src-root)
-      (def fpath (path/join src-root path))
-      (case (os/stat fpath :mode)
+      (def in-path (path/join src-root path))
+      (case (os/stat in-path :mode)
         :directory
         (do
-          (helper fpath (array/push subdirs path)
+          (helper in-path (array/push subdirs path)
                   judge-root)
           (array/pop subdirs))
         #
         :file
-        (when (string/has-suffix? ".janet" fpath)
+        (when (string/has-suffix? ".janet" in-path)
           (def judge-file-name
             (string (utils/no-ext path) ".judge"))
-          (unless (generate/handle-one
-                    {:input fpath
-                     :output (path/join judge-root
-                                        ;subdirs
-                                        judge-file-name)})
-            (eprintf "Test generation failed for: %s" fpath)
-            (eprintf "Please confirm validity of source file: %s" fpath)
-            (error nil))))))
+          (let [out-path (path/join judge-root
+                                    ;subdirs
+                                    judge-file-name)]
+            (unless (generate/handle-one {:input in-path
+                                          :output out-path})
+              (eprintf "Test generation failed for: %s" in-path)
+              (eprintf "Please confirm validity of source file: %s" in-path)
+              (error nil))
+            (put out-in-tbl
+                 (path/abspath out-path)
+                 (path/abspath in-path)))))))
   #
-  (helper src-root subdirs judge-root))
+  (helper src-root subdirs judge-root)
+  out-in-tbl)
 
-# XXX: since there are no tests in this comment block, nothing will execute
+# since there are no tests in this comment block, nothing will execute
 (comment
 
   (def proj-root
     (path/join (os/getenv "HOME")
-               "src" "judge-gen"))
+               "src" name/prog-name))
 
   (def judge-root
-    (path/join proj-root ".judge_judge-gen"))
+    (path/join proj-root name/dot-dir-name))
 
   (def src-root
-    (path/join proj-root "judge-gen"))
+    (path/join proj-root name/prog-name))
 
   (os/mkdir judge-root)
 
@@ -1420,8 +1487,10 @@
     (try
       (with [ef (file/open err-path :w)]
         (with [of (file/open out-path :w)]
-          (os/execute command :px {:err ef
-                                   :out of})
+          (let [ecode (os/execute command :px {:err ef
+                                               :out of})]
+            (when (not (zero? ecode))
+              (eprintf "non-zero exit code: %d" ecode)))
           (file/flush ef)
           (file/flush of)))
       ([_]
@@ -1445,7 +1514,6 @@
 
 (defn judges/make-results-dir-path
   [judge-root]
-  # XXX: what about windows...
   (path/join judge-root
              (string "." (os/time) "-"
                      (utils/rand-string 8) "-"
@@ -1460,7 +1528,7 @@
                         (some :h)
                         "-"
                         "judge-gen")
-    (judges/make-results-dir-path ""))
+             (judges/make-results-dir-path ""))
   # => @[]
 
   )
@@ -1477,7 +1545,7 @@
     fpath))
 
 (defn judges/judge-all
-  [judge-root]
+  [judge-root test-src-tbl]
   (def results @{})
   (def file-paths
     (sort (judges/find-judge-files judge-root)))
@@ -1514,16 +1582,32 @@
               # XXX: if more errors need to be handled, check err-type
               (let [{:out-path out-path
                      :err-path err-path} err]
+                (eprint)
                 (eprintf "Command failed:\n  %p" command)
+                (eprint)
                 (eprint "Potentially relevant paths:")
-                (eprintf "  %s" results-full-path)
-                (eprintf "  %s" out-path)
-                (eprintf "  %s" err-path)
-                (eprintf "  %s" jf-full-path))
+                (eprintf "  %s" jf-full-path)
+                #
+                (def err-file-size (os/stat err-path :size))
+                (when (pos? err-file-size)
+                  (eprintf "  %s" err-path))
+                #
+                (eprint)
+                (when (pos? err-file-size)
+                  (eprint "Start of test stderr output")
+                  (eprint)
+                  (eprint (string (slurp err-path)))
+                  #(eprint)
+                  (eprint "End of test stderr output")
+                  (eprint)))
               (eprintf "Unknown error:\n %p" err)))
           (error nil))))
+    (def src-full-path
+      (in test-src-tbl jf-full-path))
+    (assert src-full-path
+            (string "Failed to determine source for test: " jf-full-path))
     (put results
-         jf-full-path results-for-path)
+         src-full-path results-for-path)
     (++ count))
   results)
 
@@ -1535,6 +1619,7 @@
   (var total-tests 0)
   (var total-passed 0)
   (def failures @{})
+  # analyze results
   (eachp [fpath test-results] results
     (def name (path/basename fpath))
     (when test-results
@@ -1551,36 +1636,48 @@
           (array/push fails test-result)))
       (when (not (empty? fails))
         (put failures fpath fails))))
-  (when (pos? (length failures))
-    (print))
-  (eachp [fpath failed-tests] failures
-    (print fpath)
+  # report any failures
+  (var i 0)
+  (each fpath (sort (keys failures))
+    (def failed-tests (get failures fpath))
     (each fail failed-tests
       (def {:test-value test-value
             :expected-value expected-value
             :name test-name
             :passed test-passed
             :test-form test-form} fail)
+      (++ i)
       (print)
-      (display/print-color (string "  failed: " test-name) :red)
+      (prin "--(")
+      (display/print-color i :cyan)
+      (print ")--")
       (print)
-      (printf "    form: %M" test-form)
-      (prin "expected")
-      # XXX: this could use some work...
-      (if (< 30 (length (describe expected-value)))
-        (print ":")
-        (prin ": "))
-      (printf "%m" expected-value)
-      (prin "  actual")
-      # XXX: this could use some work...
-      (if (< 30 (length (describe test-value)))
-        (print ":")
-        (prin ": "))
-      (display/print-color (string/format "%m" test-value) :blue)
-      (print)))
+      (display/print-color "source file:" :yellow)
+      (print)
+      (display/print-color (string (utils/no-ext fpath) ".janet") :red)
+      (print)
+      (print)
+      #
+      (display/print-color "failed:" :yellow)
+      (print)
+      (display/print-color test-name :red)
+      (print)
+      #
+      (print)
+      (display/print-color "form" :yellow)
+      (display/print-form test-form)
+      #
+      (print)
+      (display/print-color "expected" :yellow)
+      (display/print-form expected-value)
+      #
+      (print)
+      (display/print-color "actual" :yellow)
+      (display/print-form test-value :blue)))
   (when (zero? (length failures))
     (print)
     (print "No tests failed."))
+  # summarize totals
   (print)
   (display/print-dashes)
   (when (= 0 total-tests)
@@ -1601,22 +1698,42 @@
   # => true
 
   (def results
-    '@[{:expected-value "judge-gen"
+    '@[{:expected-value true
         :passed true
-        :name "line-20"
-        :test-form (base-no-ext "test/judge-gen.janet")
+        :name "line-6"
+        :test-form (validate/valid-code? "true")
         :type :is
-        :expected-form "judge-gen"
-        :test-value "judge-gen"}])
+        :expected-form true
+        :test-value true}
+       {:expected-value false
+        :passed true
+        :name "line-9"
+        :test-form (validate/valid-code? "(")
+        :type :is
+        :expected-form false
+        :test-value false}
+       {:expected-value true
+        :passed true
+        :name "line-12"
+        :test-form (validate/valid-code? "()")
+        :type :is
+        :expected-form true
+        :test-value true}
+       {:expected-value false
+        :passed true
+        :name "line-15"
+        :test-form (validate/valid-code? "(]")
+        :type :is
+        :expected-form false
+        :test-value false}])
 
   (let [buf @""]
     (with-dyns [:out buf]
-      (summary/report @{"1-main.jimage" results}))
+      (summary/report @{"validate.jimage" results}))
     (string/has-prefix? "\nNo tests failed." buf))
   # => true
 
   )
-
 
 (defn runner/handle-one
   [opts]
@@ -1629,7 +1746,7 @@
     (do
       (display/print-dashes)
       (print)
-      (print "judge-gen is starting...")
+      (print (string name/prog-name " is starting..."))
       (print)
       (display/print-dashes)
       # remove old judge directory
@@ -1645,17 +1762,18 @@
         # each item copied separately for platform consistency
         (each item (os/dir src-root)
           (def full-path (path/join src-root item))
-          (jpm/copy full-path judge-root)))
+          (jpm/copy-continue full-path judge-root)))
       (print "done")
       # create judge files
       (prin "Creating tests files... ")
       (flush)
-      (judges/make-judges src-root judge-root)
+      (def ts-tbl
+        (judges/make-judges src-root judge-root))
       (print "done")
       # judge
-      (print "Judging...")
+      (print "Running tests...")
       (def results
-        (judges/judge-all judge-root))
+        (judges/judge-all judge-root ts-tbl))
       (display/print-dashes)
       # summarize results
       (def all-passed
@@ -1663,7 +1781,8 @@
       (print)
       # XXX: if detecting that being run via `jpm test` is possible,
       #      may be can show following only when run from `jpm test`
-      (print "judge-gen is done, later output may be from `jpm test`")
+      (print (string name/prog-name
+                     " is done, later output may be from `jpm test`"))
       (print)
       (display/print-dashes)
       all-passed)
@@ -1675,17 +1794,17 @@
       (eprint "Runner stopped")
       nil)))
 
-# XXX: since there are no tests in this comment block, nothing will execute
+# since there are no tests in this comment block, nothing will execute
 (comment
 
   (def proj-root
     (path/join (os/getenv "HOME")
-               "src" "judge-gen"))
+               "src" name/prog-name))
 
   (def src-root
-    (path/join proj-root "judge-gen"))
+    (path/join proj-root name/prog-name))
 
-  (runner/handle-one {:judge-dir-name ".judge_judge-gen"
+  (runner/handle-one {:judge-dir-name name/dot-dir-name
                       :proj-root proj-root
                       :src-root src-root})
 
@@ -1737,10 +1856,18 @@
 
 # XXX: hack to prevent from running when testing
 (when (nil? (dyn :judge-gen/test-out))
-  (let [all-passed
-        (runner/handle-one
-          {:judge-dir-name (deduce-judge-dir-name)
-           :proj-root proj-root
-           :src-root (deduce-src-root)})]
-    (when (not all-passed)
-      (os/exit 1))))
+  (let [src-root (deduce-src-root)
+        judge-dir-name (deduce-judge-dir-name)]
+    (def stat (os/stat src-root))
+    (unless stat
+      (eprint "src-root must exist: " src-root)
+      (os/exit 1))
+    (unless (= :directory (stat :mode))
+      (eprint "src-root must be a directory: " src-root)
+      (os/exit 1))
+    (let [all-passed (runner/handle-one
+                       {:judge-dir-name judge-dir-name
+                        :proj-root proj-root
+                        :src-root src-root})]
+      (when (not all-passed)
+        (os/exit 1)))))
