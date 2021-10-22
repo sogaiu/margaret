@@ -1326,7 +1326,8 @@ default-peg-grammar
 # ---------------------------------
 
 # Although all pattern matching is done in anchored mode, operations like
-# global substituion and searching can be implemented with the `peg` module.
+# global substitution and searching can be implemented with the `peg`
+# module.
 
 # A simple Janet function that prodces PEGs that search for strings shows
 # how captures and looping specials can be composed, and how quasiquoting
@@ -1390,8 +1391,8 @@ default-peg-grammar
 (peg/find-all "dog" "do do cat do")
 # => @[]
 
-# We can also wrap a PEG to turn it into a global substituion grammar with
-# the `accumulate` special (`%`).
+# We can also wrap a PEG to turn it into a global substitution grammar
+# with the `accumulate` special (`%`).
 
 (defn replacer
   "Creates a peg that replaces instances of `patt` with `subst`."
@@ -1411,7 +1412,8 @@ default-peg-grammar
 #               &opt start
 #               & args)`
 
-# Replace first match of `peg` in `text` with `repl`, returning a new buffer.
+# Replace first match of `peg` in `text` with `repl`, returning a new
+# buffer.
 
 # The peg does not need to make captures to do replacement.
 
@@ -1430,7 +1432,8 @@ default-peg-grammar
 #                   &opt start
 #                   & args)`
 
-# Replace all matches of `peg` in `text` with `repl`, returning a new buffer.
+# Replace all matches of `peg` in `text` with `repl`, returning a new
+# buffer.
 
 # The peg does not need to make captures to do replacement.
 
