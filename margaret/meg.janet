@@ -34,7 +34,14 @@
         @{:main opeg}
         #
         :struct
-        (table ;(kvs opeg))))
+        (do (assert (get opeg :main)
+                    (string "missing :main in grammar: %p" opeg))
+          (table ;(kvs opeg)))
+        #
+        :table
+        (do (assert (get opeg :main)
+                    (string "missing :main in grammar: %p" opeg))
+          opeg)))
     (assert (peg-table :main)
             "peg needs a :main key")
     (table/setproto peg-table default-peg-grammar)
