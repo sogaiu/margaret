@@ -19,8 +19,8 @@
                "(defn hi [] 1)"))
   # => @["(" "defn hi [] 1" ")"]
 
-  (peg/match ~(group (* (capture "a")
-                        (group (capture "b"))))
+  (peg/match ~(group (sequence (capture "a")
+                               (group (capture "b"))))
              "ab")
   # => @[@["a" @["b"]]]
 
