@@ -61,7 +61,7 @@
     # allow overriding via :meg-debug
     (def has_backref
       (if-let [md (dyn :meg-debug)]
-        (if-let [setting (in md :disable_tagged_captures)]
+        (if-let [setting (get md :disable_tagged_captures)]
           (not setting)
           true)
         true))
