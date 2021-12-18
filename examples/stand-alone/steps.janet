@@ -4,28 +4,55 @@
 
   #########################################################################
 
+  # step 0
+
+  # many programming languages support string matching with so-called
+  # "regular expressions".  perhaps one or more of the following are
+  # familiar:
+
+  # emacs-lisp: (string-match pattern string)
+
+  # javascript: r = new Regexp(pattern); r.exec(string);
+
+  # python: re.match(pattern, string)
+
+  # `pattern` is a string representing a "regular expression" and
+  # `string` is the string to be matched.
+
+  # janet has a function named `peg/match` for matching text as well
+  # as capturing some of the examined content.  a simplified signature
+  # looks like:
+
+  #   (peg/match pattern string)
+
+  # note that as with other programming languages, the pattern is
+  # expressed before the string to match.
+
+  # however, since janet doesn't support regular expressions, the
+  # "pattern" part differs.
+
+  #########################################################################
+
   # step 1
 
-  (peg/match "Content-Length:"
-             "Content-Type:")
+  (peg/match "Content-"
+             "Content")
   # => nil
 
-  # the second argument, "Content-Type:", is a string (or buffer) to
-  # match against
+  # the first argument, "Content-", is a pattern that describes the
+  # desired "matching" (somewhat analogous to a "regular expression").
 
-  # the first argument, "Content-Length:", describes the desired
-  # "matching" (somewhat analogous to a "regular expression" for
-  # string matching in many other programming languages).
+  # the second argument, "Content", is a string to match against.
 
-  # here the string literal "Content-Length:" results in an attempt to
-  # match "Content-Length:" against the string "Content-Type:".  this
-  # doesn't succeed because the strings differ after the "-":
+  # here the string literal "Content-" results in an attempt to match
+  # "Content-" against the string "Content".  this doesn't succeed
+  # because the strings differ after the last "t":
   #
-  #   "Content-Type:"
-  #   "Content-Length:"
-  #            ^
-  #            |
-  #            strings differ from here
+  #   "Content-"
+  #   "Content"
+  #           ^
+  #           |
+  #           strings differ from here
 
   # when matching "fails", the return value of `peg/match` is `nil`
 
@@ -52,17 +79,8 @@
   # (in the examples so far, the first argument has been a string, but
   # it can be other things too (examples coming up).)
 
-  # the first argument is sometimes referred to as a "peg" (short for
-  # "parsing expression grammar").
-  #
-  # a simplified signature of `peg/match` is thus:
-  #
-  #   (peg/match peg str)
-  #
-  # where:
-  #
-  #   `peg` is a parsing expression grammar     (describes matching)
-  #   `str` is a string                         (to match against)
+  # the first argument, the pattern part, is sometimes referred to as
+  # a "peg" (short for "parsing expression grammar").
 
   #########################################################################
 
@@ -76,12 +94,12 @@
   # argument and matching succeeds.  (this is referred to as an
   # "anchored match" in other contexts.)
 
-  #   str: "Content-Type:"
   #   peg: "Content"
+  #   str: "Content-Type:"
   #               ^
   #               |
   #               the part of the string "Content-Type:" that was examined
-  #               was equal to the peg ("Content")
+  #               was equal to the peg "Content"
 
   # still, the returned array is empty because there were no captures.
 
