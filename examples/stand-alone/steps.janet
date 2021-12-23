@@ -91,8 +91,7 @@
   # => @[]
 
   # in this case, the first argument is a substring of the second
-  # argument and matching succeeds.  (this is referred to as an
-  # "anchored match" in other contexts.)
+  # argument and matching succeeds.
 
   #   peg: "Content"
   #   str: "Content-Type:"
@@ -113,7 +112,6 @@
 
   # the peg is not a string in this case, but rather a tuple:
 
-  #   str: "Content-Type:"
   #   peg: (capture "Content-Type:)
 
   # ~ is used to prevent the tuple from being interpreted as a "call".
@@ -149,8 +147,8 @@
   # "string to match", only occured up through the end of the word
   # "Content":
 
-  #   str: "Content-Type:"
   #   peg: "Content"
+  #   str: "Content-Type:"
   #               ^
   #               |
   #               "advanced" up through this position
