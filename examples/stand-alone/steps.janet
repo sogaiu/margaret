@@ -655,9 +655,9 @@
     #
     (->> (string "Content-Type: text/plain\r\n"
                  "Content-Length: 1024\r\n")
-         (peg/match ~{:main (cmt (some :header-line)
-                                 ,(fn [& captures]
-                                    (table ;captures)))
+         (peg/match ~{:main (replace (some :header-line)
+                                     ,(fn [& captures]
+                                        (table ;captures)))
                       :header-line (sequence (capture :header-name) ":"
                                              :s+
                                              (capture :header-value) :crlf)
@@ -679,9 +679,9 @@
   (defn parse-header-from-buffer
     [lines-as-buffer]
     (def header-peg
-      (peg/compile ~{:main (cmt (some :header-line)
-                                ,(fn [& captures]
-                                   (table ;captures)))
+      (peg/compile ~{:main (replace (some :header-line)
+                                    ,(fn [& captures]
+                                       (table ;captures)))
                      :header-line (sequence (capture :header-name) ":"
                                             :s+
                                             (capture :header-value) :crlf)
