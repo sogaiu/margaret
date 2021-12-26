@@ -662,7 +662,7 @@
                                              :s+
                                              (capture :header-value) :crlf)
                       :header-name (to ":")
-                      :header-value (to "\r\n")
+                      :header-value (to :crlf)
                       :crlf "\r\n"})
          first)
     #
@@ -686,7 +686,7 @@
                                             :s+
                                             (capture :header-value) :crlf)
                      :header-name (to ":")
-                     :header-value (to "\r\n")
+                     :header-value (to :crlf)
                      :crlf "\r\n"}))
     #
     (->> lines-as-buffer
