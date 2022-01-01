@@ -18,18 +18,18 @@
 (comment
 
   (def grammar
-    ~{:main (* :tagged -1)
-      :tagged (unref (replace (* :open-tag :value :close-tag)
+    ~{:main (sequence :tagged -1)
+      :tagged (unref (replace (sequence :open-tag :value :close-tag)
                               ,struct))
-      :open-tag (* (constant :tag)
-                   "<"
-                   (capture :w+ :tag-name)
-                   ">")
-      :value (* (constant :value)
-                (group (any (+ :tagged :untagged))))
-      :close-tag (* "</"
-                    (backmatch :tag-name)
-                    ">")
+      :open-tag (sequence (constant :tag)
+                          "<"
+                          (capture :w+ :tag-name)
+                          ">")
+      :value (sequence (constant :value)
+                       (group (any (choice :tagged :untagged))))
+      :close-tag (sequence "</"
+                           (backmatch :tag-name)
+                           ">")
       :untagged (capture (any (if-not "<" 1)))})
 
   (peg/match grammar "<p>Hello</p>")
