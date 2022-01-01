@@ -12,13 +12,15 @@
                                     (capture 1)
                                     (capture 1)))
              "abc")
-  # => @["abc"]
+  # =>
+  @["abc"]
 
   (peg/match ~(accumulate (sequence (capture "a")
                                     (capture "b")
                                     (capture "c")))
              "abc")
-  # => @["abc"]
+  # =>
+  @["abc"]
 
   (peg/match ~(accumulate (sequence (capture "a")
                                     (position)
@@ -27,13 +29,15 @@
                                     (capture "c")
                                     (position)))
              "abc")
-  # => @["a1b2c3"]
+  # =>
+  @["a1b2c3"]
 
   (peg/match ~(% (sequence (capture "a")
                            (capture "b")
                            (capture "c")))
              "abc")
-  # => @["abc"]
+  # =>
+  @["abc"]
 
   (peg/match ~(% (sequence (capture "a")
                            (position)
@@ -42,6 +46,7 @@
                            (capture "c")
                            (position)))
              "abc")
-  # => @["a1b2c3"]
+  # =>
+  @["a1b2c3"]
 
   )

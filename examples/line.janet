@@ -8,17 +8,20 @@
 
   (peg/match ~(line)
              "a")
-  # => @[1]
+  # =>
+  @[1]
 
   (peg/match ~(sequence "a\n"
                         (line))
              "a\nb")
-  # => @[2]
+  # =>
+  @[2]
 
   (peg/match ~(sequence "a"
                         (line)
                         (capture "b"))
              "ab")
-  # => @[1 "b"]
+  # =>
+  @[1 "b"]
 
   )

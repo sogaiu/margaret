@@ -18,18 +18,21 @@
                           (error))
                "a\nb\nc")
     ([e] e))
-  # => "match error at line 3, column 2"
+  # =>
+  "match error at line 3, column 2"
 
   # error match failure
   (peg/match ~(error "ho")
              "")
-  # => nil
+  # =>
+  nil
 
   (try
     (peg/match ~(error (capture "a"))
                "a")
     ([e] e))
-  # => "a"
+  # =>
+  "a"
 
   (try
     (peg/match ~(sequence "a"
@@ -38,7 +41,8 @@
                "abc")
     ([err]
       err))
-  # => "c"
+  # =>
+  "c"
 
   (try
     (peg/match ~(choice "a"
@@ -47,7 +51,8 @@
                "c")
     ([err]
       err))
-  # => "match error at line 1, column 1"
+  # =>
+  "match error at line 1, column 1"
 
   (try
     (peg/match ~(choice "a"
@@ -56,6 +61,7 @@
                "c")
     ([err]
       :match-error))
-  # => :match-error
+  # =>
+  :match-error
 
   )

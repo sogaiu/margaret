@@ -13,33 +13,43 @@
 (comment
 
   (peg/match 0 "")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match 1 "")
-  # => nil
+  # =>
+  nil
 
   (peg/match 1 "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match 3 "cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match 2 "cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match 4 "cat")
-  # => nil
+  # =>
+  nil
 
   (peg/match -1 "")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match -2 "")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match -1 "cat")
-  # => nil
+  # =>
+  nil
 
   (peg/match -2 "o")
-  # => @[]
+  # =>
+  @[]
 
 )

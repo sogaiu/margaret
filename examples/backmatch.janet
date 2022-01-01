@@ -15,37 +15,43 @@
                         "b"
                         (capture (backmatch)))
              "aba")
-  # => @["a" "a"]
+  # =>
+  @["a" "a"]
 
   (peg/match ~(sequence (capture "a" :a)
                         (capture "b")
                         (capture (backmatch)))
              "abb")
-  # => @["a" "b" "b"]
+  # =>
+  @["a" "b" "b"]
 
   (peg/match ~(sequence (capture "a" :a)
                         (capture "b")
                         (capture (backmatch :a)))
              "aba")
-  # => @["a" "b" "a"]
+  # =>
+  @["a" "b" "a"]
 
   (peg/match ~(sequence (capture "a" :target)
                         (capture (some "b"))
                         (capture (backmatch :target)))
              "abbba")
-  # => @["a" "bbb" "a"]
+  # =>
+  @["a" "bbb" "a"]
 
   (peg/match ~(sequence (capture "a")
                         (capture (some "b"))
                         (capture (backmatch))) # referring to captured "b"s
              "abbba")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(sequence (capture "a")
                         (some "b")
                         (capture (backmatch))) # referring to captured "a"
              "abbba")
-  # => @["a" "a"]
+  # =>
+  @["a" "a"]
 
   (def backmatcher-1
     '(sequence (capture (any "x") :1)
@@ -54,21 +60,26 @@
                -1))
 
   (peg/match backmatcher-1 "y")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match backmatcher-1 "xyx")
-  # => @["x"]
+  # =>
+  @["x"]
 
   (peg/match backmatcher-1 "xxxxxxxyxxxxxxx")
-  # => @["xxxxxxx"]
+  # =>
+  @["xxxxxxx"]
 
   (peg/match backmatcher-1 "xyxx")
-  # => nil
+  # =>
+  nil
 
   (peg/match backmatcher-1
              (string "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy"))
-  # => nil
+  # =>
+  nil
 
   (def backmatcher-2
     '(sequence '(any "x")
@@ -77,31 +88,38 @@
                -1))
 
   (peg/match backmatcher-2 "y")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match backmatcher-2 "xyx")
-  # => @["x"]
+  # =>
+  @["x"]
 
   (peg/match backmatcher-2 "xxxxxxxyxxxxxxx")
-  # => @["xxxxxxx"]
+  # =>
+  @["xxxxxxx"]
 
   (peg/match backmatcher-2 "xyxx")
-  # => nil
+  # =>
+  nil
 
   (peg/match backmatcher-2
              (string "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy"))
-  # => nil
+  # =>
+  nil
 
   (peg/match backmatcher-2
              (string (string/repeat "x" 1000) "y"))
-  # => nil
+  # =>
+  nil
 
   (peg/match backmatcher-2
              (string (string/repeat "x" 1000)
                      "y"
                      (string/repeat "x" 1000)))
-  # => (array (string/repeat "x" 1000))
+  # =>
+  (array (string/repeat "x" 1000))
 
   (def longstring-2
     '(sequence (capture (any "`"))
@@ -110,24 +128,31 @@
                -1))
 
   (peg/match longstring-2 "`john")
-  # => nil
+  # =>
+  nil
 
   (peg/match longstring-2 "abc")
-  # => nil
+  # =>
+  nil
 
   (peg/match longstring-2 "` `")
-  # => @["`"]
+  # =>
+  @["`"]
 
   (peg/match longstring-2 "`  `")
-  # => @["`"]
+  # =>
+  @["`"]
 
   (peg/match longstring-2 "``  ``")
-  # => @["``"]
+  # =>
+  @["``"]
 
   (peg/match longstring-2 "``` `` ```")
-  # => @["```"]
+  # =>
+  @["```"]
 
   (peg/match longstring-2 "``  ```")
-  # =>  nil
+  # =>
+  nil
 
   )

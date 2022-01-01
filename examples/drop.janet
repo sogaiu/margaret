@@ -8,12 +8,14 @@
 
   (peg/match ~(drop (capture 1))
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence (drop (cmt (capture 3)
                                    ,scan-number))
                         (capture (any 1)))
              "-1.89")
-  # => @["89"]
+  # =>
+  @["89"]
 
   )

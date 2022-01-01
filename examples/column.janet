@@ -8,27 +8,32 @@
 
   (peg/match ~(column)
              "a")
-  # => @[1]
+  # =>
+  @[1]
 
   (peg/match ~(sequence "a"
                         (column))
              "ab")
-  # => @[2]
+  # =>
+  @[2]
 
   (peg/match ~(sequence "a\n"
                         (column))
              "a\nb")
-  # => @[1]
+  # =>
+  @[1]
 
   (peg/match ~(sequence "a\nb"
                         (column))
              "a\nb")
-  # => @[2]
+  # =>
+  @[2]
 
   (peg/match ~(sequence "ab"
                         (column)
                         (capture "c"))
              "abc")
-  # => @[3 "c"]
+  # =>
+  @[3 "c"]
 
   )

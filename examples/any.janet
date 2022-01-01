@@ -9,16 +9,19 @@
   # any with empty string
   (peg/match ~(any "a")
              "")
-  # => @[]
+  # =>
+  @[]
 
   # any
   (peg/match ~(any "a")
              "aa")
-  # => @[]
+  # =>
+  @[]
 
   # any with capture
   (peg/match ~(capture (any "a"))
              "aa")
-  # => @["aa"]
+  # =>
+  @["aa"]
 
 )

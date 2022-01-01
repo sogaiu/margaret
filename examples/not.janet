@@ -11,14 +11,17 @@
 (comment
 
   (peg/match ~(not "cat") "dog")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence (not "cat")
                         (set "dgo"))
              "dog")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(! "cat") "dog")
-  # => @[]
+  # =>
+  @[]
 
   )

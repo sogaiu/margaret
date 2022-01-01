@@ -11,60 +11,69 @@
 (comment
 
   (peg/match ~(sequence) "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence "a" "b" "c")
              "abc")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence "a" "b" "c")
              "abcd")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence "a" "b" "c")
              "abx")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(sequence (capture 1 :a)
                         (capture 1)
                         (capture 1 :c))
              "abc")
-  # => @["a" "b" "c"]
+  # =>
+  @["a" "b" "c"]
 
   (peg/match ~(* "a" "b" "c")
              "abc")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match
     ~(sequence (capture "a"))
     "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
-  (deep=
-    (peg/match
-      ~(capture "a")
-      "a")
-    (peg/match
-      ~(sequence (capture "a"))
-      "a")) # => true
+  (peg/match
+    ~(capture "a")
+    "a")
+  # =>
+  (peg/match
+    ~(sequence (capture "a"))
+    "a")
 
   (peg/match
     ~(sequence (capture (choice "a" "b")))
     "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match
     ~(capture (+ "GET" "POST" "PATCH" "DELETE"))
     "PATCH")
-  # => @["PATCH"]
+  # =>
+  @["PATCH"]
 
   # thanks pepe
-  (deep=
-    (peg/match
-      ~(capture (choice "GET" "POST" "PATCH" "DELETE"))
-      "PATCH")
-    (peg/match
-      ~(sequence (capture (choice "GET" "POST" "PATCH" "DELETE")))
-      "PATCH")) # => true
+  (peg/match
+    ~(capture (choice "GET" "POST" "PATCH" "DELETE"))
+    "PATCH")
+  # =>
+  (peg/match
+    ~(sequence (capture (choice "GET" "POST" "PATCH" "DELETE")))
+    "PATCH")
 
   )

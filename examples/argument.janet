@@ -11,16 +11,19 @@
              "abc"
              0
              :smile)
-  # => @[:smile]
+  # =>
+  @[:smile]
 
   (peg/match ~(argument 0) "whatever"
              0
              :zero :one :two)
-  # => @[:zero]
+  # =>
+  @[:zero]
 
   (peg/match ~(argument 2) "whatever"
              0
              :zero :one :two)
-  # => @[:two]
+  # =>
+  @[:two]
 
   )

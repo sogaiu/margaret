@@ -7,10 +7,12 @@
 (comment
 
   (peg/match ~(at-most 3 "z") "zz")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence (at-most 3 "z") "z")
              "zzz")
-  # => nil
+  # =>
+  nil
 
 )

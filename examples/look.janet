@@ -15,39 +15,47 @@
 
   (peg/match ~(look 3 "cat")
              "my cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(look 3 (capture "cat"))
              "my cat")
-  # => @["cat"]
+  # =>
+  @["cat"]
 
   (peg/match ~(look -4 (capture "cat"))
              "my cat")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(sequence (look 3 "cat")
                         "my")
              "my cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence "my"
                         (look -2 "my")
                         " "
                         (capture "cat"))
              "my cat")
-  # => @["cat"]
+  # =>
+  @["cat"]
 
   (peg/match ~(capture (look 3 "cat"))
              "my cat")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match ~(> 3 "cat")
              "my cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence (> 3 "cat")
                         "my")
              "my cat")
-  # => @[]
+  # =>
+  @[]
 
   )

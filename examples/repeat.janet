@@ -10,18 +10,22 @@
 
   (peg/match ~(repeat 3 "m")
              "mmm")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(repeat 2 "m")
              "m")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(3 "m")
              "mmm")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(2 "m")
              "m")
-  # => nil
+  # =>
+  nil
 
 )

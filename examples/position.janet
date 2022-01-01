@@ -9,35 +9,46 @@
 (comment
 
   (peg/match ~(position) "a")
-  # => @[0]
+  # =>
+  @[0]
 
   (peg/match ~(sequence "a"
                         (position))
              "ab")
-  # => @[1]
+  # =>
+  @[1]
 
   (peg/match ~(sequence (capture "w")
                         (position :p)
                         (backref :p))
              "whatever")
-  # => @["w" 1 1]
+  # =>
+  @["w" 1 1]
 
   (peg/match ~($) "a")
-  # => @[0]
+  # =>
+  @[0]
 
   (peg/match ~(sequence "a"
                         ($))
              "ab")
-  # => @[1]
+  # =>
+  @[1]
 
-  (let [rand-int (math/rng-int (math/rng (os/cryptorand 3)) 80)
-        a-buf (buffer/new-filled rand-int 66)]
-    (= rand-int
-       (- (- ;(peg/match ~(sequence (position)
-                                    (some 1)
-                                    -1
-                                    (position))
-                         a-buf)))))
-  # => true
+  (def rand-int
+    (-> (os/cryptorand 3)
+        math/rng
+        (math/rng-int 90)))
+
+  (def a-buf
+    (buffer/new-filled rand-int 66))
+
+  rand-int
+  # =>
+  (- (- ;(peg/match ~(sequence (position)
+                               (some 1)
+                               -1
+                               (position))
+                    a-buf)))
 
   )

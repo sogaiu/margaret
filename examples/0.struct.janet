@@ -17,12 +17,14 @@
 (comment
 
   (peg/match '{:main 1} "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match '{:main :fun
                :fun 1}
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (def my-grammar
     '{:a (* "a" :b "a")
@@ -46,14 +48,17 @@
 
   # simplest match
   (peg/match my-grammar-alt "(bb)")
-  # => @[]
+  # =>
+  @[]
 
   # next simplest match
   (peg/match my-grammar-alt "(babbab)")
-  # => @[]
+  # =>
+  @[]
 
   # non-match
   (peg/match my-grammar-alt "(baab)")
-  # => nil
+  # =>
+  nil
 
 )

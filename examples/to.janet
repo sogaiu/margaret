@@ -11,24 +11,30 @@
 
   (peg/match ~(to "\n")
              "this is a nice line\n")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence (to "\n")
                         "\n")
              "this is a nice line\n")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(capture (to -1)) "foo")
-  # => @["foo"]
+  # =>
+  @["foo"]
 
   # issue #640 in janet
   (peg/match '(to -1) "aaaa")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ''(to -1) "aaaa")
-  # => @["aaaa"]
+  # =>
+  @["aaaa"]
 
   (peg/match '(to "b") "aaaa")
-  # => nil
+  # =>
+  nil
 
   )

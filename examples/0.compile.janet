@@ -3,28 +3,33 @@
 (comment
 
   (type (peg/compile ~(capture 1)))
-  # => :function
+  # =>
+  :function
 
   (peg/match
     (peg/compile ~(capture 1))
     "xy"
     0)
-  # => @["x"]
+  # =>
+  @["x"]
 
   (type (comptime (peg/compile ~(capture 1))))
-  # => :function
+  # =>
+  :function
 
   (peg/match
     (comptime
       (peg/compile ~(capture 1)))
     "xy"
     0)
-  # => @["x"]
+  # =>
+  @["x"]
 
   (try
     (let [compiled-peg (peg/compile ~(capture 1))]
       (peg/match compiled-peg "xy" -4))
     ([e] e))
-  # => "start argument out of range"
+  # =>
+  "start argument out of range"
 
 )

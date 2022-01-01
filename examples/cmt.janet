@@ -15,19 +15,22 @@
                    ,(fn [cap]
                       (= cap "a")))
              "a")
-  # => @[true]
+  # =>
+  @[true]
 
   (peg/match ~(cmt (capture 1)
                    ,(fn [cap]
                       (= cap "a")))
              "b")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(cmt (capture "hello")
                    ,(fn [cap]
                       (string cap "!")))
              "hello")
-  # => @["hello!"]
+  # =>
+  @["hello!"]
 
   (peg/match ~(cmt (sequence (capture "hello")
                              (some (set " ,"))
@@ -35,7 +38,8 @@
                    ,(fn [cap1 cap2]
                       (string cap2 ": yes, " cap1 "!")))
              "hello, world")
-  # => @["world: yes, hello!"]
+  # =>
+  @["world: yes, hello!"]
 
   (peg/match ~{:main :pair
                :pair (sequence (cmt (capture :key)
@@ -48,7 +52,8 @@
                :value (any (sequence (not "&")
                                      1))}
              "name=tao")
-  # => @["name" "tao"]
+  # =>
+  @["name" "tao"]
 
   )
 

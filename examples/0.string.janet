@@ -7,18 +7,23 @@
 (comment
 
   (peg/match "cat" "cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match "cat" "cat1")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match "" "")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match "" "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match "cat" "dog")
-  # => nil
+  # =>
+  nil
 
 )

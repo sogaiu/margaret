@@ -8,15 +8,18 @@
 
   (peg/match ~(constant "smile")
              "whatever")
-  # => @["smile"]
+  # =>
+  @["smile"]
 
   (peg/match ~(constant {:fun :value})
              "whatever")
-  # => @[{:fun :value}]
+  # =>
+  @[{:fun :value}]
 
   (peg/match ~(sequence (constant :relax)
                         (position))
              "whatever")
-  # => @[:relax 0]
+  # =>
+  @[:relax 0]
 
   )

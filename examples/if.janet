@@ -10,14 +10,17 @@
 
   (peg/match ~(if 1 "a")
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(if 5 (set "eilms"))
              "smile")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(if 5 (set "eilms"))
              "wink")
-  # => nil
+  # =>
+  nil
 
   )

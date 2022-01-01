@@ -9,16 +9,19 @@
   # some with empty string
   (peg/match ~(some "a")
              "")
-  # => nil
+  # =>
+  nil
 
   # some
   (peg/match ~(some "a")
              "aa")
-  # => @[]
+  # =>
+  @[]
 
   # some with capture
   (peg/match ~(capture (some "a"))
              "aa")
-  # => @["aa"]
+  # =>
+  @["aa"]
 
 )

@@ -19,12 +19,15 @@
        -1))
 
   (peg/match lenprefix-peg "5:abcde")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match lenprefix-peg "5:abcdef")
-  # => nil
+  # =>
+  nil
 
   (peg/match lenprefix-peg "5:abcd")
-  # => nil
+  # =>
+  nil
 
 )

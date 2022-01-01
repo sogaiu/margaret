@@ -19,50 +19,59 @@
   (peg/match ~(replace (capture "cat")
                        {"cat" "tiger"})
              "cat")
-  # => @["tiger"]
+  # =>
+  @["tiger"]
 
   (peg/match ~(replace (capture "cat")
                        ,(fn [original]
                           (string original "alog")))
              "cat")
-  # => @["catalog"]
+  # =>
+  @["catalog"]
 
   (peg/match ~(replace (sequence (capture "ca")
                                  (capture "t"))
                        ,(fn [one two]
                           (string one two "alog")))
              "cat")
-  # => @["catalog"]
+  # =>
+  @["catalog"]
 
   (peg/match ~(replace (capture "cat")
                        "dog")
              "cat")
-  # => @["dog"]
+  # =>
+  @["dog"]
 
   (peg/match ~(replace (capture "cat")
                        :hi)
              "cat")
-  # => @[:hi]
+  # =>
+  @[:hi]
 
   (peg/match ~(capture (replace (capture "cat")
                                 :hi))
              "cat")
-  # => @[:hi "cat"]
+  # =>
+  @[:hi "cat"]
 
   (peg/match ~(/ (capture "cat")
                  {"cat" "tiger"})
              "cat")
-  # => @["tiger"]
+  # =>
+  @["tiger"]
 
   (peg/match ~(/ (capture "cat")
                  ,(fn [original]
                     (string original "alog")))
              "cat")
-  # => @["catalog"]
+  # =>
+  @["catalog"]
 
   (peg/match ~(/ (capture "cat")
                  "dog")
              "cat")
-  # => @["dog"]
+  # =>
+  @["dog"]
 
   )

@@ -12,33 +12,41 @@
 (comment
 
   (peg/match ~(choice) "")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(choice) "a")
-  # => nil
-  
+  # =>
+  nil
+
   (peg/match ~(choice 1)
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(choice (capture 1))
              "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~(choice "a" "b")
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(choice "a" "b")
              "b")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(choice "a" "b")
              "c")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(+ "a" "b")
              "a")
-  # => @[]
+  # =>
+  @[]
 
   )

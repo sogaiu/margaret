@@ -32,27 +32,21 @@
                     ">")
       :untagged (capture (any (if-not "<" 1)))})
 
-  (deep=
-    (peg/match grammar "<p>Hello</p>")
-    #
-    @[{:tag "p"
-       :value @["Hello"]}]
-    ) # => true
+  (peg/match grammar "<p>Hello</p>")
+  # =>
+  @[{:tag "p"
+     :value @["Hello"]}]
 
-  (deep=
-    (peg/match grammar "<p><p>Hello</p></p>")
-    #
-    @[{:tag "p"
-       :value @[{:tag "p"
-                 :value @["Hello"]}]}]
-    ) # => true
+  (peg/match grammar "<p><p>Hello</p></p>")
+  # =>
+  @[{:tag "p"
+     :value @[{:tag "p"
+               :value @["Hello"]}]}]
 
-  (deep=
-    (peg/match grammar "<p><em>Hello</em></p>")
-    #
-    @[{:tag "p"
-       :value @[{:tag "em"
-                 :value @["Hello"]}]}]
-    ) # => true
+  (peg/match grammar "<p><em>Hello</em></p>")
+  # =>
+  @[{:tag "p"
+     :value @[{:tag "em"
+               :value @["Hello"]}]}]
 
 )

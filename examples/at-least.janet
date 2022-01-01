@@ -8,10 +8,12 @@
 
   (peg/match ~(at-least 3 "z")
              "zz")
-  # => nil
+  # =>
+  nil
 
   (peg/match ~(at-least 3 "z")
              "zzz")
-  # => @[]
+  # =>
+  @[]
 
 )

@@ -10,10 +10,12 @@
 
   (peg/match ~(if-not 2 "a")
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(if-not 5 (set "iknw"))
              "wink")
-  # => @[]
+  # =>
+  @[]
 
   )

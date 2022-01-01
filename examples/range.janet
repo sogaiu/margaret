@@ -8,25 +8,30 @@
 
   (peg/match ~(range "aa")
              "a")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(capture (range "az"))
              "c")
-  # => @["c"]
+  # =>
+  @["c"]
 
   (peg/match ~(capture (range "az" "AZ"))
              "J")
-  # => @["J"]
+  # =>
+  @["J"]
 
   (peg/match ~(capture (range "09"))
              "123")
-  # => @["1"]
+  # =>
+  @["1"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")]
     (peg/match ~(range "ac" "xz")
                text))
-  # => @[]
+  # =>
+  @[]
 
   )

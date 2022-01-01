@@ -8,18 +8,22 @@
 
   (peg/match ~(set "act")
              "cat")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(set "act!")
              "cat!")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(set "bo")
              "bob")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(capture (set "act"))
              "cat")
-  # => @["c"]
+  # =>
+  @["c"]
 
   )

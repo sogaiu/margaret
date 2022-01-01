@@ -16,27 +16,34 @@
 (comment
 
   (peg/match '(capture 1) "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~(capture "a") "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match '(capture 1 :a) "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~(capture 2) "hi")
-  # => @["hi"]
+  # =>
+  @["hi"]
 
   (peg/match ~(capture -1) "")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match ~(sequence (capture :d+ :a)
                         (backref :a))
              "78")
-  # => @["78" "78"]
+  # =>
+  @["78" "78"]
 
   (peg/match ~(capture (range "ac")) "b")
-  # => @["b"]
+  # =>
+  @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
@@ -45,22 +52,28 @@
                          text)]
     (or (= cap "b")
         (= cap "y")))
-  # => true
+  # =>
+  true
 
   (peg/match ~(capture (set "cat")) "cat")
-  # => @["c"]
+  # =>
+  @["c"]
 
   (peg/match ~(<- "a") "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~(<- 2) "hi")
-  # => @["hi"]
+  # =>
+  @["hi"]
 
   (peg/match ~(<- -1) "")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match ~(<- (range "ac")) "b")
-  # => @["b"]
+  # =>
+  @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
@@ -69,34 +82,44 @@
                          text)]
     (or (= cap "b")
         (= cap "y")))
-  # => true
+  # =>
+  true
 
   (peg/match ~(<- (set "cat")) "cat")
-  # => @["c"]
+  # =>
+  @["c"]
 
   (peg/match ~(quote "a") "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~'"a" "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match ~(quote 2) "hi")
-  # => @["hi"]
+  # =>
+  @["hi"]
 
   (peg/match ~'2 "hi")
-  # => @["hi"]
+  # =>
+  @["hi"]
 
   (peg/match ~(quote -1) "")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match ~'-1 "")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match ~(quote (range "ac")) "b")
-  # => @["b"]
+  # =>
+  @["b"]
 
   (peg/match ~'(range "ac") "b")
-  # => @["b"]
+  # =>
+  @["b"]
 
   (let [text (if (< (math/random) 0.5)
                "b"
@@ -105,7 +128,8 @@
                          text)]
     (or (= cap "b")
         (= cap "y")))
-  # => true
+  # =>
+  true
 
   (let [text (if (< (math/random) 0.5)
                "b"
@@ -114,12 +138,15 @@
                          text)]
     (or (= cap "b")
         (= cap "y")))
-  # => true
+  # =>
+  true
 
   (peg/match ~(quote (set "cat")) "cat")
-  # => @["c"]
+  # =>
+  @["c"]
 
   (peg/match ~'(set "cat") "cat")
-  # => @["c"]
+  # =>
+  @["c"]
 
   )
