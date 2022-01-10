@@ -38,7 +38,8 @@
   (def rand-int
     (-> (os/cryptorand 3)
         math/rng
-        (math/rng-int 90)))
+        (math/rng-int 90)
+        inc))
 
   (def a-buf
     (buffer/new-filled rand-int 66))
