@@ -79,9 +79,9 @@ There are currently tests for:
 
 * link:margaret/meg.janet[margaret's `meg` module]
 
-* link:examples/stand-alone/tutorial.janet[`peg` module tutorial]
+* link:tutorials/tutorial.janet[`peg` module tutorial]
 
-* link:examples/stand-alone/article.janet[modified code from bakpakin's article]
+* link:tutorials/article.janet[modified code from bakpakin's article]
 
 Some of the tests were adapted / copied from Janet's tests.
 
