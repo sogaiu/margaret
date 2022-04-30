@@ -48,5 +48,18 @@
   # =>
   nil
 
+  # https://github.com/janet-lang/janet/issues/971
+  (peg/match
+    '{:dd (sequence :d :d)
+      :sep (set "/-")
+      :date (sequence :dd :sep :dd)
+      :wsep (some (set " \t"))
+      :entry (group (sequence (capture :date) :wsep (capture :date)))
+      :main (some (thru :entry))}
+    "1800-10-818-9-818 16/12\n17/12 19/12\n20/12 11/01")
+  # =>
+  @[@["17/12" "19/12"]
+    @["20/12" "11/01"]]
+
   )
 
