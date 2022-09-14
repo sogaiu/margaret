@@ -391,11 +391,14 @@
                                      (string op)))
               (def patt-a (first tail))
               (def patt-b (in tail 1))
+              (def cs (cap_save))
               (def res-idx (peg-match* patt-a text grammar))
               (def ret
                 (if res-idx
                   nil
-                  (peg-match* patt-b text grammar)))
+                  (do
+                    (cap_load cs)
+                    (peg-match* patt-b text grammar))))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_NOT
@@ -407,11 +410,14 @@
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
               (def patt (first tail))
+              (def cs (cap_save))
               (def res-idx (peg-match* patt text grammar))
               (def ret
                 (if res-idx
                   nil
-                  0))
+                  (do
+                    (cap_load cs)
+                    0)))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_THRU

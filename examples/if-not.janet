@@ -18,5 +18,17 @@
   # =>
   @[]
 
+  # https://github.com/janet-lang/janet/issues/1026
+  (peg/match ~(if-not (sequence (constant 7) "a") "hello")
+             "hello")
+  # =>
+  @[]
+
+  # https://github.com/janet-lang/janet/issues/1026
+  (peg/match ~(if-not (drop (sequence (constant 7) "a")) "hello")
+             "hello")
+  # =>
+  @[]
+
   )
 
