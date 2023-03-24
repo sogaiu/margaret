@@ -1,42 +1,43 @@
 # Primitive Patterns
-#   String Patterns
 #   Integer Patterns
 #   Range Patterns
 #   Set Patterns
+#   String Patterns
 # Combining Patterns
-#   `choice` aka `+`
-#   `sequence` aka `*`
 #   `any`
-#   `some`
-#   `between` aka `opt` or `?`
 #   `at-least`
 #   `at-most`
-#   `repeat` aka `n` (actual number)
+#   `backmatch`
+#   `between` aka `opt` or `?`
+#   `choice` aka `+`
 #   `if`
 #   `if-not`
-#   `not` aka `!`
 #   `look` aka `>`
-#   `to`
+#   `not` aka `!`
+#   `repeat` aka `n` (actual number)
+#   `sequence` aka `*`
+#   `some`
 #   `thru`
-#   `backmatch`
+#   `to`
 #   `unref`
 # Captures
-#   `capture` aka `<-` or `quote`
-#   `group`
-#   `replace` aka `/`
-#   `constant`
-#   `argument`
-#   `position` aka `$`
-#   `line`
-#   `column`
 #   `accumulate` aka `%`
-#   `cmt`
+#   `argument`
 #   `backref` aka `->`
-#   `error`
+#   `capture` aka `<-` or `quote`
+#   `cmt`
+#   `column`
+#   `constant`
 #   `drop`
-#   `lenprefix`
+#   `error`
+#   `group`
 #   `int`
 #   `int-be`
+#   `lenprefix`
+#   `line`
+#   `number`
+#   `position` aka `$`
+#   `replace` aka `/`
 #   `uint`
 #   `uint-be`
 
