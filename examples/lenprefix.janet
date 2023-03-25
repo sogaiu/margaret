@@ -9,6 +9,35 @@
 
 (comment
 
+  (peg/match ~(sequence (number :d nil :tag)
+                        (capture (lenprefix (backref :tag)
+                                            1)))
+             "3abc")
+  # =>
+  @[3 "abc"]
+
+  (peg/match ~(replace (sequence (number :d 10 :tag)
+                                 (capture (lenprefix (backref :tag)
+                                                     1)))
+                       ,(fn [num cap]
+                          cap))
+             "3abc")
+  # =>
+  @["abc"]
+
+  (peg/match ~(lenprefix
+                (replace (sequence (capture (any (if-not ":" 1)))
+                                   ":")
+                         ,scan-number)
+                1)
+             "8:abcdefgh")
+  # =>
+  @[]
+
+  )
+
+(comment
+
   (def lenprefix-peg
     ~(sequence
        (lenprefix

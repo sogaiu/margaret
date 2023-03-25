@@ -17,6 +17,21 @@
 
 (comment
 
+  # try removing the unref to see what happens
+  (peg/match ~{:main (sequence :thing -1)
+               :thing (choice (unref (sequence :open :thing :close))
+                              (capture (any (if-not "[" 1))))
+               :open (capture (sequence "[" (some "_") "]")
+                              :delim)
+               :close (capture (backmatch :delim))}
+             "[__][_]a[_][__]")
+  # =>
+  @["[__]" "[_]" "a" "[_]" "[__]"]
+
+  )
+
+(comment
+
   (def grammar
     ~{:main (sequence :tagged -1)
       :tagged (unref (replace (sequence :open-tag :value :close-tag)
