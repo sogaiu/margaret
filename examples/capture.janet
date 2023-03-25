@@ -23,7 +23,7 @@
   # =>
   @["a"]
 
-  (peg/match '(capture 1 :a) "a")
+  (peg/match ~(<- "a") "a")
   # =>
   @["a"]
 
@@ -31,9 +31,21 @@
   # =>
   @["hi"]
 
+  (peg/match ~(quote 2) "hi")
+  # =>
+  @["hi"]
+
+  (peg/match ~'2 "hi")
+  # =>
+  @["hi"]
+
   (peg/match ~(capture -1) "")
   # =>
   @[""]
+
+  (peg/match '(capture 1 :a) "a")
+  # =>
+  @["a"]
 
   (peg/match ~(sequence (capture :d+ :a)
                         (backref :a))
@@ -44,6 +56,10 @@
   (peg/match ~(capture (range "ac")) "b")
   # =>
   @["b"]
+
+  )
+
+(comment
 
   (let [text (if (< (math/random) 0.5)
                "b"
@@ -58,10 +74,6 @@
   (peg/match ~(capture (set "cat")) "cat")
   # =>
   @["c"]
-
-  (peg/match ~(<- "a") "a")
-  # =>
-  @["a"]
 
   (peg/match ~(<- 2) "hi")
   # =>
@@ -96,14 +108,6 @@
   (peg/match ~'"a" "a")
   # =>
   @["a"]
-
-  (peg/match ~(quote 2) "hi")
-  # =>
-  @["hi"]
-
-  (peg/match ~'2 "hi")
-  # =>
-  @["hi"]
 
   (peg/match ~(quote -1) "")
   # =>

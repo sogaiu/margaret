@@ -22,6 +22,12 @@
   # =>
   @["tiger"]
 
+  (peg/match ~(/ (capture "cat")
+                 {"cat" "tiger"})
+             "cat")
+  # =>
+  @["tiger"]
+
   (peg/match ~(replace (capture "cat")
                        ,(fn [original]
                           (string original "alog")))
@@ -37,8 +43,25 @@
   # =>
   @["catalog"]
 
+  )
+
+(comment
+
   (peg/match ~(replace (capture "cat")
                        "dog")
+             "cat")
+  # =>
+  @["dog"]
+
+  (peg/match ~(/ (capture "cat")
+                 ,(fn [original]
+                    (string original "alog")))
+             "cat")
+  # =>
+  @["catalog"]
+
+  (peg/match ~(/ (capture "cat")
+                 "dog")
              "cat")
   # =>
   @["dog"]
@@ -54,25 +77,6 @@
              "cat")
   # =>
   @[:hi "cat"]
-
-  (peg/match ~(/ (capture "cat")
-                 {"cat" "tiger"})
-             "cat")
-  # =>
-  @["tiger"]
-
-  (peg/match ~(/ (capture "cat")
-                 ,(fn [original]
-                    (string original "alog")))
-             "cat")
-  # =>
-  @["catalog"]
-
-  (peg/match ~(/ (capture "cat")
-                 "dog")
-             "cat")
-  # =>
-  @["dog"]
 
   )
 

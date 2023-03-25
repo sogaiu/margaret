@@ -24,6 +24,10 @@
   # =>
   @["foo"]
 
+  )
+
+(comment
+  
   # issue #640 in janet
   (peg/match '(to -1) "aaaa")
   # =>

@@ -35,6 +35,10 @@
   # =>
   nil
 
+  )
+
+(comment
+
   # issue #640 in janet
   (peg/match '(thru -1) "aaaa")
   # =>

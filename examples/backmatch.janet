@@ -53,6 +53,10 @@
   # =>
   @["a" "a"]
 
+  )
+
+(comment
+
   (def backmatcher-1
     '(sequence (capture (any "x") :1)
                "y"

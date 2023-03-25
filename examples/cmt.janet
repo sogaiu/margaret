@@ -41,6 +41,10 @@
   # =>
   @["world: yes, hello!"]
 
+  )
+
+(comment
+
   (peg/match ~{:main :pair
                :pair (sequence (cmt (capture :key)
                                     ,identity)

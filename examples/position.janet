@@ -35,6 +35,10 @@
   # =>
   @[1]
 
+  )
+
+(comment
+
   (def rand-int
     (-> (os/cryptorand 3)
         math/rng

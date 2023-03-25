@@ -22,6 +22,10 @@
   # =>
   @[171]
 
+  (peg/match ~(number :w+ 8) "10")
+  # =>
+  @[8]
+
   (peg/match '(number (sequence (some (choice :d "_"))))
              "60_000 ganges rivers")
   # =>
@@ -40,6 +44,10 @@
              "28")
   # =>
   @[28 28]
+
+  )
+
+(comment
 
   (let [chunked
         (string "4\r\n"

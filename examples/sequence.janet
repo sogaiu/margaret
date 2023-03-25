@@ -19,6 +19,11 @@
   # =>
   @[]
 
+  (peg/match ~(* "a" "b" "c")
+             "abc")
+  # =>
+  @[]
+
   (peg/match ~(sequence "a" "b" "c")
              "abcd")
   # =>
@@ -36,10 +41,9 @@
   # =>
   @["a" "b" "c"]
 
-  (peg/match ~(* "a" "b" "c")
-             "abc")
-  # =>
-  @[]
+  )
+
+(comment
 
   (peg/match
     ~(sequence (capture "a"))

@@ -26,6 +26,18 @@
   # =>
   @[]
 
+  (peg/match ~{:main (some :fun)
+               :fun (choice :play :relax)
+               :play "1"
+               :relax "0"}
+             "0110111001")
+  # =>
+  @[]
+
+  )
+
+(comment
+
   (def my-grammar
     '{:a (* "a" :b "a")
       :b (* "b" (+ :a 0) "b")
@@ -60,6 +72,12 @@
   (peg/match my-grammar-alt "(baab)")
   # =>
   nil
+
+  (all |(deep= (peg/match my-grammar $)
+               (peg/match my-grammar-alt $))
+       ["(bb)" "(babbab)" "(baab)"])
+  # =>
+  true
 
   )
 
