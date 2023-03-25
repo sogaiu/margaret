@@ -3,6 +3,7 @@
 #   Range Patterns
 #   Set Patterns
 #   String Patterns
+#
 # Combining Patterns
 #   `any`
 #   `at-least`
@@ -20,6 +21,7 @@
 #   `thru`
 #   `to`
 #   `unref`
+#
 # Captures
 #   `accumulate` aka `%`
 #   `argument`
