@@ -4,7 +4,7 @@
 
 # Tries to match `patt` only if `cond` matches as well.
 
-# `cond` will not produce any captures. [*]
+# `cond` will not produce any captures.
 
 (comment
 
