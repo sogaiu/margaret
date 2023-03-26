@@ -44,6 +44,28 @@
 #   uint
 #   uint-be
 #
+# Built-ins
+#   :a                     =  (range "az" "AZ")
+#   :d                     =  (range "09")
+#   :h                     =  (range "09" "af" "AF")
+#   :s                     =  (set " \t\r\n\0\f\v")
+#   :w                     =  (range "az" "AZ" "09")
+#   :a*                    =  (any :a)
+#   :d*                    =  (any :d)
+#   :h*                    =  (any :h)
+#   :s*                    =  (any :s)
+#   :w*                    =  (any :w)
+#   :a+                    =  (some :a)
+#   :d+                    =  (some :d)
+#   :h+                    =  (some :h)
+#   :s+                    =  (some :s)
+#   :w+                    =  (some :w)
+#   :A                     =  (if-not :a 1)
+#   :D                     =  (if-not :d 1)
+#   :H                     =  (if-not :h 1)
+#   :W                     =  (if-not :w 1)
+#   :S                     =  (if-not :s 1)
+#
 # Aliases
 #   (! patt)               =  (not patt)
 #   ($ ?tag)               =  (position ?tag)
