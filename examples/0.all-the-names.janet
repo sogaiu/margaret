@@ -63,8 +63,8 @@
 #   :A                     =  (if-not :a 1)
 #   :D                     =  (if-not :d 1)
 #   :H                     =  (if-not :h 1)
-#   :W                     =  (if-not :w 1)
 #   :S                     =  (if-not :s 1)
+#   :W                     =  (if-not :w 1)
 #
 # Aliases
 #   (! patt)               =  (not patt)
