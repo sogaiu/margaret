@@ -53,8 +53,6 @@
 #   (-> prev-tag ?tag)     =  (backref prev-tag ?tag)
 #   (/ patt subst ?tag)    =  (replace patt subst ?tag)
 #   (<- patt ?tag)         =  (capture patt ?tag)
-#   (<- patt ?tag)         =  (quote patt ?tag)
-#   (<- patt)              =  'patt
 #   (> offset patt)        =  (look offset patt)
 #   (? patt)               =  (between 0 1 patt)
 #   (1 patt)               =  (repeat 1 patt)
@@ -62,4 +60,6 @@
 #   (3 patt)               =  (repeat 3 patt)
 #   ...
 #   (opt patt)             =  (between 0 1 patt)
+#   (quote patt ?tag)      =  (capture patt ?tag)
+#   'patt                  =  (capture patt)
 #
