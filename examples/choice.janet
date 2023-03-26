@@ -1,13 +1,13 @@
 (import ../margaret/meg :as peg)
 
-# `(choice a b ...)`
+# `(choice patt-1 patt-2 ...)`
 
-# Tries to match a, then b, and so on.
+# Tries to match patt-1, then patt-2, and so on.
 
 # Will succeed on the first successful match, and fails if none of the
 # arguments match the text.
 
-# `(+ a b c ...)` is an alias for `(choice a b c ...)`
+# `(+ patt-1 patt-2 ...)` is an alias for `(choice patt-1 patt-2 ...)`
 
 (comment
 

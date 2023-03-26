@@ -1,12 +1,12 @@
 (import ../margaret/meg :as peg)
 
-# `(sequence a b c ...)`
+# `(sequence patt-1 patt-2 ...)`
 
-# Tries to match a, b, c and so on in sequence.
+# Tries to match patt-1, patt-2, and so on in sequence.
 
 # If any of these arguments fail to match the text, the whole pattern fails.
 
-# `(* a b c ...)` is an alias for `(sequence a b c ...)`
+# `(* patt-1 patt-2 ...)` is an alias for `(sequence patt-1 patt-2 ...)`
 
 (comment
 

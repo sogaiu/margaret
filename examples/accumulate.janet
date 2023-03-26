@@ -4,7 +4,7 @@
 
 # Capture a string that is the concatenation of all captures in `patt`.
 
-# `(% ?tag)` is an alias for `(accumulate ?tag)`
+# `(% patt ?tag)` is an alias for `(accumulate patt ?tag)`
 
 (comment
 
