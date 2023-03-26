@@ -45,11 +45,11 @@
 #   uint-be
 #
 # Built-ins
-#   :a                     =  (range "az" "AZ")
+#   :a                     =  (range "AZ" "az")
 #   :d                     =  (range "09")
-#   :h                     =  (range "09" "af" "AF")
-#   :s                     =  (set " \t\r\n\0\f\v")
-#   :w                     =  (range "az" "AZ" "09")
+#   :h                     =  (range "09" "AF" "af")
+#   :s                     =  (set " \0\f\n\r\t\v")
+#   :w                     =  (range "09" "AZ" "az")
 #   :a*                    =  (any :a)
 #   :d*                    =  (any :d)
 #   :h*                    =  (any :h)
