@@ -7,6 +7,8 @@
 # The error thrown will be the last capture of `patt`, or a generic error if
 # `patt` produces no captures or `patt` is not specified.
 
+# If `patt` does not match, no error will be thrown.
+
 (comment
 
   (try
