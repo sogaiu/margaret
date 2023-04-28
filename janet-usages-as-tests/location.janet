@@ -148,7 +148,8 @@
                        (set "!$%&*+-./:<?=>@^_"))
     #
     :constant ,(atom-node :constant
-                          '(choice "false" "nil" "true"))
+                          '(sequence (choice "false" "nil" "true")
+                                     (not :name-char)))
     #
     :buffer ,(atom-node :buffer
                         '(sequence `@"`
@@ -198,6 +199,18 @@
   (get (peg/match loc-grammar " ") 2)
   # =>
   '(:whitespace @{:bc 1 :bl 1 :ec 2 :el 1} " ")
+
+  (get (peg/match loc-grammar "true?") 2)
+  # =>
+  '(:symbol @{:bc 1 :bl 1 :ec 6 :el 1} "true?")
+
+  (get (peg/match loc-grammar "nil?") 2)
+  # =>
+  '(:symbol @{:bc 1 :bl 1 :ec 5 :el 1} "nil?")
+
+  (get (peg/match loc-grammar "false?") 2)
+  # =>
+  '(:symbol @{:bc 1 :bl 1 :ec 7 :el 1} "false?")
 
   (get (peg/match loc-grammar "# hi there") 2)
   # =>
