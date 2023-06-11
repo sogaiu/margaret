@@ -2,13 +2,15 @@
 
 # `<n>` -- where <n> is an integer
 
-# Matches a number of characters, and advances that many characters.
+# For n >= 0, try to matches n characters, and if successful, advance
+# that many characters.
 
-# If negative, matches if not that many characters and does not advance.
+# For n < 0, matches only if there aren't |n| characters, and do not
+# advance.
 
 # For example, -1 will match the end of a string because the length of
-# the empty string is 0, which is less than 1 (i.e. "not that many
-# characters").
+# the empty string is 0, which is less than 1 (i.e. |-1| = 1 and there
+# aren't that many characters).
 
 (comment
 
