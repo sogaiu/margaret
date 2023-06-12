@@ -1,6 +1,6 @@
 (import ../margaret/meg :as peg)
 
-# `(uint n ?patt)`
+# `(uint n ?tag)`
 
 # Captures `n` bytes interpreted as a little endian unsigned integer.
 
