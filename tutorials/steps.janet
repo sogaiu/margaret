@@ -338,7 +338,11 @@
     #
     (sort (keys default-peg-grammar))
     #
-    @[:A :D :H :S :W
+    @[:A :A* :A+
+      :D :D* :D+
+      :H :H* :H+
+      :S :S* :S+
+      :W :W* :W+
       :a :a* :a+
       :d :d* :d+
       :h :h* :h+
