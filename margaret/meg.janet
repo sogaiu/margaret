@@ -17,6 +17,11 @@
     #
     (def peg-table
       (case (type opeg)
+        :boolean
+        (if (true? opeg)
+          @{:main 0}
+          @{:main '(not 0)})
+        #
         :string
         @{:main opeg}
         #
@@ -187,6 +192,16 @@
       [peg text grammar]
       #
       (cond
+        # true / false
+        (boolean? peg)
+        (do
+          (log-entry "BOOLEAN" peg text grammar)
+          (def ret
+            (if (true? peg)
+              (peg-match* 0 text grammar)
+              (peg-match* '(not 0) text grammar)))
+          (log-exit "BOOLEAN" ret {:peg peg :text text})
+          ret)
         # keyword leads to a lookup in the grammar
         (keyword? peg)
         (do
