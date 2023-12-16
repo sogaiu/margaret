@@ -12,8 +12,7 @@ thing I knew...
 
 == Status
 
-All peg specials have implementations and tests, including the fix in
-Janet 1.25.0 for `if-not`.
+All peg specials have implementations and tests.
 
 == Why?
 
