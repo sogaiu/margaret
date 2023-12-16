@@ -2,7 +2,7 @@
 
 # `<n>` -- where <n> is an integer
 
-# For n >= 0, try to matches n characters, and if successful, advance
+# For n >= 0, try to match n characters, and if successful, advance
 # that many characters.
 
 # For n < 0, matches only if there aren't |n| characters, and do not
