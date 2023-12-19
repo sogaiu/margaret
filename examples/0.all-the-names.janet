@@ -1,5 +1,6 @@
 #
 # Primitive Patterns
+#   Boolean Patterns
 #   Integer Patterns
 #   Range Patterns
 #   Set Patterns
@@ -50,21 +51,31 @@
 #   :h                     =  (range "09" "AF" "af")
 #   :s                     =  (set " \0\f\n\r\t\v")
 #   :w                     =  (range "09" "AZ" "az")
-#   :a*                    =  (any :a)
-#   :d*                    =  (any :d)
-#   :h*                    =  (any :h)
-#   :s*                    =  (any :s)
-#   :w*                    =  (any :w)
-#   :a+                    =  (some :a)
-#   :d+                    =  (some :d)
-#   :h+                    =  (some :h)
-#   :s+                    =  (some :s)
-#   :w+                    =  (some :w)
 #   :A                     =  (if-not :a 1)
 #   :D                     =  (if-not :d 1)
 #   :H                     =  (if-not :h 1)
 #   :S                     =  (if-not :s 1)
 #   :W                     =  (if-not :w 1)
+#   :a+                    =  (some :a)
+#   :d+                    =  (some :d)
+#   :h+                    =  (some :h)
+#   :s+                    =  (some :s)
+#   :w+                    =  (some :w)
+#   :A+                    =  (some :A)
+#   :D+                    =  (some :D)
+#   :H+                    =  (some :H)
+#   :S+                    =  (some :S)
+#   :W+                    =  (some :W)
+#   :a*                    =  (any :a)
+#   :d*                    =  (any :d)
+#   :h*                    =  (any :h)
+#   :s*                    =  (any :s)
+#   :w*                    =  (any :w)
+#   :A*                    =  (any :A)
+#   :D*                    =  (any :D)
+#   :H*                    =  (any :H)
+#   :S*                    =  (any :S)
+#   :W*                    =  (any :W)
 #
 # Aliases
 #   (! patt)               =  (not patt)
