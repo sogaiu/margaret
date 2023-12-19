@@ -91,11 +91,11 @@ Each of the Janet PEG specials has an initial implementation with
 tests.  Specifically, that includes:
 
 . Primitive Patterns
+.. link:examples/0.boolean.janet[boolean]
 .. link:examples/0.integer.janet[integer]
 .. link:examples/range.janet[range]
 .. link:examples/set.janet[set]
 .. link:examples/0.string.janet[string]
-.. link:examples/0.boolean.janet[boolean]
 
 . Combinators
 .. link:examples/any.janet[any]
