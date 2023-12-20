@@ -1,34 +1,34 @@
 #
 # Primitive Patterns
-#   Integer Patterns
+#   Integer (..., -1, 0, 1, ...)
 #   range
 #   set
-#   String Patterns
-#   Boolean Patterns
+#   String ("...")
+#   Boolean (true, false)
 #
 # Combining Patterns
 #   any
 #   at-least
 #   at-most
 #   backmatch
-#   between aka opt or ?
-#   choice aka +
+#   between (opt, ?)
+#   choice (+)
 #   if
 #   if-not
-#   look aka >
-#   not aka !
-#   repeat aka n (actual number)
-#   sequence aka *
+#   look (>)
+#   not (!)
+#   repeat (0, 1, 2, ...)
+#   sequence (*)
 #   some
 #   thru
 #   to
 #   unref
 #
 # Captures
-#   accumulate aka %
+#   accumulate (%)
 #   argument
-#   backref aka ->
-#   capture aka <- or quote
+#   backref (->)
+#   capture (<-, quote)
 #   cmt
 #   column
 #   constant
@@ -40,8 +40,8 @@
 #   lenprefix
 #   line
 #   number
-#   position aka $
-#   replace aka /
+#   position ($)
+#   replace (/)
 #   uint
 #   uint-be
 #
