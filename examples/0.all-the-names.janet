@@ -1,10 +1,10 @@
 #
 # Primitive Patterns
-#   Boolean Patterns
 #   Integer Patterns
-#   Range Patterns
-#   Set Patterns
+#   range
+#   set
 #   String Patterns
+#   Boolean Patterns
 #
 # Combining Patterns
 #   any
