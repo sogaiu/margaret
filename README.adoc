@@ -95,7 +95,7 @@ tests.  Specifically, that includes:
 .. link:examples/range.janet[range]
 .. link:examples/set.janet[set]
 .. link:examples/0.string.janet[string patterns]
-.. link:examples/0.boolean.janet[boolean patters]
+.. link:examples/0.boolean.janet[boolean patterns]
 
 . Combinators
 .. link:examples/any.janet[any]
