@@ -233,10 +233,10 @@
              (neg? peg))
         (do
           (log-entry "RULE_NOTNCHAR" peg text grammar)
-          (def text-len (length text))
           (def ret
-            (when (not (<= (math/abs peg) text-len))
-              text-len))
+            (when (not (<= (math/abs peg)
+                           (length text)))
+              0))
           (log-exit "RULE_NOTNCHAR" ret {:peg peg :text text})
           ret)
         # struct looks up the peg associated with :main
