@@ -189,7 +189,7 @@
         [(+ lo 2) (- position (get linemap lo))]))
     #
     (defn peg-match*
-      [peg text grammar]
+      [peg text grammar &opt state]
       #
       (cond
         # true / false
@@ -198,8 +198,8 @@
           (log-entry "BOOLEAN" peg text grammar)
           (def ret
             (if (true? peg)
-              (peg-match* 0 text grammar)
-              (peg-match* '(not 0) text grammar)))
+              (peg-match* 0 text grammar state)
+              (peg-match* '(not 0) text grammar state)))
           (log-exit "BOOLEAN" ret {:peg peg :text text})
           ret)
         # keyword leads to a lookup in the grammar
@@ -207,7 +207,7 @@
         (do
           (log-entry "KEYWORD" peg text grammar)
           (def ret
-            (peg-match* (grammar peg) text grammar))
+            (peg-match* (grammar peg) text grammar state))
           (log-exit "KEYWORD" ret {:peg peg :text text})
           ret)
         # string is RULE_LITERAL
@@ -246,7 +246,7 @@
           (assert (peg :main)
                   "peg does not have :main")
           (def ret
-            (peg-match* (peg :main) text peg))
+            (peg-match* (peg :main) text peg state))
           (log-exit "STRUCT" ret {:peg peg :text text})
           ret)
         #
@@ -312,7 +312,9 @@
                       "offset argument should be an integer")
               (def ret
                 (label result
-                  (let [text-len (length text)
+                  (let [text-len
+                        # RULE_SUB needs this
+                        (length (get state :text text))
                         cur-idx (- tot-len text-len)
                         new-start (+ cur-idx offset)]
                     (when (or (< new-start 0)
@@ -322,7 +324,8 @@
                     (when-let [res-idx
                                (peg-match* patt
                                            (string/slice otext new-start)
-                                           grammar)]
+                                           grammar
+                                           state)]
                       0))))
               (log-exit op ret {:peg peg :text text})
               ret)
@@ -339,13 +342,13 @@
                   (def cs (cap_save))
                   (forv i 0 (dec len)
                     (def sub-peg (get tail i))
-                    (def res-idx (peg-match* sub-peg text grammar))
+                    (def res-idx (peg-match* sub-peg text grammar state))
                     # XXX: should be ok?
                     (when res-idx
                       (return result res-idx))
                     (cap_load cs))
                   (peg-match* (get tail (dec len))
-                              text grammar)))
+                              text grammar state)))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_SEQUENCE
@@ -365,7 +368,7 @@
                   (while (and cur-text
                               (< i (dec len)))
                     (def sub-peg (get tail i))
-                    (set res-idx (peg-match* sub-peg cur-text grammar))
+                    (set res-idx (peg-match* sub-peg cur-text grammar state))
                     # looks weird but makes it more similar to peg.c
                     (if res-idx
                       (do
@@ -377,7 +380,7 @@
                     (return result nil))
                   (when-let [last-idx
                              (peg-match* (get tail (dec len))
-                                         cur-text grammar)]
+                                         cur-text grammar state)]
                     (+ acc-idx last-idx))))
               (log-exit op ret {:peg peg :text text})
               ret)
@@ -390,10 +393,10 @@
                                      (string op)))
               (def patt-a (first tail))
               (def patt-b (in tail 1))
-              (def res-idx (peg-match* patt-a text grammar))
+              (def res-idx (peg-match* patt-a text grammar state))
               (def ret
                 (if res-idx
-                  (peg-match* patt-b text grammar)
+                  (peg-match* patt-b text grammar state)
                   nil))
               (log-exit op ret {:peg peg :text text})
               ret)
@@ -407,13 +410,13 @@
               (def patt-a (first tail))
               (def patt-b (in tail 1))
               (def cs (cap_save))
-              (def res-idx (peg-match* patt-a text grammar))
+              (def res-idx (peg-match* patt-a text grammar state))
               (def ret
                 (if res-idx
                   nil
                   (do
                     (cap_load cs)
-                    (peg-match* patt-b text grammar))))
+                    (peg-match* patt-b text grammar state))))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_NOT
@@ -426,7 +429,7 @@
                                      (string op)))
               (def patt (first tail))
               (def cs (cap_save))
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (if res-idx
                   nil
@@ -452,7 +455,7 @@
                   (var cur-idx 0)
                   (while (<= cur-idx text-len)
                     (def cs2 (cap_save))
-                    (set next-idx (peg-match* patt cur-text grammar))
+                    (set next-idx (peg-match* patt cur-text grammar state))
                     (when next-idx
                       (break))
                     (when (pos? (length cur-text))
@@ -483,7 +486,7 @@
                   (var cur-idx 0)
                   (while (<= cur-idx text-len)
                     (def cs2 (cap_save))
-                    (set next-idx (peg-match* patt cur-text grammar))
+                    (set next-idx (peg-match* patt cur-text grammar state))
                     (when next-idx
                       (cap_load cs2)
                       (break))
@@ -597,7 +600,7 @@
                   (var acc-idx 0)
                   (while (< captured hi)
                     (def cs2 (cap_save))
-                    (set next-idx (peg-match* patt cur-text grammar))
+                    (set next-idx (peg-match* patt cur-text grammar state))
                     # match fail or no change in position
                     (when (or (nil? next-idx)
                               (= next-idx 0))
@@ -638,7 +641,10 @@
               (log-entry op peg text grammar)
               (def tag (when (not (empty? tail))
                          (first tail)))
-              (pushcap (- tot-len (length text)) tag)
+              (pushcap (- tot-len
+                          # RULE_SUB needs this
+                          (length (get state :text text)))
+                       tag)
               (def ret 0)
               (log-exit op ret {:peg peg :text text})
               ret)
@@ -649,8 +655,10 @@
               (def tag (when (not (empty? tail))
                          (first tail)))
               (def [line _]
-                (get_linecol_from_position (- tot-len
-                                              (length text))))
+                (get_linecol_from_position
+                  (- tot-len
+                     # RULE_SUB needs this
+                     (length (get state :text text)))))
               (pushcap line tag)
               (def ret 0)
               (log-exit op ret {:peg peg :text text})
@@ -662,8 +670,10 @@
               (def tag (when (not (empty? tail))
                          (first tail)))
               (def [_ col]
-                (get_linecol_from_position (- tot-len
-                                              (length text))))
+                (get_linecol_from_position
+                  (- tot-len
+                     # RULE_SUB needs this
+                     (length (get state :text text)))))
               (pushcap col tag)
               (def ret 0)
               (log-exit op ret {:peg peg :text text})
@@ -713,7 +723,7 @@
               (def patt (first tail))
               (def tag (when (< 1 (length tail))
                          (in tail 1)))
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (when res-idx
                   (let [cap (string/slice text 0 res-idx)]
@@ -736,7 +746,7 @@
                           (in tail 1)))
               (def tag (when (< 2 (length tail))
                          (in tail 2)))
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (when res-idx
                   (let [cap (string/slice text 0 res-idx)]
@@ -762,10 +772,10 @@
               (def old-mode mode)
               (when (and (not tag)
                          (= old-mode :peg_mode_accumulate))
-                (peg-match* patt text grammar))
+                (peg-match* patt text grammar state))
               (def cs (cap_save))
               (set mode :peg_mode_accumulate)
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (set mode old-mode)
               (def ret
                 (when res-idx
@@ -784,7 +794,7 @@
                                      (string op)))
               (def patt (first tail))
               (def cs (cap_save))
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (when res-idx
                   (cap_load cs)
@@ -804,7 +814,7 @@
               (def old-mode mode)
               (def cs (cap_save))
               (set mode :peg_mode_normal)
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (set mode old-mode)
               (def ret
                 (when res-idx
@@ -815,6 +825,27 @@
                   (cap_load_keept cs)
                   (pushcap cap tag)
                   res-idx))
+              (log-exit op ret {:peg peg :text text})
+              ret)
+            # RULE_SUB
+            (= 'sub op)
+            (do
+              (log-entry op peg text grammar)
+              (assert (not (< (length tail) 2))
+                      (string/format "`%s` requires at least 2 arguments"
+                                     (string op)))
+              (def window (first tail))
+              (def patt (in tail 1))
+              (def window-end-idx (peg-match* window text grammar state))
+              (def ret
+                (when window-end-idx
+                  (def next-text-idx
+                    (peg-match* patt
+                                (string/slice text 0 window-end-idx)
+                                grammar
+                                (merge state {:text text})))
+                  (when next-text-idx
+                    window-end-idx)))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_REPLACE
@@ -832,7 +863,7 @@
               (def old-mode mode)
               (def cs (cap_save))
               (set mode :peg_mode_normal)
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (set mode old-mode)
               (def ret
                 (when res-idx
@@ -870,7 +901,7 @@
               (def old-mode mode)
               (def cs (cap_save))
               (set mode :peg_mode_normal)
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (set mode old-mode)
               (def ret
                 (label result
@@ -896,15 +927,17 @@
               (def old-mode mode)
               (set mode :peg_mode_normal)
               (def old-cap (length captures))
-              (def res-idx (peg-match* patt text grammar))
+              (def res-idx (peg-match* patt text grammar state))
               (set mode old-mode)
               (def ret
                 (when res-idx
                   (if (> (length captures) old-cap)
                     (error (string (last captures)))
                     (let [[line col]
-                          (get_linecol_from_position (- tot-len
-                                                        (length text)))]
+                          (get_linecol_from_position
+                            (- tot-len
+                               # RULE_SUB needs this
+                               (length (get state :text text))))]
                       (errorf "match error at line %d, column %d" line col)))
                   # XXX: should not get here
                   nil))
@@ -950,7 +983,7 @@
               (def cs (cap_save))
               (def ret
                 (label result
-                  (def idx (peg-match* n-patt text grammar))
+                  (def idx (peg-match* n-patt text grammar state))
                   (when (nil? idx)
                     (return result nil))
                   #
@@ -974,7 +1007,7 @@
                   (var acc-idx idx)
                   (forv i 0 nrep
                     (set next-idx
-                         (peg-match* patt next-text grammar))
+                         (peg-match* patt next-text grammar state))
                     (when (nil? next-idx)
                       (cap_load cs)
                       (return result nil))
@@ -1064,7 +1097,7 @@
               (def tag (when (> (length tail) 1)
                          (in tail 1)))
               (def tcap (length tags))
-              (def res-idx (peg-match* rule text grammar))
+              (def res-idx (peg-match* rule text grammar state))
               (def ret
                 (label result
                   (when (nil? res-idx)
@@ -1095,7 +1128,7 @@
       (print))
     #
     (def index
-      (peg-match* (peg-table :main) otext peg-table))
+      (peg-match* (peg-table :main) otext peg-table @{}))
     [captures index tags])
   #
   (when the-start
