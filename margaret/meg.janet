@@ -262,7 +262,7 @@
             (= 'range op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
               (def ret
@@ -288,10 +288,10 @@
             (= 'set op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def ret
                 (when (and (> (length text) 0)
                            (string/check-set patt
@@ -307,7 +307,7 @@
               (assert (>= (length tail) 2)
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def offset (first tail))
+              (def offset (in tail 0))
               (assert (int? offset)
                       "offset argument should be an integer")
               (def ret
@@ -321,11 +321,10 @@
                               (> new-start text-len))
                       (return result nil))
                     (def patt (in tail 1))
-                    (when-let [res-idx
-                               (peg-match* patt
-                                           (string/slice otext new-start)
-                                           grammar
-                                           state)]
+                    (when (peg-match* patt
+                                      (string/slice otext new-start)
+                                      grammar
+                                      state)
                       0))))
               (log-exit op ret {:peg peg :text text})
               ret)
@@ -391,7 +390,7 @@
               (assert (>= (length tail) 2)
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def patt-a (first tail))
+              (def patt-a (in tail 0))
               (def patt-b (in tail 1))
               (def res-idx (peg-match* patt-a text grammar state))
               (def ret
@@ -407,7 +406,7 @@
               (assert (>= (length tail) 2)
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def patt-a (first tail))
+              (def patt-a (in tail 0))
               (def patt-b (in tail 1))
               (def cs (cap_save))
               (def res-idx (peg-match* patt-a text grammar state))
@@ -424,10 +423,10 @@
                 (= '! op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def cs (cap_save))
               (def res-idx (peg-match* patt text grammar state))
               (def ret
@@ -442,10 +441,10 @@
             (= 'thru op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def cs (cap_save))
               (def ret
                 (label result
@@ -473,10 +472,10 @@
             (= 'to op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def cs (cap_save))
               (def ret
                 (label result
@@ -514,7 +513,7 @@
                 (int? op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
               (var lo 0)
@@ -535,17 +534,17 @@
                 #
                 (or (= 'opt op)
                     (= '? op))
-                (set patt (first tail))
+                (set patt (in tail 0))
                 #
                 (= 'any op)
                 (do
-                  (set patt (first tail))
+                  (set patt (in tail 0))
                   # XXX: 2 ^ 32 - 1 not an integer...
                   (set hi (math/pow 2 30)))
                 #
                 (= 'some op)
                 (do
-                  (set patt (first tail))
+                  (set patt (in tail 0))
                   (set lo 1)
                   # XXX: 2 ^ 32 - 1 not an integer...
                   (set hi (math/pow 2 30)))
@@ -554,8 +553,8 @@
                 (do
                   (assert (<= 2 (length tail))
                           "`at-least` requires at least 2 arguments")
+                  (set lo (in tail 0))
                   (set patt (in tail 1))
-                  (set lo (first tail))
                   (assert (nat? lo)
                           (string "expected non-neg int, got: " lo))
                   # XXX: 2 ^ 32 - 1 not an integer...
@@ -565,8 +564,8 @@
                 (do
                   (assert (<= 2 (length tail))
                           "`at-most` requires at least 2 arguments")
+                  (set hi (in tail 0))
                   (set patt (in tail 1))
-                  (set hi (first tail))
                   (assert (nat? hi)
                           (string "expected non-neg int, got: " hi)))
                 #
@@ -574,8 +573,8 @@
                 (do
                   (assert (<= 2 (length tail))
                           "`repeat` requires at least 2 arguments")
+                  (def arg (in tail 0))
                   (set patt (in tail 1))
-                  (def arg (first tail))
                   (assert (nat? arg)
                           (string "expected non-neg int, got: " arg))
                   (set lo arg)
@@ -583,9 +582,9 @@
                 #
                 (int? op)
                 (do
-                  (assert (not (empty? tail))
+                  (assert (next tail)
                           "`n` requires at least 1 argument")
-                  (set patt (first tail))
+                  (set patt (in tail 0))
                   (assert (nat? op)
                           (string "expected non-neg int, got: " op))
                   (set lo op)
@@ -620,10 +619,10 @@
                 (= '-> op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def tag (first tail))
+              (def tag (in tail 0))
               (def ret
                 (label result
                   (loop [i :down-to [(dec (length tags)) 0]]
@@ -639,8 +638,7 @@
                 (= '$ op))
             (do
               (log-entry op peg text grammar)
-              (def tag (when (not (empty? tail))
-                         (first tail)))
+              (def tag (when (next tail) (in tail 0)))
               (pushcap (- tot-len
                           # RULE_SUB needs this
                           (length (get state :text text)))
@@ -652,8 +650,7 @@
             (= 'line op)
             (do
               (log-entry op peg text grammar)
-              (def tag (when (not (empty? tail))
-                         (first tail)))
+              (def tag (when (next tail) (in tail 0)))
               (def [line _]
                 (get_linecol_from_position
                   (- tot-len
@@ -667,8 +664,7 @@
             (= 'column op)
             (do
               (log-entry op peg text grammar)
-              (def tag (when (not (empty? tail))
-                         (first tail)))
+              (def tag (when (next tail) (in tail 0)))
               (def [_ col]
                 (get_linecol_from_position
                   (- tot-len
@@ -682,10 +678,10 @@
             (= 'argument op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (assert (nat? patt)
                       (string "expected non-negative integer, got: " patt))
               (assert (< patt (length the-args))
@@ -701,12 +697,11 @@
             (= 'constant op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
-              (def tag (when (< 1 (length tail))
-                         (in tail 1)))
+              (def patt (in tail 0))
+              (def tag (when (< 1 (length tail)) (in tail 1)))
               (pushcap patt tag)
               (def ret 0)
               (log-exit op ret {:peg peg :text text})
@@ -717,12 +712,11 @@
                 (= '<- op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
-              (def tag (when (< 1 (length tail))
-                         (in tail 1)))
+              (def patt (in tail 0))
+              (def tag (when (< 1 (length tail)) (in tail 1)))
               (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (when res-idx
@@ -738,14 +732,12 @@
             (= 'number op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
-              (def base (when (< 1 (length tail))
-                          (in tail 1)))
-              (def tag (when (< 2 (length tail))
-                         (in tail 2)))
+              (def patt (in tail 0))
+              (def base (when (< 1 (length tail)) (in tail 1)))
+              (def tag (when (< 2 (length tail)) (in tail 2)))
               (def res-idx (peg-match* patt text grammar state))
               (def ret
                 (when res-idx
@@ -763,12 +755,11 @@
                 (= '% op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
-              (def tag (when (< 1 (length tail))
-                         (in tail 1)))
+              (def patt (in tail 0))
+              (def tag (when (< 1 (length tail)) (in tail 1)))
               (def old-mode mode)
               (when (and (not tag)
                          (= old-mode :peg_mode_accumulate))
@@ -789,10 +780,10 @@
             (= 'drop op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def cs (cap_save))
               (def res-idx (peg-match* patt text grammar state))
               (def ret
@@ -805,10 +796,10 @@
             (= 'group op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def tag (when (< 1 (length tail))
                          (in tail 1)))
               (def old-mode mode)
@@ -834,7 +825,7 @@
               (assert (not (< (length tail) 2))
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def window (first tail))
+              (def window (in tail 0))
               (def patt (in tail 1))
               (def window-end-idx (peg-match* window text grammar state))
               (def ret
@@ -856,7 +847,7 @@
               (assert (not (< (length tail) 2))
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def subst (in tail 1))
               (def tag (when (> (length tail) 2)
                          (in tail 2)))
@@ -891,7 +882,7 @@
               (assert (not (< (length tail) 2))
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def patt (first tail))
+              (def patt (in tail 0))
               (def subst (in tail 1))
               (assert (or (function? subst)
                           (cfunction? subst))
@@ -923,7 +914,7 @@
               (log-entry op peg text grammar)
               (def patt (if (empty? tail)
                           0 # determined via gdb
-                          (first tail)))
+                          (in tail 0)))
               (def old-mode mode)
               (set mode :peg_mode_normal)
               (def old-cap (length captures))
@@ -947,8 +938,7 @@
             (= 'backmatch op)
             (do
               (log-entry op peg text grammar)
-              (def tag (when (not (empty? tail))
-                         (first tail)))
+              (def tag (when (next tail) (in tail 0)))
               (def ret
                 (label result
                   (loop [i :down-to [(dec (length tags)) 0]]
@@ -976,7 +966,7 @@
               (assert (not (< (length tail) 2))
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def n-patt (first tail))
+              (def n-patt (in tail 0))
               (def patt (in tail 1))
               (def old-mode mode)
               (set mode :peg_mode_normal)
@@ -1024,12 +1014,11 @@
                 (= 'uint-be op))
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def width (first tail))
-              (def tag (when (> (length tail) 1)
-                         (in tail 1)))
+              (def width (in tail 0))
+              (def tag (when (> (length tail) 1) (in tail 1)))
               (def ret
                 (label result
                   (when (> width (length text))
@@ -1090,12 +1079,11 @@
             (= 'unref op)
             (do
               (log-entry op peg text grammar)
-              (assert (not (empty? tail))
+              (assert (next tail)
                       (string/format "`%s` requires at least 1 argument"
                                      (string op)))
-              (def rule (first tail))
-              (def tag (when (> (length tail) 1)
-                         (in tail 1)))
+              (def rule (in tail 0))
+              (def tag (when (> (length tail) 1) (in tail 1)))
               (def tcap (length tags))
               (def res-idx (peg-match* rule text grammar state))
               (def ret
