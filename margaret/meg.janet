@@ -827,16 +827,16 @@
               (assert (not (< (length tail) 2))
                       (string/format "`%s` requires at least 2 arguments"
                                      (string op)))
-              (def window (in tail 0))
+              (def win-patt (in tail 0))
               (def patt (in tail 1))
               (def ret
-                (when-let [window-end-offset
-                           (peg-match* window text grammar state)]
+                (when-let [win-end-offset
+                           (peg-match* win-patt text grammar state)]
                   (when (peg-match* patt
-                                    (string/slice text 0 window-end-offset)
+                                    (string/slice text 0 win-end-offset)
                                     grammar
                                     (merge state {:text text}))
-                    window-end-offset)))
+                    win-end-offset)))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_REPLACE

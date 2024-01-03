@@ -1,14 +1,15 @@
 (import ../margaret/meg :as peg)
 
-# `(sub window patt)`
+# `(sub window-patt patt)`
 
-# Executes the `window` pattern.  If it matches, the number of bytes
-# matched is remembered.  Then `patt` is executed over exactly the
-# bytes matched by `window`.
+# Match `window-patt` and if it succeeds, match `patt` against the
+# bytes that `window-patt` matched.
 
-# If `patt` also matches, then the whole `sub` rule matches and the
-# number of bytes advanced as a result is the same as that for
-# matching `window`.
+# `patt` cannot match more than `window-patt`; it will see
+# end-of-input at the end of the substring matched by `window-patt`.
+
+# If `patt` also succeeds, `sub` will advance to the end of what
+# `window-patt` matched.
 
 # If any of the `col`, `line`, `position`, or `error` specials appear
 # in `patt`, they still yield values relative to the whole input.
