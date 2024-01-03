@@ -829,16 +829,14 @@
                                      (string op)))
               (def window (in tail 0))
               (def patt (in tail 1))
-              (def window-end-idx (peg-match* window text grammar state))
               (def ret
-                (when window-end-idx
-                  (def next-text-idx
-                    (peg-match* patt
-                                (string/slice text 0 window-end-idx)
-                                grammar
-                                (merge state {:text text})))
-                  (when next-text-idx
-                    window-end-idx)))
+                (when-let [window-end-offset
+                           (peg-match* window text grammar state)]
+                  (when (peg-match* patt
+                                    (string/slice text 0 window-end-offset)
+                                    grammar
+                                    (merge state {:text text}))
+                    window-end-offset)))
               (log-exit op ret {:peg peg :text text})
               ret)
             # RULE_REPLACE
