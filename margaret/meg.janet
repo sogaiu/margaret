@@ -189,6 +189,8 @@
         [(+ lo 2) (- position (get linemap lo))]))
     #
     (defn peg-match*
+      # when match succeeds, return number of bytes to advance
+      # otherwise return nil
       [peg text grammar &opt state]
       #
       (cond
