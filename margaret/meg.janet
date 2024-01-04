@@ -1172,7 +1172,8 @@
                    ,(fn [cap1 cap2]
                       (string cap2 ": yes, " cap1 "!")))
              "hello, world")
-  # => @["world: yes, hello!"]
+  # =>
+  @["world: yes, hello!"]
 
   )
 
