@@ -111,6 +111,7 @@ tests.  Specifically, that includes:
 .. link:examples/repeat.janet[repeat, "n"]
 .. link:examples/sequence.janet[sequence, *]
 .. link:examples/some.janet[some]
+.. link:examples/sub.janet[sub]
 .. link:examples/thru.janet[thru]
 .. link:examples/to.janet[to]
 .. link:examples/unref.janet[unref]
