@@ -12,7 +12,7 @@ thing I knew...
 
 == Status
 
-All peg specials have implementations and tests.
+All peg specials except `split` have implementations and tests.
 
 == Why?
 
