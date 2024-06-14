@@ -473,7 +473,10 @@
 
 (defn log-entry [& args]
   (when (os/getenv "VERBOSE")
-    (eprintf "entry: %n" args)))
+    (eprin ">> entry: ")
+    (each arg args
+      (eprinf "%N " arg))
+    (eprint)))
 
 (defn log [msg & args]
   (when (os/getenv "VERBOSE")
@@ -481,7 +484,10 @@
 
 (defn log-exit [& args]
   (when (os/getenv "VERBOSE")
-    (eprintf "exit: %n" args)))
+    (eprin "<< exit: ")
+    (each arg args
+      (eprinf "%N " arg))
+    (eprint)))
 
 (defn peg-rule
   [state peg index grammar]
@@ -489,27 +495,25 @@
   # XXX
   (log "")
   (log ":state: %M" state)
-  (log ":peg: %n" peg)
-  (log ":index: %n" index)
-  (log ":grammar: %n" grammar)
+  (log ":grammar: %M" grammar)
 
   (cond
     # true / false
     (boolean? peg)
     (do
-      (log-entry "BOOLEAN" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (def ret
         (when-let [result (if (true? peg)
                             (peg-rule state 0 index grammar)
                             (peg-rule state '(not 0) index grammar))]
           result))
-      (log-exit "BOOLEAN" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # keyword leads to a lookup in the grammar
     (keyword? peg)
     (do
-      (log-entry "KEYWORD" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (def ret
         (when-let [result
                    (peg-rule state (get grammar peg) index grammar)]
@@ -517,13 +521,13 @@
           #(+ index result)
           result
           ))
-      (log-exit "KEYWORD" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # struct looks up the peg associated with :main
     (struct? peg)
     (do
-      (log-entry "STRUCT" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (assert (get peg :main)
               "peg does not have :main")
       (def ret
@@ -531,13 +535,13 @@
           #(+ index result)
           result
           ))
-      (log-exit "STRUCT" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # table looks up the peg associated with :main
     (table? peg)
     (do
-      (log-entry "TABLE" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (assert (get peg :main)
               "peg does not have :main")
       (def ret
@@ -545,40 +549,40 @@
           #(+ index result)
           result
           ))
-      (log-exit "TABLE" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # string is RULE_LITERAL
     (string? peg)
     (do
-      (log-entry "RULE_LITERAL" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (def text
         (string/slice (get state :original-text)
                       index (get state :text-end)))
       (def ret
         (when (string/has-prefix? peg text)
           (+ index (length peg))))
-      (log-exit "RULE_LITERAL" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # non-negative integer is RULE_NCHAR
     (nat? peg)
     (do
-      (log-entry "RULE_NCHAR" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (def text
         (string/slice (get state :original-text)
                       index (get state :text-end)))
       (def ret
         (when (<= peg (length text))
           (+ index peg)))
-      (log-exit "RULE_NCHAR" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     # negative integer is RULE_NOTNCHAR
     (and (int? peg)
          (neg? peg))
     (do
-      (log-entry "RULE_NOTNCHAR" peg index grammar)
+      (log-entry [:peg peg] [:index index])
       (def text
         (string/slice (get state :original-text)
                       index (get state :text-end)))
@@ -586,7 +590,7 @@
         (when (not (<= (math/abs peg)
                        (length text)))
           index))
-      (log-exit "RULE_NOTNCHAR" ret {:peg peg :index index})
+      (log-exit [:ret ret] [:peg peg] [:index index])
       ret)
 
     #
@@ -600,7 +604,7 @@
         # RULE_RANGE
         (= 'range op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -626,13 +630,13 @@
                 (when (string/check-set target-set
                                         (string/slice text 0 1))
                   (+ index 1)))))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_SET
         (= 'set op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -645,7 +649,7 @@
                        (string/check-set patt
                                          (string/slice text 0 1)))
               (+ index 1)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
 
@@ -653,7 +657,7 @@
         (or (= 'look op)
             (= '> op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (>= (length tail) 2)
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -676,14 +680,14 @@
                 (def patt (in tail 1))
                 (when (peg-rule state patt new-start grammar)
                   index))))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_CHOICE
         (or (= 'choice op)
             (= '+ op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def len (length tail))
           (def ret
             (label result
@@ -699,14 +703,14 @@
                 (cap-load state cs))
               (peg-rule state (get tail (dec len))
                         index grammar)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_SEQUENCE
         (or (= '* op)
             (= 'sequence op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def len (length tail))
           (def ret
             (label result
@@ -726,13 +730,13 @@
                          (peg-rule state (get tail (dec len))
                                    cur-idx grammar)]
                 last-idx)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_IF
         (= 'if op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (>= (length tail) 2)
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -742,13 +746,13 @@
           (def ret
             (when res-idx
               (peg-rule state patt-b index grammar)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_IFNOT
         (= 'if-not op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (>= (length tail) 2)
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -760,14 +764,14 @@
             (when (not res-idx)
               (cap-load state cs)
               (peg-rule state patt-b index grammar)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_NOT
         (or (= 'not op)
             (= '! op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -778,13 +782,13 @@
             (when (not res-idx)
               (cap-load state cs)
               index))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_THRU
         (= 'thru op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -806,13 +810,13 @@
                 (return result nil))
               (when next-idx
                 next-idx)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_TO
         (= 'to op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -835,7 +839,7 @@
                 (return result nil))
               (when next-idx
                 cur-idx)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_BETWEEN
@@ -850,7 +854,7 @@
             (= 'repeat op)
             (int? op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -948,14 +952,14 @@
                 (cap-load state cs)
                 (return result nil))
               cur-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_GETTAG
         (or (= 'backref op)
             (= '-> op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -969,26 +973,26 @@
                              (get-in state [:tagged-captures i]) tag)
                     (return result index))))
               nil))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_POSITION
         (or (= 'position op)
             (= '$ op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def tag (when (next tail) (in tail 0)))
           (pushcap state
                    (- index (get state :text-start))
                    tag)
           (def ret index)
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_LINE
         (= 'line op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def tag (when (next tail) (in tail 0)))
           (def [line _]
             (get-linecol-from-position
@@ -996,13 +1000,13 @@
               (- index (get state :text-start))))
           (pushcap state line tag)
           (def ret index)
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_COLUMN
         (= 'column op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def tag (when (next tail) (in tail 0)))
           (def [_ col]
             (get-linecol-from-position
@@ -1010,13 +1014,13 @@
               (- index (get state :text-start))))
           (pushcap state col tag)
           (def ret index)
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_ARGUMENT
         (= 'argument op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1031,13 +1035,13 @@
           (def arg-n (in (get state :extrav) patt))
           (pushcap state arg-n tag)
           (def ret index)
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_CONSTANT
         (= 'constant op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1045,7 +1049,7 @@
           (def tag (when (< 1 (length tail)) (in tail 1)))
           (pushcap state patt tag)
           (def ret index)
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_CAPTURE
@@ -1053,7 +1057,7 @@
             (= 'quote op)
             (= '<- op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1069,13 +1073,13 @@
                   (buffer/push (get state :scratch) cap)
                   (pushcap state cap tag)))
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_CAPTURE_NUM
         (= 'number op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1093,14 +1097,14 @@
                     (buffer/push (get state :scratch) cap)
                     (pushcap state num tag))))
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_ACCUMULATE
         (or (= 'accumulate op)
             (= '% op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1120,13 +1124,13 @@
               (cap-load-keept state cs)
               (pushcap state cap tag)
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_DROP
         (= 'drop op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1137,13 +1141,13 @@
             (when res-idx
               (cap-load state cs)
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_GROUP
         (= 'group op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1163,13 +1167,13 @@
               (cap-load-keept state cs)
               (pushcap state cap tag)
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_SUB
         (= 'sub op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (not (< (length tail) 2))
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -1186,13 +1190,13 @@
               (put state :text-end saved-end)
               (when next-text
                 win-end)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_SPLIT
         (= 'split op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def saved-end (get state :text-end))
           (def sep-patt (in tail 0))
           (def sub-patt (in tail 1))
@@ -1227,14 +1231,14 @@
                   (break)))
               # when loop broken out of via break...
               (get state :text-end)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_REPLACE
         (or (= 'replace op)
             (= '/ op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (not (< (length tail) 2))
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -1263,13 +1267,13 @@
               (cap-load-keept state cs)
               (pushcap state cap tag)
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_MATCHTIME
         (= 'cmt op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (not (< (length tail) 2))
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -1296,13 +1300,13 @@
                   (return result nil))
                 (pushcap state cap tag)
                 res-idx)))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_ERROR
         (= 'error op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def patt
             (if (empty? tail)
               0 # determined via gdb
@@ -1323,13 +1327,13 @@
                   (errorf "match error at line %d, column %d" line col)))
               # XXX: should not get here
               nil))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_BACKMATCH
         (= 'backmatch op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (def text
             (string/slice (get state :original-text)
                           index (get state :text-end)))
@@ -1353,13 +1357,13 @@
                                 (+ index caplen)))))))
               # just being explicit
               nil))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_LENPREFIX
         (= 'lenprefix op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (not (< (length tail) 2))
                   (string/format "`%s` requires at least 2 arguments"
                                  (string op)))
@@ -1399,7 +1403,7 @@
                   (cap-load state cs)
                   (return result nil)))
               next-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_READINT
@@ -1408,7 +1412,7 @@
             (= 'uint op)
             (= 'uint-be op))
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1468,13 +1472,13 @@
               (var capture-value accum)
               (pushcap state capture-value tag)
               width))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         # RULE_UNREF
         (= 'unref op)
         (do
-          (log-entry op peg index grammar)
+          (log-entry [:peg peg] [:index index])
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
@@ -1501,7 +1505,7 @@
               (put state :tagged-captures
                    (array/slice (get state :tagged-captures) 0 w))
               res-idx))
-          (log-exit op ret {:peg peg :index index})
+          (log-exit [:ret ret] [:peg peg] [:index index])
           ret)
 
         #
