@@ -45,10 +45,11 @@ by setting the `VERBOSE` environment variable to a non-empty string
 
 (os/setenv "VERBOSE" "1")
 
-(meg/match ~(capture (some "smile"))
+(meg/match ~(sequence (capture (some "smile") :x)
+                      (backref :x))
            "smile!")
 # =>
-"smile"
+["smile" "smile"]
 ```
 
 Currently, corresponding output looks like:
@@ -58,7 +59,7 @@ Currently, corresponding output looks like:
 :state: @{:captures @[]
   :depth 1024
   :extrav ()
-  :has-backref false
+  :has-backref true
   :linemap @[]
   :linemaplen -1
   :mode :peg-mode-normal
@@ -69,86 +70,88 @@ Currently, corresponding output looks like:
   :tags @[]
   :text-end 6
   :text-start 0}
-:peg: (capture (some "smile"))
-:index: 0
-:grammar: @{:main (capture (some "smile"))}
-entry: (capture (capture (some "smile")) 0 @{:main (capture (some "smile"))})
+:grammar: @{:main (sequence (capture (some "smile") :x) (backref :x))}
+>> entry: (:peg (sequence (capture (some "smile") :x) (backref :x))) (:index 0)
 
-:state: @{:captures @[]
+...
+
+:state: @{:captures @["smile"]
   :depth 1024
   :extrav ()
-  :has-backref false
+  :has-backref true
   :linemap @[]
   :linemaplen -1
   :mode :peg-mode-normal
   :original-text "smile!"
   :outer-text-end 6
   :scratch @""
-  :tagged-captures @[]
-  :tags @[]
+  :tagged-captures @["smile"]
+  :tags @[:x]
   :text-end 6
   :text-start 0}
-:peg: (some "smile")
-:index: 0
-:grammar: @{:main (capture (some "smile"))}
-entry: (some (some "smile") 0 @{:main (capture (some "smile"))})
-
-:state: @{:captures @[]
-  :depth 1024
-  :extrav ()
-  :has-backref false
-  :linemap @[]
-  :linemaplen -1
-  :mode :peg-mode-normal
-  :original-text "smile!"
-  :outer-text-end 6
-  :scratch @""
-  :tagged-captures @[]
-  :tags @[]
-  :text-end 6
-  :text-start 0}
-:peg: "smile"
-:index: 0
-:grammar: @{:main (capture (some "smile"))}
-entry: ("RULE_LITERAL" "smile" 0 @{:main (capture (some "smile"))})
-exit: ("RULE_LITERAL" 5 {:index 0 :peg "smile"})
-
-:state: @{:captures @[]
-  :depth 1024
-  :extrav ()
-  :has-backref false
-  :linemap @[]
-  :linemaplen -1
-  :mode :peg-mode-normal
-  :original-text "smile!"
-  :outer-text-end 6
-  :scratch @""
-  :tagged-captures @[]
-  :tags @[]
-  :text-end 6
-  :text-start 0}
-:peg: "smile"
-:index: 5
-:grammar: @{:main (capture (some "smile"))}
-entry: ("RULE_LITERAL" "smile" 5 @{:main (capture (some "smile"))})
-exit: ("RULE_LITERAL" nil {:index 5 :peg "smile"})
-exit: (some 5 {:index 0 :peg (some "smile")})
-exit: (capture 5 {:index 0 :peg (capture (some "smile"))})
+:grammar: @{:main (sequence (capture (some "smile") :x) (backref :x))}
+>> entry: (:peg (backref :x)) (:index 5)
+<< exit: (:ret 5) (:peg (backref :x)) (:index 5)
+<< exit: (:ret 5) (:peg (sequence (capture (some "smile") :x) (backref :x))) (:index 0)
 ```
 
-Not very pretty for sure, discussion and ideas welcome (^^;
+Not very pretty for sure.  With a suitable terminal, there is some
+color involved, so for folks with sufficient visual color-processing
+capabilities, that might be of some help in perceiving the output.
+
+Discussion and ideas welcome (^^;
 
 ### Explanation of Output
 
-In the above example, there were a number of lines prefixed with
-`entry:` and `exit:`.  The former type of line signals that
-processing for a particular PEG special is about to start.
+In the above output, `:state:` signals that some subsequent lines
+represent the overall PEG's execution state.  The content is fairly
+similar to
+[`PegState`](https://github.com/janet-lang/janet/blob/e2a8951f688fec8362f725e4a8afd3c79bc1854e/src/core/peg.c#L38-L62)
+in Janet's `peg.c`.
+
+The lines starting with `:grammar:` indicate the grammar being matched
+against.  This might be slightly different from what one might be
+expected due to some preprocessing done for internal reasons.  For
+example, if you specified:
+
+```janet
+(some "hello")
+```
+
+as the PEG to be matched against, you might see instead:
+
+```janet
+@{:main (some "hello")}
+```
+
+AFAIU, this should be fine for the most part.
+
+Lines prefixed with:
+
+* `>> entry:`
+* `<< exit:`
+
+indicate the entry into and exiting out of processing particular PEG
+specials, respectively.
 
 For example, in:
 
 ```
-entry: ("RULE_LITERAL" "smile" 0 @{:main (capture (some "smile"))})
+>> entry: (:peg (backref :x)) (:index 5)
 ```
 
-* `"RULE_LITERAL"` is a name for the string primitive pattern,
-* `"smile"` is 
+* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`,
+* `(:index 5)` means `5` is the index position of the text being matched over
+
+Similarly, in:
+
+```
+<< exit: (:ret 5) (:peg (backref :x)) (:index 5)
+```
+
+* `(:ret 5)` means the return value for the PEG is `5`,
+* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`,
+* `(:index 5)` means `5` _was_ the index position of the text being matched over
+
+Note that by correlating pairs of `(:peg ...)` and `(:index ...)`
+values, one can usually match up entries and exits.

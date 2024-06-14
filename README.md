@@ -104,6 +104,8 @@ Output format is very much in-flux but ATM one can see:
 
 ...and other details.
 
+See [here](doc/tracing.md) for more.
+
 ## Other Docs
 
 * [Why?](doc/why.md)
