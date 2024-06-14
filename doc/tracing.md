@@ -30,7 +30,7 @@ Some know cases include:
   in certain cases.
 
 * There is currently no attempt at protecting from too many recursive
-  calls in margaret so execution results may differ.
+  calls in `margaret` so execution results may differ.
 
 ## Example Output
 
@@ -49,7 +49,7 @@ by setting the `VERBOSE` environment variable to a non-empty string
                       (backref :x))
            "smile!")
 # =>
-["smile" "smile"]
+@["smile" "smile"]
 ```
 
 Currently, corresponding output looks like:
@@ -71,7 +71,7 @@ Currently, corresponding output looks like:
   :text-end 6
   :text-start 0}
 :grammar: @{:main (sequence (capture (some "smile") :x) (backref :x))}
->> entry: (:peg (sequence (capture (some "smile") :x) (backref :x))) (:index 0)
+>> entry: (:index 0) (:peg (sequence (capture (some "smile") :x) (backref :x)))
 
 ...
 
@@ -91,8 +91,8 @@ Currently, corresponding output looks like:
   :text-start 0}
 :grammar: @{:main (sequence (capture (some "smile") :x) (backref :x))}
 >> entry: (:peg (backref :x)) (:index 5)
-<< exit: (:ret 5) (:peg (backref :x)) (:index 5)
-<< exit: (:ret 5) (:peg (sequence (capture (some "smile") :x) (backref :x))) (:index 0)
+<< exit: (:ret 5) (:index 5) (:peg (backref :x))
+<< exit: (:ret 5) (:index 0) (:peg (sequence (capture (some "smile") :x) (backref :x)))
 ```
 
 Not very pretty for sure.  With a suitable terminal, there is some
@@ -110,9 +110,8 @@ similar to
 in Janet's `peg.c`.
 
 The lines starting with `:grammar:` indicate the grammar being matched
-against.  This might be slightly different from what one might be
-expected due to some preprocessing done for internal reasons.  For
-example, if you specified:
+against.  This may be slightly different from what you might expect
+due to some internal preprocessing.  For example, if you specified:
 
 ```janet
 (some "hello")
@@ -137,21 +136,21 @@ specials, respectively.
 For example, in:
 
 ```
->> entry: (:peg (backref :x)) (:index 5)
+>> entry: (:index 5) (:peg (backref :x))
 ```
 
-* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`,
-* `(:index 5)` means `5` is the index position of the text being matched over
+* `(:index 5)` means `5` is the index position of the text being matched over,
+* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`
 
 Similarly, in:
 
 ```
-<< exit: (:ret 5) (:peg (backref :x)) (:index 5)
+<< exit: (:ret 5) (:index 5) (:peg (backref :x))
 ```
 
-* `(:ret 5)` means the return value for the PEG is `5`,
-* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`,
-* `(:index 5)` means `5` _was_ the index position of the text being matched over
+* `(:ret 5)` means the return value for the PEG is `5` (new index position),
+* `(:index 5)` means `5` _was_ the index position of the text being matched over,
+* `(:peg (backref :x))` means the curent PEG form is `(backref :x)`
 
-Note that by correlating pairs of `(:peg ...)` and `(:index ...)`
+Note that by correlating pairs of `(:index ...)` and `(:peg ...)`
 values, one can usually match up entries and exits.
