@@ -20,6 +20,7 @@
 #   repeat (0, 1, 2, ...)
 #   sequence (*)
 #   some
+#   split
 #   sub
 #   thru
 #   to

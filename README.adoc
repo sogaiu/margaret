@@ -12,7 +12,7 @@ thing I knew...
 
 == Status
 
-All peg specials except `split` have implementations and tests.
+All peg specials have implementations and tests.
 
 == Why?
 
@@ -42,32 +42,23 @@ All peg specials except `split` have implementations and tests.
 
 should work.
 
-There is some support for diagnostic output via the dynamic variable
-`:meg-debug`.
+There is some primitive support for tracing.  It can be enabled by
+setting the `VERBOSE` environment variable to a non-empty string.
 
-To try it, do:
+Either:
 
-[source,janet]
-----
-(setdyn :meg-debug true)
-----
-
-or for more detailed info:
-
-[source,janet]
-----
-(setdyn :meg-debug {:captures true
-                    :peg true
-                    :text true})
-----
+* set the `VERBOSE` env var (say to "1") before starting `janet`, or
+* use `(os/setenv "VERBOSE" "1")` in code
 
 before calling `meg/match`.
 
-Output format is still evolving but likely will support at least:
+Output format is very much in-flux but ATM one can see:
 
 . capture stack
 . tags
 . specials execution order
+
+...and other details.
 
 == Testing
 
@@ -111,6 +102,7 @@ tests.  Specifically, that includes:
 .. link:examples/repeat.janet[repeat, "n"]
 .. link:examples/sequence.janet[sequence, *]
 .. link:examples/some.janet[some]
+.. link:examples/split.janet[split]
 .. link:examples/sub.janet[sub]
 .. link:examples/thru.janet[thru]
 .. link:examples/to.janet[to]
@@ -178,6 +170,7 @@ Thanks to (at least) the following folks:
 * crocket
 * goto-engineering
 * GrayJack
+* ianthehenry
 * ikarius
 * jcmkk3
 * LeafGarland
