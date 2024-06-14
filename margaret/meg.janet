@@ -15,48 +15,48 @@
 # turn peg into table if needed
 (defn tablify-peg
   [peg]
-  (var peg-tbl @{})
-  (case (type peg)
-    :boolean
-    (if (true? peg)
-      (put peg-tbl :main 0)
-      (put peg-tbl :main '(not 0)))
+  (def peg-tbl
+    (case (type peg)
+      :boolean
+      @{:main (if (true? peg)
+                0
+                '(not 0))}
+      #
+      :string
+      @{:main peg}
+      #
+      :number
+      (do
+        (assert (int? peg)
+                (string "number must be an integer: " peg))
+        @{:main peg})
+      #
+      :keyword
+      (do
+        (assert (in default-peg-grammar peg)
+                (string "default-peg-grammar does not have :" peg))
+        @{:main peg})
+      #
+      :tuple
+      @{:main peg}
+      #
+      :struct
+      (do
+        (assert (get peg :main)
+                (string/format "missing :main in grammar: %p" peg))
+        (struct/to-table peg))
+      #
+      :table
+      (do
+        (assert (get peg :main)
+                (string/format "missing :main in grammar: %p" peg))
+        peg)
+      #
+      (errorf "Unexpected type for peg %n: %n" peg (type peg))))
     #
-    :string
-    (put peg-tbl :main peg)
+    (table/setproto peg-tbl default-peg-grammar)
     #
-    :number
-    (do
-      (assert (int? peg)
-              (string "number must be an integer: " peg))
-      (put peg-tbl :main peg))
-    #
-    :keyword
-    (do
-      (assert (in default-peg-grammar peg)
-              (string "default-peg-grammar does not have :" peg))
-      (put peg-tbl :main peg))
-    #
-    :tuple
-    (put peg-tbl :main peg)
-    #
-    :struct
-    (do
-      (assert (get peg :main)
-              (string/format "missing :main in grammar: %p" peg))
-      (set peg-tbl (table ;(kvs peg))))
-    #
-    :table
-    (do
-      (assert (get peg :main)
-              (string/format "missing :main in grammar: %p" peg))
-      (set peg-tbl peg))
-    #
-    (errorf "Unexpected type for peg %n: %n" peg (type peg)))
-  #
-  (table/setproto peg-tbl default-peg-grammar)
-  #
-  peg-tbl)
+    peg-tbl)
 
 (comment
 
@@ -295,17 +295,16 @@
     (if (function? arg-0)
       (arg-0)
       arg-0))
-  (put ret :peg
-       (tablify-peg non-fn-peg))
+  (put ret :peg (tablify-peg non-fn-peg))
+  #
   (def backref? (has-backref? non-fn-peg))
   #
-  (def arg-1 (get argv 1))
   (if get-replace
     (do
-      (put ret :subst arg-1)
+      (put ret :subst (get argv 1))
       (put ret :bytes (get argv 2)))
-    (put ret :bytes arg-1))
-  (put-in ret [:state :original-text] (get ret :bytes))
+    (put ret :bytes (get argv 1)))
+  #
   (if (> argc min_)
     (do
       # XXX: if more than min # of args, the arg after the min # is a
@@ -315,19 +314,21 @@
     (do
       (put ret :start 0)
       (put-in ret [:state :extrav] @[])))
-  (put-in ret [:state :mode] :peg-mode-normal)
-  (put-in ret [:state :text-start] 0)
-  (put-in ret [:state :text-end] (length (get ret :bytes)))
-  (put-in ret [:state :outer-text-end] (get-in ret [:state :text-end]))
-  (put-in ret [:state :depth] recursion-guard)
-  (put-in ret [:state :captures] @[])
-  (put-in ret [:state :tagged-captures] @[])
-  (put-in ret [:state :scratch] @"")
-  # XXX: use an array for tags instead
-  (put-in ret [:state :tags] @[])
-  (put-in ret [:state :linemap] @[])
-  (put-in ret [:state :linemaplen] -1)
-  (put-in ret [:state :has-backref] backref?)
+  #
+  (-> ret
+      (put-in [:state :original-text] (get ret :bytes))
+      (put-in [:state :mode] :peg-mode-normal)
+      (put-in [:state :text-start] 0)
+      (put-in [:state :text-end] (length (get ret :bytes)))
+      (put-in [:state :outer-text-end] (get-in ret [:state :text-end]))
+      (put-in [:state :depth] recursion-guard)
+      (put-in [:state :captures] @[])
+      (put-in [:state :tagged-captures] @[])
+      (put-in [:state :scratch] @"")
+      (put-in [:state :tags] @[])
+      (put-in [:state :linemap] @[])
+      (put-in [:state :linemaplen] -1)
+      (put-in [:state :has-backref] backref?))
   #
   ret)
 
@@ -517,10 +518,7 @@
       (def ret
         (when-let [result
                    (peg-rule state (get grammar peg) index grammar)]
-          # XXX
-          #(+ index result)
-          result
-          ))
+          result))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -532,9 +530,7 @@
               "peg does not have :main")
       (def ret
         (when-let [result (peg-rule state (get peg :main) index peg)]
-          #(+ index result)
-          result
-          ))
+          result))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -546,9 +542,7 @@
               "peg does not have :main")
       (def ret
         (when-let [result (peg-rule state (get peg :main) index peg)]
-          #(+ index result)
-          result
-          ))
+          result))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -652,7 +646,6 @@
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
 
-
         # RULE_LOOK
         (or (= 'look op)
             (= '> op))
@@ -701,6 +694,7 @@
                 (when res-idx
                   (return result res-idx))
                 (cap-load state cs))
+              # instead of goto :tail, make a call
               (peg-rule state (get tail (dec len))
                         index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
@@ -745,6 +739,7 @@
           (def res-idx (peg-rule state patt-a index grammar))
           (def ret
             (when res-idx
+              # instead of goto :tail, make a call
               (peg-rule state patt-b index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -763,6 +758,7 @@
           (def ret
             (when (not res-idx)
               (cap-load state cs)
+              # instead of goto :tail, make a call
               (peg-rule state patt-b index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -972,6 +968,7 @@
                     (pushcap state
                              (get-in state [:tagged-captures i]) tag)
                     (return result index))))
+              # just being explicit
               nil))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -1027,11 +1024,9 @@
           (def patt (in tail 0))
           (assert (nat? patt)
                   (string "expected non-negative integer, got: " patt))
-          # XXX: could use (get state :extrac)?
           (assert (< patt (length (get state :extrav)))
                   (string "expected smaller integer, got: " patt))
-          (def tag (when (< 1 (length tail))
-                     (in tail 1)))
+          (def tag (when (< 1 (length tail)) (in tail 1)))
           (def arg-n (in (get state :extrav) patt))
           (pushcap state arg-n tag)
           (def ret index)
@@ -1113,6 +1108,7 @@
           (def old-mode (get state :mode))
           (when (and (not tag)
                      (= old-mode :peg-mode-accumulate))
+            # instead of goto :tail, make a call
             (peg-rule state patt index grammar))
           (def cs (cap-save state))
           (put state :mode :peg-mode-accumulate)
@@ -1214,19 +1210,19 @@
                   (when sep-end
                     (break))
                   (++ cur-idx))
-
+                #
                 (when sep-end
                   (put state :text-end cur-idx)
                   (set cur-idx sep-end))
-
+                #
                 (def subpatt-end
                   (peg-rule state sub-patt text-start grammar))
-
+                #
                 (put state :text-end saved-end)
-
+                #
                 (when (nil? subpatt-end)
                   (return result nil))
-
+                #
                 (when (nil? sep-end)
                   (break)))
               # when loop broken out of via break...
@@ -1517,6 +1513,7 @@
   [peg text &opt start & args]
   (default start 0)
   (default args [])
+  #
   (def peg-call (peg-init [peg text start ;args]))
   (def state (get peg-call :state))
   (def new-peg (get peg-call :peg))
