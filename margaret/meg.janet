@@ -596,7 +596,6 @@
               "peg must have non-zero length")
       (def op (get peg 0))
       (def tail (drop 1 peg))
-      # XXX: many more to go
       (cond
         # RULE_RANGE
         (= 'range op)
