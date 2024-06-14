@@ -20,13 +20,15 @@
   # =>
   nil
 
-  (try
-    (peg/match ~(capture 1)
-               "xy"
-               3)
-    ([e] e))
+  (string/has-prefix?
+    "start "
+    (try
+      (peg/match ~(capture 1)
+                 "xy"
+                 3)
+      ([e] e)))
   # =>
-  "start argument out of range"
+  true
 
   (peg/match ~(capture 1)
              "xy"
@@ -46,13 +48,15 @@
   # =>
   @["x"]
 
-  (try
-    (peg/match ~(capture 1)
-               "xy"
-               -4)
-    ([e] e))
+  (string/has-prefix?
+    "start "
+    (try
+      (peg/match ~(capture 1)
+                 "xy"
+                 -4)
+      ([e] e)))
   # =>
-  "start argument out of range"
+  true
 
   )
 

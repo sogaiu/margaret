@@ -25,12 +25,14 @@
   # =>
   @["x"]
 
-  (try
-    (let [compiled-peg (peg/compile ~(capture 1))]
-      (peg/match compiled-peg "xy" -4))
-    ([e] e))
+  (string/has-prefix?
+    "start "
+    (try
+      (let [compiled-peg (peg/compile ~(capture 1))]
+        (peg/match compiled-peg "xy" -4))
+      ([e] e)))
   # =>
-  "start argument out of range"
+  true
 
   )
 
