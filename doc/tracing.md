@@ -8,7 +8,7 @@ better compared to having no information about execution flow (^^;
 Due to implementation differences between `peg.c` and `margaret`,
 execution flow may differ in certain ways.
 
-Some know cases include:
+Some known cases include:
 
 * Janet's native PEG implementation compiles a source PEG to a custom
   bytecode first before "execution".  In this process of compilation,
