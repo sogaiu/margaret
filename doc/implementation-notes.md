@@ -1,9 +1,39 @@
 # Implementation Notes
 
-In many cases an attempt to follow the original
+## Brief History
+
+Following along with bakpakin's [How Janet's PEG module
+works](https://bakpakin.com/writing/how-janets-peg-works.html) led to
+the idea that may be something more full-fledged might be done.
+
+Having worked through [mal](https://github.com/kanaka/mal) a couple of
+times (part of which involves implementing tree-walking interpreters),
+it was natural to reuse some of that experience.
+
+The initial complete implementation held up ok until the arrival of
+the `sub` and `split` PEG specials (^^;
+
+Although with some struggle, `sub` was grafted on, the result was very
+unsatisfactory and the idea of trying to accomodate `split` as well
+was quite unappealing.
+
+Things stalled for a while until one day, a decision was made to try
+somewhat from scratch and aim to implement `sub` and `split` as early
+as possible (relative to most of the other PEG specials).
+
+As luck would have it, this approach seems to have worked :)
+
+The latest attempt tries to follow some of the structure of the C
+implementation more closely than the first attempt.  Hopefully, this
+will reduce the chance of a future rewrite (at least one motivated by
+trying to cope with difficulty in emulating future additions to
+Janet's `peg.c`).
+
+## Misc Notes
+
+In many cases an attempt was made to follow the original
 [`peg.c`](https://github.com/janet-lang/janet/blob/master/src/core/peg.c)
-implementation by bakpakin was made.  Some motivations for doing so
-include:
+implementation by bakpakin.  Some motivations for doing so include:
 
 * If `peg.c` changes, tracking those changes may be easier.
 

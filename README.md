@@ -5,12 +5,6 @@ This aims to be a pure-Janet implementation of Janet's `peg/match`.
 Apart from having fun, here are some reasons [why](doc/why.md) this
 could be of some interest.
 
-## Background
-
-While reading bakpakin's [How Janet's PEG module
-works](https://bakpakin.com/writing/how-janets-peg-works.html),
-started typing the code in and evaluating it, next thing I knew...
-
 ## Setup
 
 * Clone this repository and cd to the relevant directory
