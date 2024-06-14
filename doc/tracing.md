@@ -52,7 +52,7 @@ by setting the `VERBOSE` environment variable to a non-empty string
 @["smile" "smile"]
 ```
 
-Currently, corresponding output looks like:
+Currently, corresponding (desaturated) output looks like:
 
 ```
 
