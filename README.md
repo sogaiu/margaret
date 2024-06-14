@@ -8,76 +8,10 @@ While reading bakpakin's [How Janet's PEG module
 works](https://bakpakin.com/writing/how-janets-peg-works.html),
 started typing the code in and evaluating it, next thing I knew...
 
-## Status
-
-All peg specials have implementations and tests.
-
-## Why?
-
-* Aid in understanding Janet's PEG system
-* Generate example PEG specials usages
-* Experiment with adding diagnostic info / tracing
-* Experiment with additional constructs
-
-## Setup
-
-* Clone this repository and cd to the relevant directory
-
-* Ensure `janet` and `jpm` are on your `PATH`
-
-* Install if you like: `jpm install`
-
-## Usage
-
-`meg/match` is an attempt at implementing `peg/match`, so for example,
-if `margaret` has already been installed:
-
-```janet
-(import margaret/meg)
-
-(meg/match ~(capture (some "smile")) "smile!")
-```
-
-should work.
-
-There is some primitive support for tracing.  It can be enabled by
-setting the `VERBOSE` environment variable to a non-empty string.
-
-Either:
-
-* set the `VERBOSE` env var (say to "1") before starting `janet`, or
-* use `(os/setenv "VERBOSE" "1")` in code
-
-before calling `meg/match`.
-
-Output format is very much in-flux but ATM one can see:
-
-* capture stack
-* tags
-* specials execution order
-
-...and other details.
-
-## Testing
-
-Run all tests by:
-
-* `jpm test` from the project directory of margaret
-
-There are currently tests for:
-
-* [margaret's `meg` module](margaret/meg.janet)
-
-* [`peg` module tutorial](tutorials/tutorial.janet)
-
-* [modified code from bakpakin's article](tutorials/article.janet)
-
-Some of the tests were adapted / copied from Janet's tests.
-
 ## Specials Implementation Status
 
 Each of the Janet PEG specials has an initial implementation with
-tests.  Specifically, that includes:
+tests -- that includes:
 
 * Primitive Patterns
   * [integer patterns](examples/0.integer.janet)
@@ -127,63 +61,53 @@ tests.  Specifically, that includes:
   * [uint](examples/uint.janet)
   * [uint-be](examples/uint-be.janet)
 
-## Implementation Notes
+## Setup
 
-In many cases an attempt to follow the original
-[`peg.c`](https://github.com/janet-lang/janet/blob/master/src/core/peg.c)
-implementation by bakpakin was made.  Some motivations for doing so
-include:
+* Clone this repository and cd to the relevant directory
 
-* If `peg.c` changes, tracking those changes may be easier.
+* Ensure `janet` and `jpm` are on your `PATH`
 
-* If an experimentally added special in margaret proves useful, it
-  might be easier to port it to `peg.c`.
+* Install if you like: `jpm install`
 
-* Arriving at a correct implementation might be easier because
-  comparing it with a similar one is more meaningful.
+## Usage
 
-* Debugging information obtained here might be more relevant when
-  trying to understand a situation in the original `peg.c` context.
+### Basic Use
 
-* Reading margaret's implementation might be an easier place to start
-  if one wants to study `peg.c`.
+`meg/match` is an attempt at implementing `peg/match`, so for example,
+if `margaret` has already been installed:
 
-Some differences include:
+```janet
+(import margaret/meg)
 
-* `peg.c` creates a bytecode representation before execution and some
-  information (e.g. tag names) is not retained.  In at least one case,
-  some uses of `range` get compiled to the same type of bytecode
-  instruction used by `set`.
+(meg/match ~(capture (some "smile")) "smile!")
+```
 
-* `peg.c` has protections for too much recursion.
+should work.
 
-## Acknowledgments
+### Tracing
 
-Thanks to (at least) the following folks:
+There is some primitive support for tracing.  It can be enabled by
+setting the `VERBOSE` environment variable to a non-empty string.
 
-* ahungry
-* andrewchambers
-* bakpakin
-* CosmicToast
-* crocket
-* goto-engineering
-* GrayJack
-* ianthehenry
-* ikarius
-* jcmkk3
-* LeafGarland
-* leahneukirchen
-* LeviSchuck
-* MikeBeller
-* nate
-* pepe
-* pyrmont
-* Saikyun
-* skuza
-* subsetpark
-* swlkr
-* tami5
-* uvtc
-* yumaikas
+Either:
 
-...and other Janet community members :)
+* set the `VERBOSE` env var (say to "1") before starting `janet`, or
+* use `(os/setenv "VERBOSE" "1")` in code
+
+before calling `meg/match`.
+
+Output format is very much in-flux but ATM one can see:
+
+* capture stack
+* tags
+* specials execution order
+
+...and other details.
+
+## Other Docs
+
+* [Why?](doc/why.md)
+* [Tutorials](doc/tutorials.md)
+* [Testing](doc/testing.md)
+* [Implementation Notes](doc/implementation-notes.md)
+* [Credits](doc/credits.md)
