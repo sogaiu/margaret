@@ -494,30 +494,6 @@
   (log ":grammar: %n" grammar)
 
   (cond
-    # non-negative integer is RULE_NCHAR
-    (nat? peg)
-    (do
-      (log-entry "RULE_NCHAR" peg index grammar)
-      (def text
-        (string/slice (get state :original-text)
-                      index (get state :text-end)))
-      (def ret
-        (when (<= peg (length text))
-          (+ index peg)))
-      (log-exit "RULE_NCHAR" ret {:peg peg :index index})
-      ret)
-    # string is RULE_LITERAL
-    (string? peg)
-    (do
-      (log-entry "RULE_LITERAL" peg index grammar)
-      (def text
-        (string/slice (get state :original-text)
-                      index (get state :text-end)))
-      (def ret
-        (when (string/has-prefix? peg text)
-          (+ index (length peg))))
-      (log-exit "RULE_LITERAL" ret {:peg peg :index index})
-      ret)
     # true / false
     (boolean? peg)
     (do
@@ -529,6 +505,7 @@
           result))
       (log-exit "BOOLEAN" ret {:peg peg :index index})
       ret)
+
     # keyword leads to a lookup in the grammar
     (keyword? peg)
     (do
@@ -542,6 +519,61 @@
           ))
       (log-exit "KEYWORD" ret {:peg peg :index index})
       ret)
+
+    # struct looks up the peg associated with :main
+    (struct? peg)
+    (do
+      (log-entry "STRUCT" peg index grammar)
+      (assert (get peg :main)
+              "peg does not have :main")
+      (def ret
+        (when-let [result (peg-rule state (get peg :main) index peg)]
+          #(+ index result)
+          result
+          ))
+      (log-exit "STRUCT" ret {:peg peg :index index})
+      ret)
+
+    # table looks up the peg associated with :main
+    (table? peg)
+    (do
+      (log-entry "TABLE" peg index grammar)
+      (assert (get peg :main)
+              "peg does not have :main")
+      (def ret
+        (when-let [result (peg-rule state (get peg :main) index peg)]
+          #(+ index result)
+          result
+          ))
+      (log-exit "TABLE" ret {:peg peg :index index})
+      ret)
+
+    # string is RULE_LITERAL
+    (string? peg)
+    (do
+      (log-entry "RULE_LITERAL" peg index grammar)
+      (def text
+        (string/slice (get state :original-text)
+                      index (get state :text-end)))
+      (def ret
+        (when (string/has-prefix? peg text)
+          (+ index (length peg))))
+      (log-exit "RULE_LITERAL" ret {:peg peg :index index})
+      ret)
+
+    # non-negative integer is RULE_NCHAR
+    (nat? peg)
+    (do
+      (log-entry "RULE_NCHAR" peg index grammar)
+      (def text
+        (string/slice (get state :original-text)
+                      index (get state :text-end)))
+      (def ret
+        (when (<= peg (length text))
+          (+ index peg)))
+      (log-exit "RULE_NCHAR" ret {:peg peg :index index})
+      ret)
+
     # negative integer is RULE_NOTNCHAR
     (and (int? peg)
          (neg? peg))
@@ -556,32 +588,7 @@
           index))
       (log-exit "RULE_NOTNCHAR" ret {:peg peg :index index})
       ret)
-    # struct looks up the peg associated with :main
-    (struct? peg)
-    (do
-      (log-entry "STRUCT" peg index grammar)
-      (assert (get peg :main)
-              "peg does not have :main")
-      (def ret
-        (when-let [result (peg-rule state (get peg :main) index peg)]
-          #(+ index result)
-          result
-          ))
-      (log-exit "STRUCT" ret {:peg peg :index index})
-      ret)
-    # table looks up the peg associated with :main
-    (table? peg)
-    (do
-      (log-entry "TABLE" peg index grammar)
-      (assert (get peg :main)
-              "peg does not have :main")
-      (def ret
-        (when-let [result (peg-rule state (get peg :main) index peg)]
-          #(+ index result)
-          result
-          ))
-      (log-exit "TABLE" ret {:peg peg :index index})
-      ret)
+
     #
     (tuple? peg)
     (do
@@ -591,24 +598,6 @@
       (def tail (drop 1 peg))
       # XXX: many more to go
       (cond
-        # RULE_SET
-        (= 'set op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def text
-            (string/slice (get state :original-text)
-                          index (get state :text-end)))
-          (def patt (in tail 0))
-          (def ret
-            (when (and (pos? (length text))
-                       (string/check-set patt
-                                         (string/slice text 0 1)))
-              (+ index 1)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
         # RULE_RANGE
         (= 'range op)
         (do
@@ -640,203 +629,27 @@
                   (+ index 1)))))
           (log-exit op ret {:peg peg :index index})
           ret)
-        # RULE_SUB
-        (= 'sub op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def text-start-index index)
-          (def win-patt (in tail 0))
-          (def sub-patt (in tail 1))
-          (def ret
-            (when-let [win-end
-                       (peg-rule state win-patt index grammar)]
-              (def saved-end (get state :text-end))
-              (put state :text-end win-end)
-              (def next-text
-                (peg-rule state sub-patt text-start-index grammar))
-              (put state :text-end saved-end)
-              (when next-text
-                win-end)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_CAPTURE
-        (or (= 'capture op)
-            (= 'quote op)
-            (= '<- op))
+
+        # RULE_SET
+        (= 'set op)
         (do
           (log-entry op peg index grammar)
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
-          (def res-idx (peg-rule state patt index grammar))
-          (def ret
-            (when res-idx
-              (let [cap (string/slice (get state :original-text)
-                                      index res-idx)]
-                (if (and (not (get state :has-backref))
-                         (= (get state :mode) :peg-mode-accumulate))
-                  (buffer/push (get state :scratch) cap)
-                  (pushcap state cap tag)))
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_SEQUENCE
-        (or (= '* op)
-            (= 'sequence op))
-        (do
-          (log-entry op peg index grammar)
-          (def len (length tail))
-          (def ret
-            (label result
-              (when (zero? len)
-                (return result index))
-              (var cur-idx index)
-              (var i 0)
-              (while (and cur-idx
-                          (< i (dec len)))
-                (def sub-peg (get tail i))
-                (set cur-idx (peg-rule state sub-peg cur-idx grammar))
-                (++ i))
-              (when (not cur-idx)
-                (return result nil))
-              # instead of goto :tail, make a call
-              (when-let [last-idx
-                         (peg-rule state (get tail (dec len))
-                                   cur-idx grammar)]
-                last-idx)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_CONSTANT
-        (= 'constant op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
-          (pushcap state patt tag)
-          (def ret index)
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_GETTAG
-        (or (= 'backref op)
-            (= '-> op))
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def tag (in tail 0))
-          (def ret
-            (label result
-              (loop [i :down-to [(dec (length (get state :tags))) 0]]
-                (let [cur-tag (get-in state [:tags i])]
-                  (when (= cur-tag tag)
-                    (pushcap state
-                             (get-in state [:tagged-captures i]) tag)
-                    (return result index))))
-              nil))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_POSITION
-        (or (= 'position op)
-            (= '$ op))
-        (do
-          (log-entry op peg index grammar)
-          (def tag (when (next tail) (in tail 0)))
-          (pushcap state
-                   (- index (get state :text-start))
-                   tag)
-          (def ret index)
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_LINE
-        (= 'line op)
-        (do
-          (log-entry op peg index grammar)
-          (def tag (when (next tail) (in tail 0)))
-          (def [line _]
-            (get-linecol-from-position
-              state
-              (- index (get state :text-start))))
-          (pushcap state line tag)
-          (def ret index)
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_COLUMN
-        (= 'column op)
-        (do
-          (log-entry op peg index grammar)
-          (def tag (when (next tail) (in tail 0)))
-          (def [_ col]
-            (get-linecol-from-position
-              state
-              (- index (get state :text-start))))
-          (pushcap state col tag)
-          (def ret index)
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_ERROR
-        (= 'error op)
-        (do
-          (log-entry op peg index grammar)
-          (def patt
-            (if (empty? tail)
-              0 # determined via gdb
-              (in tail 0)))
-          (def old-mode (get state :mode))
-          (put state :mode :peg-mode-normal)
-          (def old-cap (length (get state :captures)))
-          (def res-idx (peg-rule state patt index grammar))
-          (put state :mode old-mode)
-          (def ret
-            (when res-idx
-              (if (> (length (get state :captures)) old-cap)
-                (error (string (last (get state :captures))))
-                (let [[line col]
-                      (get-linecol-from-position
-                        state
-                        (- index (get state :text-start)))]
-                  (errorf "match error at line %d, column %d" line col)))
-              # XXX: should not get here
-              nil))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_BACKMATCH
-        (= 'backmatch op)
-        (do
-          (log-entry op peg index grammar)
           (def text
             (string/slice (get state :original-text)
                           index (get state :text-end)))
-          (def tag (when (next tail) (in tail 0)))
+          (def patt (in tail 0))
           (def ret
-            (label result
-              (loop [i :down-to [(dec (length (get state :tags))) 0]]
-                (let [cur-tag (get-in state [:tags i])]
-                  (when (= cur-tag tag)
-                    (def cap
-                      (get-in state [:tagged-captures i]))
-                    (when (not (string? cap))
-                      (return result nil))
-                    #
-                    (let [caplen (length cap)]
-                      (when (> (+ (length text) caplen)
-                               (get state :text-end))
-                        (return result nil))
-                      (return result
-                              (when (string/has-prefix? cap text)
-                                (+ index caplen)))))))
-              # just being explicit
-              nil))
+            (when (and (pos? (length text))
+                       (string/check-set patt
+                                         (string/slice text 0 1)))
+              (+ index 1)))
           (log-exit op ret {:peg peg :index index})
           ret)
+
+
         # RULE_LOOK
         (or (= 'look op)
             (= '> op))
@@ -866,6 +679,137 @@
                   index))))
           (log-exit op ret {:peg peg :index index})
           ret)
+
+        # RULE_CHOICE
+        (or (= 'choice op)
+            (= '+ op))
+        (do
+          (log-entry op peg index grammar)
+          (def len (length tail))
+          (def ret
+            (label result
+              (when (zero? len)
+                (return result nil))
+              (def cs (cap-save state))
+              (forv i 0 (dec len)
+                (def sub-peg (get tail i))
+                (def res-idx (peg-rule state sub-peg index grammar))
+                # XXX: should be ok?
+                (when res-idx
+                  (return result res-idx))
+                (cap-load state cs))
+              (peg-rule state (get tail (dec len))
+                        index grammar)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_SEQUENCE
+        (or (= '* op)
+            (= 'sequence op))
+        (do
+          (log-entry op peg index grammar)
+          (def len (length tail))
+          (def ret
+            (label result
+              (when (zero? len)
+                (return result index))
+              (var cur-idx index)
+              (var i 0)
+              (while (and cur-idx
+                          (< i (dec len)))
+                (def sub-peg (get tail i))
+                (set cur-idx (peg-rule state sub-peg cur-idx grammar))
+                (++ i))
+              (when (not cur-idx)
+                (return result nil))
+              # instead of goto :tail, make a call
+              (when-let [last-idx
+                         (peg-rule state (get tail (dec len))
+                                   cur-idx grammar)]
+                last-idx)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_IF
+        (= 'if op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (>= (length tail) 2)
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def patt-a (in tail 0))
+          (def patt-b (in tail 1))
+          (def res-idx (peg-rule state patt-a index grammar))
+          (def ret
+            (when res-idx
+              (peg-rule state patt-b index grammar)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_IFNOT
+        (= 'if-not op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (>= (length tail) 2)
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def patt-a (in tail 0))
+          (def patt-b (in tail 1))
+          (def cs (cap-save state))
+          (def res-idx (peg-rule state patt-a index grammar))
+          (def ret
+            (when (not res-idx)
+              (cap-load state cs)
+              (peg-rule state patt-b index grammar)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_NOT
+        (or (= 'not op)
+            (= '! op))
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def cs (cap-save state))
+          (def res-idx (peg-rule state patt index grammar))
+          (def ret
+            (when (not res-idx)
+              (cap-load state cs)
+              index))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_THRU
+        (= 'thru op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def cs (cap-save state))
+          (def ret
+            (label result
+              (var next-idx nil)
+              (var cur-idx index)
+              (while (<= cur-idx (get state :text-end))
+                (def cs2 (cap-save state))
+                (set next-idx (peg-rule state patt cur-idx grammar))
+                (when next-idx
+                  (break))
+                (cap-load state cs2)
+                (++ cur-idx))
+              (when (> cur-idx (get state :text-end))
+                (cap-load state cs)
+                (return result nil))
+              (when next-idx
+                next-idx)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
         # RULE_TO
         (= 'to op)
         (do
@@ -894,33 +838,7 @@
                 cur-idx)))
           (log-exit op ret {:peg peg :index index})
           ret)
-        # RULE_THRU
-        (= 'thru op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def cs (cap-save state))
-          (def ret
-            (label result
-              (var next-idx nil)
-              (var cur-idx index)
-              (while (<= cur-idx (get state :text-end))
-                (def cs2 (cap-save state))
-                (set next-idx (peg-rule state patt cur-idx grammar))
-                (when next-idx
-                  (break))
-                (cap-load state cs2)
-                (++ cur-idx))
-              (when (> cur-idx (get state :text-end))
-                (cap-load state cs)
-                (return result nil))
-              (when next-idx
-                next-idx)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
+
         # RULE_BETWEEN
         (or (= 'between op)
             # XXX: might remove if analysis / rewrite path is taken
@@ -1033,6 +951,458 @@
               cur-idx))
           (log-exit op ret {:peg peg :index index})
           ret)
+
+        # RULE_GETTAG
+        (or (= 'backref op)
+            (= '-> op))
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def tag (in tail 0))
+          (def ret
+            (label result
+              (loop [i :down-to [(dec (length (get state :tags))) 0]]
+                (let [cur-tag (get-in state [:tags i])]
+                  (when (= cur-tag tag)
+                    (pushcap state
+                             (get-in state [:tagged-captures i]) tag)
+                    (return result index))))
+              nil))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_POSITION
+        (or (= 'position op)
+            (= '$ op))
+        (do
+          (log-entry op peg index grammar)
+          (def tag (when (next tail) (in tail 0)))
+          (pushcap state
+                   (- index (get state :text-start))
+                   tag)
+          (def ret index)
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_LINE
+        (= 'line op)
+        (do
+          (log-entry op peg index grammar)
+          (def tag (when (next tail) (in tail 0)))
+          (def [line _]
+            (get-linecol-from-position
+              state
+              (- index (get state :text-start))))
+          (pushcap state line tag)
+          (def ret index)
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_COLUMN
+        (= 'column op)
+        (do
+          (log-entry op peg index grammar)
+          (def tag (when (next tail) (in tail 0)))
+          (def [_ col]
+            (get-linecol-from-position
+              state
+              (- index (get state :text-start))))
+          (pushcap state col tag)
+          (def ret index)
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_ARGUMENT
+        (= 'argument op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (assert (nat? patt)
+                  (string "expected non-negative integer, got: " patt))
+          # XXX: could use (get state :extrac)?
+          (assert (< patt (length (get state :extrav)))
+                  (string "expected smaller integer, got: " patt))
+          (def tag (when (< 1 (length tail))
+                     (in tail 1)))
+          (def arg-n (in (get state :extrav) patt))
+          (pushcap state arg-n tag)
+          (def ret index)
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_CONSTANT
+        (= 'constant op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (pushcap state patt tag)
+          (def ret index)
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_CAPTURE
+        (or (= 'capture op)
+            (= 'quote op)
+            (= '<- op))
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def res-idx (peg-rule state patt index grammar))
+          (def ret
+            (when res-idx
+              (let [cap (string/slice (get state :original-text)
+                                      index res-idx)]
+                (if (and (not (get state :has-backref))
+                         (= (get state :mode) :peg-mode-accumulate))
+                  (buffer/push (get state :scratch) cap)
+                  (pushcap state cap tag)))
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_CAPTURE_NUM
+        (= 'number op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def base (when (< 1 (length tail)) (in tail 1)))
+          (def tag (when (< 2 (length tail)) (in tail 2)))
+          (def res-idx (peg-rule state patt index grammar))
+          (def ret
+            (when res-idx
+              (let [cap (string/slice (get state :original-text)
+                                      index res-idx)]
+                (when-let [num (scan-number-base cap base)]
+                  (if (and (not (get state :has-backref))
+                           (= (get state :mode) :peg-mode-accumulate))
+                    (buffer/push (get state :scratch) cap)
+                    (pushcap state num tag))))
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_ACCUMULATE
+        (or (= 'accumulate op)
+            (= '% op))
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def old-mode (get state :mode))
+          (when (and (not tag)
+                     (= old-mode :peg-mode-accumulate))
+            (peg-rule state patt index grammar))
+          (def cs (cap-save state))
+          (put state :mode :peg-mode-accumulate)
+          (def res-idx (peg-rule state patt index grammar))
+          (put state :mode old-mode)
+          (def ret
+            (when res-idx
+              (def cap (string (get state :scratch)))
+              (cap-load-keept state cs)
+              (pushcap state cap tag)
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_DROP
+        (= 'drop op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def cs (cap-save state))
+          (def res-idx (peg-rule state patt index grammar))
+          (def ret
+            (when res-idx
+              (cap-load state cs)
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_GROUP
+        (= 'group op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (next tail)
+                  (string/format "`%s` requires at least 1 argument"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def old-mode (get state :mode))
+          (def cs (cap-save state))
+          (put state :mode :peg-mode-normal)
+          (def res-idx (peg-rule state patt index grammar))
+          (put state  :mode old-mode)
+          (def ret
+            (when res-idx
+              (def cap
+                # use only the new captures
+                (array/slice (get state :captures)
+                             (get cs :captures)))
+              (cap-load-keept state cs)
+              (pushcap state cap tag)
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_SUB
+        (= 'sub op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (not (< (length tail) 2))
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def text-start-index index)
+          (def win-patt (in tail 0))
+          (def sub-patt (in tail 1))
+          (def ret
+            (when-let [win-end
+                       (peg-rule state win-patt index grammar)]
+              (def saved-end (get state :text-end))
+              (put state :text-end win-end)
+              (def next-text
+                (peg-rule state sub-patt text-start-index grammar))
+              (put state :text-end saved-end)
+              (when next-text
+                win-end)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_SPLIT
+        (= 'split op)
+        (do
+          (log-entry op peg index grammar)
+          (def saved-end (get state :text-end))
+          (def sep-patt (in tail 0))
+          (def sub-patt (in tail 1))
+          (var cur-idx index)
+          (var sep-end nil)
+          (def ret
+            (label result
+              (forever # not really
+                (def text-start cur-idx)
+                (def cs (cap-save state))
+                (while (<= cur-idx (get state :text-end))
+                  (set sep-end
+                       (peg-rule state sep-patt cur-idx grammar))
+                  (cap-load state cs)
+                  (when sep-end
+                    (break))
+                  (++ cur-idx))
+
+                (when sep-end
+                  (put state :text-end cur-idx)
+                  (set cur-idx sep-end))
+
+                (def subpatt-end
+                  (peg-rule state sub-patt text-start grammar))
+
+                (put state :text-end saved-end)
+
+                (when (nil? subpatt-end)
+                  (return result nil))
+
+                (when (nil? sep-end)
+                  (break)))
+              # when loop broken out of via break...
+              (get state :text-end)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_REPLACE
+        (or (= 'replace op)
+            (= '/ op))
+        (do
+          (log-entry op peg index grammar)
+          (assert (not (< (length tail) 2))
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def subst (in tail 1))
+          (def tag (when (> (length tail) 2) (in tail 2)))
+          (def old-mode (get state :mode))
+          (def cs (cap-save state))
+          (put state :mode :peg-mode-normal)
+          (def res-idx (peg-rule state patt index grammar))
+          (put state :mode old-mode)
+          (def ret
+            (when res-idx
+              (def cap
+                (cond
+                  (dictionary? subst)
+                  (get subst (last (get state :captures)))
+                  #
+                  (or (function? subst)
+                      (cfunction? subst))
+                  # use only the new captures
+                  (subst ;(array/slice (get state :captures)
+                                       (get cs :captures)))
+                  #
+                  subst))
+              (cap-load-keept state cs)
+              (pushcap state cap tag)
+              res-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_MATCHTIME
+        (= 'cmt op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (not (< (length tail) 2))
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def patt (in tail 0))
+          (def subst (in tail 1))
+          (assert (or (function? subst)
+                      (cfunction? subst))
+                  (string "expected a function, got: " (type subst)))
+          (def tag (when (> (length tail) 2) (in tail 2)))
+          (def old-mode (get state :mode))
+          (def cs (cap-save state))
+          (put state :mode :peg-mode-normal)
+          (def res-idx (peg-rule state patt index grammar))
+          (put state :mode old-mode)
+          (def ret
+            (label result
+              (when res-idx
+                (def cap
+                  # use only the new captures
+                  (subst ;(array/slice (get state :captures)
+                                       (get cs :captures))))
+                (cap-load-keept state cs)
+                (when (not (truthy? cap))
+                  (return result nil))
+                (pushcap state cap tag)
+                res-idx)))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_ERROR
+        (= 'error op)
+        (do
+          (log-entry op peg index grammar)
+          (def patt
+            (if (empty? tail)
+              0 # determined via gdb
+              (in tail 0)))
+          (def old-mode (get state :mode))
+          (put state :mode :peg-mode-normal)
+          (def old-cap (length (get state :captures)))
+          (def res-idx (peg-rule state patt index grammar))
+          (put state :mode old-mode)
+          (def ret
+            (when res-idx
+              (if (> (length (get state :captures)) old-cap)
+                (error (string (last (get state :captures))))
+                (let [[line col]
+                      (get-linecol-from-position
+                        state
+                        (- index (get state :text-start)))]
+                  (errorf "match error at line %d, column %d" line col)))
+              # XXX: should not get here
+              nil))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_BACKMATCH
+        (= 'backmatch op)
+        (do
+          (log-entry op peg index grammar)
+          (def text
+            (string/slice (get state :original-text)
+                          index (get state :text-end)))
+          (def tag (when (next tail) (in tail 0)))
+          (def ret
+            (label result
+              (loop [i :down-to [(dec (length (get state :tags))) 0]]
+                (let [cur-tag (get-in state [:tags i])]
+                  (when (= cur-tag tag)
+                    (def cap
+                      (get-in state [:tagged-captures i]))
+                    (when (not (string? cap))
+                      (return result nil))
+                    #
+                    (let [caplen (length cap)]
+                      (when (> (+ (length text) caplen)
+                               (get state :text-end))
+                        (return result nil))
+                      (return result
+                              (when (string/has-prefix? cap text)
+                                (+ index caplen)))))))
+              # just being explicit
+              nil))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
+        # RULE_LENPREFIX
+        (= 'lenprefix op)
+        (do
+          (log-entry op peg index grammar)
+          (assert (not (< (length tail) 2))
+                  (string/format "`%s` requires at least 2 arguments"
+                                 (string op)))
+          (def n-patt (in tail 0))
+          (def patt (in tail 1))
+          (def old-mode (get state :mode))
+          (put state :mode :peg-mode-normal)
+          (def cs (cap-save state))
+          (def ret
+            (label result
+              (var next-idx (peg-rule state n-patt index grammar))
+              (when (nil? next-idx)
+                (return result nil))
+              #
+              (put state :mode old-mode)
+              (def num-sub-caps
+                (- (length (get state :captures))
+                   (get cs :captures)))
+              (var lencap nil)
+              # XXX: is the condition below incomplete?
+              (when (<= num-sub-caps 0)
+                (cap-load state cs)
+                (return result nil))
+              # above and below here somewhat different from c
+              (set lencap (get-in state
+                                  [:captures (get cs :captures)]))
+              (when (not (int? lencap))
+                (cap-load state cs)
+                (return result nil))
+              #
+              (def nrep lencap)
+              (cap-load state cs)
+              (forv i 0 nrep
+                (set next-idx
+                     (peg-rule state patt next-idx grammar))
+                (when (nil? next-idx)
+                  (cap-load state cs)
+                  (return result nil)))
+              next-idx))
+          (log-exit op ret {:peg peg :index index})
+          ret)
+
         # RULE_READINT
         (or (= 'int op)
             (= 'int-be op)
@@ -1101,293 +1471,7 @@
               width))
           (log-exit op ret {:peg peg :index index})
           ret)
-        # RULE_CHOICE
-        (or (= 'choice op)
-            (= '+ op))
-        (do
-          (log-entry op peg index grammar)
-          (def len (length tail))
-          (def ret
-            (label result
-              (when (zero? len)
-                (return result nil))
-              (def cs (cap-save state))
-              (forv i 0 (dec len)
-                (def sub-peg (get tail i))
-                (def res-idx (peg-rule state sub-peg index grammar))
-                # XXX: should be ok?
-                (when res-idx
-                  (return result res-idx))
-                (cap-load state cs))
-              (peg-rule state (get tail (dec len))
-                        index grammar)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_SPLIT
-        (= 'split op)
-        (do
-          (log-entry op peg index grammar)
-          (def saved-end (get state :text-end))
-          (def sep-patt (in tail 0))
-          (def sub-patt (in tail 1))
-          (var cur-idx index)
-          (var sep-end nil)
-          (def ret
-            (label result
-              (forever # not really
-                (def text-start cur-idx)
-                (def cs (cap-save state))
-                (while (<= cur-idx (get state :text-end))
-                  (set sep-end
-                       (peg-rule state sep-patt cur-idx grammar))
-                  (cap-load state cs)
-                  (when sep-end
-                    (break))
-                  (++ cur-idx))
 
-                (when sep-end
-                  (put state :text-end cur-idx)
-                  (set cur-idx sep-end))
-
-                (def subpatt-end
-                  (peg-rule state sub-patt text-start grammar))
-
-                (put state :text-end saved-end)
-
-                (when (nil? subpatt-end)
-                  (return result nil))
-
-                (when (nil? sep-end)
-                  (break)))
-              # when loop broken out of via break...
-              (get state :text-end)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_IF
-        (= 'if op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (>= (length tail) 2)
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt-a (in tail 0))
-          (def patt-b (in tail 1))
-          (def res-idx (peg-rule state patt-a index grammar))
-          (def ret
-            (when res-idx
-              (peg-rule state patt-b index grammar)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_NOT
-        (or (= 'not op)
-            (= '! op))
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def cs (cap-save state))
-          (def res-idx (peg-rule state patt index grammar))
-          (def ret
-            (when (not res-idx)
-              (cap-load state cs)
-              index))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_MATCHTIME
-        (= 'cmt op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def subst (in tail 1))
-          (assert (or (function? subst)
-                      (cfunction? subst))
-                  (string "expected a function, got: " (type subst)))
-          (def tag (when (> (length tail) 2) (in tail 2)))
-          (def old-mode (get state :mode))
-          (def cs (cap-save state))
-          (put state :mode :peg-mode-normal)
-          (def res-idx (peg-rule state patt index grammar))
-          (put state :mode old-mode)
-          (def ret
-            (label result
-              (when res-idx
-                (def cap
-                  # use only the new captures
-                  (subst ;(array/slice (get state :captures)
-                                       (get cs :captures))))
-                (cap-load-keept state cs)
-                (when (not (truthy? cap))
-                  (return result nil))
-                (pushcap state cap tag)
-                res-idx)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_DROP
-        (= 'drop op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def cs (cap-save state))
-          (def res-idx (peg-rule state patt index grammar))
-          (def ret
-            (when res-idx
-              (cap-load state cs)
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_IFNOT
-        (= 'if-not op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (>= (length tail) 2)
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt-a (in tail 0))
-          (def patt-b (in tail 1))
-          (def cs (cap-save state))
-          (def res-idx (peg-rule state patt-a index grammar))
-          (def ret
-            (when (not res-idx)
-              (cap-load state cs)
-              (peg-rule state patt-b index grammar)))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_REPLACE
-        (or (= 'replace op)
-            (= '/ op))
-        (do
-          (log-entry op peg index grammar)
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def subst (in tail 1))
-          (def tag (when (> (length tail) 2) (in tail 2)))
-          (def old-mode (get state :mode))
-          (def cs (cap-save state))
-          (put state :mode :peg-mode-normal)
-          (def res-idx (peg-rule state patt index grammar))
-          (put state :mode old-mode)
-          (def ret
-            (when res-idx
-              (def cap
-                (cond
-                  (dictionary? subst)
-                  (get subst (last (get state :captures)))
-                  #
-                  (or (function? subst)
-                      (cfunction? subst))
-                  # use only the new captures
-                  (subst ;(array/slice (get state :captures)
-                                       (get cs :captures)))
-                  #
-                  subst))
-              (cap-load-keept state cs)
-              (pushcap state cap tag)
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_CAPTURE_NUM
-        (= 'number op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def base (when (< 1 (length tail)) (in tail 1)))
-          (def tag (when (< 2 (length tail)) (in tail 2)))
-          (def res-idx (peg-rule state patt index grammar))
-          (def ret
-            (when res-idx
-              (let [cap (string/slice (get state :original-text)
-                                      index res-idx)]
-                (when-let [num (scan-number-base cap base)]
-                  (if (and (not (get state :has-backref))
-                           (= (get state :mode) :peg-mode-accumulate))
-                    (buffer/push (get state :scratch) cap)
-                    (pushcap state num tag))))
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_LENPREFIX
-        (= 'lenprefix op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def n-patt (in tail 0))
-          (def patt (in tail 1))
-          (def old-mode (get state :mode))
-          (put state :mode :peg-mode-normal)
-          (def cs (cap-save state))
-          (def ret
-            (label result
-              (var next-idx (peg-rule state n-patt index grammar))
-              (when (nil? next-idx)
-                (return result nil))
-              #
-              (put state :mode old-mode)
-              (def num-sub-caps
-                (- (length (get state :captures))
-                   (get cs :captures)))
-              (var lencap nil)
-              # XXX: is the condition below incomplete?
-              (when (<= num-sub-caps 0)
-                (cap-load state cs)
-                (return result nil))
-              # above and below here somewhat different from c
-              (set lencap (get-in state
-                                  [:captures (get cs :captures)]))
-              (when (not (int? lencap))
-                (cap-load state cs)
-                (return result nil))
-              #
-              (def nrep lencap)
-              (cap-load state cs)
-              (forv i 0 nrep
-                (set next-idx
-                     (peg-rule state patt next-idx grammar))
-                (when (nil? next-idx)
-                  (cap-load state cs)
-                  (return result nil)))
-              next-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_GROUP
-        (= 'group op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
-          (def old-mode (get state :mode))
-          (def cs (cap-save state))
-          (put state :mode :peg-mode-normal)
-          (def res-idx (peg-rule state patt index grammar))
-          (put state  :mode old-mode)
-          (def ret
-            (when res-idx
-              (def cap
-                # use only the new captures
-                (array/slice (get state :captures)
-                             (get cs :captures)))
-              (cap-load-keept state cs)
-              (pushcap state cap tag)
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
         # RULE_UNREF
         (= 'unref op)
         (do
@@ -1420,52 +1504,7 @@
               res-idx))
           (log-exit op ret {:peg peg :index index})
           ret)
-        # RULE_ACCUMULATE
-        (or (= 'accumulate op)
-            (= '% op))
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
-          (def old-mode (get state :mode))
-          (when (and (not tag)
-                     (= old-mode :peg-mode-accumulate))
-            (peg-rule state patt index grammar))
-          (def cs (cap-save state))
-          (put state :mode :peg-mode-accumulate)
-          (def res-idx (peg-rule state patt index grammar))
-          (put state :mode old-mode)
-          (def ret
-            (when res-idx
-              (def cap (string (get state :scratch)))
-              (cap-load-keept state cs)
-              (pushcap state cap tag)
-              res-idx))
-          (log-exit op ret {:peg peg :index index})
-          ret)
-        # RULE_ARGUMENT
-        (= 'argument op)
-        (do
-          (log-entry op peg index grammar)
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (assert (nat? patt)
-                  (string "expected non-negative integer, got: " patt))
-          # XXX: could use (get state :extrac)?
-          (assert (< patt (length (get state :extrav)))
-                  (string "expected smaller integer, got: " patt))
-          (def tag (when (< 1 (length tail))
-                     (in tail 1)))
-          (def arg-n (in (get state :extrav) patt))
-          (pushcap state arg-n tag)
-          (def ret index)
-          (log-exit op ret {:peg peg :index index})
-          ret)
+
         #
         (errorf "unknown tuple op: %n" op)))
     #
