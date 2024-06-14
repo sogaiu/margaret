@@ -1525,334 +1525,205 @@
 
 (comment
 
-  (peg-match 1 "abc")
-  # =>
-  @[]
+  (defn make-attrs
+    [& items]
+    (zipcoll [:bl :bc :el :ec]
+             items))
 
-  (peg-match 1 "abc" 1 :hola)
-  # =>
-  @[]
+  (defn atom-node
+    [node-type peg-form]
+    ~(cmt (capture (sequence (line) (column)
+                             ,peg-form
+                             (line) (column)))
+          ,|[node-type (make-attrs ;(slice $& 0 -2)) (last $&)]))
 
-  (peg-match "a" "abc")
-  # =>
-  @[]
+  (defn reader-macro-node
+    [node-type sigil]
+    ~(cmt (capture (sequence (line) (column)
+                             ,sigil
+                             (any :non-form)
+                             :form
+                             (line) (column)))
+          ,|[node-type (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
+             ;(slice $& 2 -4)]))
 
-  (peg-match '(set "a") "abc")
-  # =>
-  @[]
+  (defn collection-node
+    [node-type open-delim close-delim]
+    ~(cmt
+       (capture
+         (sequence
+           (line) (column)
+           ,open-delim
+           (any :input)
+           (choice ,close-delim
+                   (error
+                     (replace (sequence (line) (column))
+                              ,|(string/format
+                                  "line: %p column: %p missing %p for %p"
+                                  $0 $1 close-delim node-type))))
+           (line) (column)))
+       ,|[node-type (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
+          ;(slice $& 2 -4)]))
 
-  (peg-match '(set "d") "abc")
-  # =>
-  nil
+  (def loc-grammar
+    ~@{:main (sequence (line) (column)
+                       (some :input)
+                       (line) (column))
+       #
+       :input (choice :non-form
+                      :form)
+       #
+       :non-form (choice :whitespace
+                         :comment
+                         :discard)
+       #
+       :whitespace ,(atom-node :whitespace
+                               '(choice (some (set " \0\f\t\v"))
+                                        (choice "\r\n"
+                                                "\r"
+                                                "\n")))
+       #
+       :comment ,(atom-node :comment
+                            '(sequence "#"
+                                       (any (if-not (set "\r\n") 1))))
+       #
+       :discard
+       (cmt (capture (sequence (line) (column)
+                               "\\#"
+                               (opt (sequence (any (choice :comment
+                                                           :whitespace))
+                                              :discard))
+                               (any (choice :comment
+                                            :whitespace))
+                               :form
+                               (line) (column)))
+            ,|[:discard (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
+               ;(slice $& 2 -4)])
+       #
+       :form (choice # reader macros
+                     :fn
+                     :quasiquote
+                     :quote
+                     :splice
+                     :unquote
+                     # collections
+                     :array
+                     :bracket-array
+                     :tuple
+                     :bracket-tuple
+                     :table
+                     :struct
+                     # atoms
+                     :number
+                     :constant
+                     :buffer
+                     :string
+                     :long-buffer
+                     :long-string
+                     :keyword
+                     :symbol)
+       #
+       :fn ,(reader-macro-node :fn "|")
+       #
+       :quasiquote ,(reader-macro-node :quasiquote "~")
+       #
+       :quote ,(reader-macro-node :quote "'")
+       #
+       :splice ,(reader-macro-node :splice ";")
+       #
+       :unquote ,(reader-macro-node :unquote ",")
+       #
+       :array ,(collection-node :array "@(" ")")
+       #
+       :tuple ,(collection-node :tuple "(" ")")
+       #
+       :bracket-array ,(collection-node :bracket-array "@[" "]")
+       #
+       :bracket-tuple ,(collection-node :bracket-tuple "[" "]")
+       #
+       :table ,(collection-node :table "@{" "}")
+       #
+       :struct ,(collection-node :struct "{" "}")
+       #
+       :number ,(atom-node :number
+                           ~(drop (cmt
+                                    (capture (some :name-char))
+                                    ,scan-number)))
+       #
+       :name-char (choice (range "09" "AZ" "az" "\x80\xFF")
+                          (set "!$%&*+-./:<?=>@^_"))
+       #
+       :constant ,(atom-node :constant
+                             '(sequence (choice "false" "nil" "true")
+                                        (not :name-char)))
+       #
+       :buffer ,(atom-node :buffer
+                           '(sequence `@"`
+                                      (any (choice :escape
+                                                   (if-not "\"" 1)))
+                                      `"`))
+       #
+       :escape (sequence "\\"
+                         (choice (set `"'0?\abefnrtvz`)
+                                 (sequence "x" (2 :h))
+                                 (sequence "u" (4 :h))
+                                 (sequence "U" (6 :h))
+                                 (error (constant "bad escape"))))
+       #
+       :string ,(atom-node :string
+                           '(sequence `"`
+                                      (any (choice :escape
+                                                   (if-not "\"" 1)))
+                                      `"`))
+       #
+       :long-string ,(atom-node :long-string
+                                :long-bytes)
+       #
+       :long-bytes {:main (drop (sequence :open
+                                          (any (if-not :close 1))
+                                          :close))
+                    :open (capture :delim :n)
+                    :delim (some "`")
+                    :close (cmt (sequence (not (look -1 "`"))
+                                          (backref :n)
+                                          (capture (backmatch :n)))
+                                ,=)}
+       #
+       :long-buffer ,(atom-node :long-buffer
+                                '(sequence "@" :long-bytes))
+       #
+       :keyword ,(atom-node :keyword
+                            '(sequence ":"
+                                       (any :name-char)))
+       #
+       :symbol ,(atom-node :symbol
+                           '(some :name-char))
+       })
 
-  (peg-match '{:main :sub
-               :sub {:main :inner
-                     :inner 1}}
-             "abc")
+  (peg-match loc-grammar
+             (string "(defn my-fn\n"
+                     "  [x]\n"
+                     "  (math/pow x x))"))
   # =>
-  @[]
-
-  (peg-match '(range "ac") "abc")
-  # =>
-  @[]
-
-  (peg-match :a "abc")
-  # =>
-  @[]
-
-  (peg-match ~(sub "abcd" "abc")
-             "abcdef")
-  # =>
-  @[]
-
-  (peg-match ~(sub "abcd" "abcde")
-             "abcdef")
-  # =>
-  nil
-
-  (peg-match ~(sub "x" "abc")
-             "abcdef")
-  # =>
-  nil
-
-  (peg-match ~(sub "abc" "x")
-             "abcdef")
-  # =>
-  nil
-
-  (peg-match ~(capture 1) "a")
-  # =>
-  @["a"]
-
-  (peg-match ~(sub (capture "abcd") (capture "abc"))
-             "abcdef")
-  # =>
-  @["abcd" "abc"]
-
-  (peg-match ~(sequence "a" "b" "c") "abc")
-  # =>
-  @[]
-
-  (peg-match ~(sequence (capture 1 :a) (capture 1) (capture 1 :c))
-             "abc")
-  # =>
-  @["a" "b" "c"]
-
-  (peg-match ~(constant "smile")
-             "whatever")
-  # =>
-  @["smile"]
-
-  (peg-match ~(sequence (capture 1 :a)
-                        (backref :a))
-             "a")
-  # =>
-  @["a" "a"]
-
-  (peg-match ~(sequence (constant 5 :tag)
-                        (sub (capture "abc" :tag)
-                             (backref :tag)))
-             "abcdef")
-  # =>
-  @[5 "abc" "abc"]
-
-  (peg-match ~(sub "abc" (sequence "abc" -1))
-             "abcdef")
-  # =>
-  @[]
-
-  (peg-match ~(position) "a")
-  # =>
-  @[0]
-
-  (peg-match ~(line)
-             "a")
-  # =>
-  @[1]
-
-  (peg-match ~(column)
-             "a")
-  # =>
-  @[1]
-
-  (peg-match ~(sequence "one\ntw"
-                        (sub "o" (position)))
-             "one\ntwo\nthree\n")
-  # =>
-  @[6]
-
-  (peg-match ~(sequence "one\ntw"
-                        (sub "o" (sequence (position) (line) (column))))
-             "one\ntwo\nthree\n")
-  # =>
-  @[6 2 3]
-
-  (peg-match ~(sequence (sub "abc" "ab")
-                        "d")
-             "abcdef")
-  # =>
-  @[]
-
-  (try
-    (peg-match ~(sequence "a"
-                          (sub "bcd" (error "bc")))
-               "abcdef")
-    ([e] e))
-  # =>
-  "match error at line 1, column 2"
-
- (peg-match ~(sequence (sub (capture "abcd" :a)
-                            (capture "abc"))
-                       (capture (backmatch)))
-            "abcdabcd")
-  # =>
-  @["abcd" "abc" "abc"]
-
-  (peg-match ~(sequence (sub (capture "abcd" :a)
-                             (capture "abc"))
-                        (capture (backmatch :a)))
-             "abcdabcd")
-  # =>
-  @["abcd" "abc" "abcd"]
-
-  (peg-match ~(sequence (capture "abcd" :a)
-                        (sub (capture "abc" :a)
-                             (capture (backmatch :a)))
-                        (capture (backmatch :a)))
-             "abcdabcabcd")
-  # =>
-  @["abcd" "abc" "abc" "abc"]
-
-  (peg-match ~(sequence (capture "abcd" :a)
-                        (sub (capture "abc")
-                             (capture (backmatch)))
-                        (capture (backmatch :a)))
-             "abcdabcabcd")
-  # =>
-  @["abcd" "abc" "abc" "abcd"]
-
-  (peg-match ~(sub (capture "abcd")
-                   (look 3 (capture "d")))
-             "abcdcba")
-  # =>
-  @["abcd" "d"]
-
-  (peg-match ~(sub (capture "abcd")
-                   (capture (to "c")))
-             "abcdef")
-  # =>
-  @["abcd" "ab"]
-
-  (peg-match ~(sub (capture (to "d"))
-                   (capture "abc"))
-             "abcdef")
-  # =>
-  @["abc" "abc"]
-
-  (peg-match ~(sub (capture (to "d"))
-                   (capture (to "c")))
-             "abcdef")
-  # =>
-  @["abc" "ab"]
-
-  (peg-match ~(sequence (sub (capture (to "d"))
-                             (capture (to "c")))
-                        (capture (to "f")))
-             "abcdef")
-  # =>
-  @["abc" "ab" "de"]
-
-  (peg-match ~(sub (capture "abcd")
-                   (capture (thru "c")))
-             "abcdef")
-  # =>
-  @["abcd" "abc"]
-
-  (peg-match ~(sub (capture (thru "d"))
-                   (capture "abc"))
-             "abcdef")
-  # =>
-  @["abcd" "abc"]
-
-  (peg-match ~(sub (capture (thru "d"))
-                   (capture (thru "c")))
-             "abcdef")
-  # =>
-  @["abcd" "abc"]
-
-  (peg-match ~(sequence (sub (capture (thru "d"))
-                             (capture (thru "c")))
-                        (capture (thru "f")))
-             "abcdef")
-  # =>
-  @["abcd" "abc" "ef"]
-
-  (peg-match ~(sequence (sub (capture 3)
-                             (capture 2))
-                        (capture 3))
-             "abcdef")
-  # =>
-  @["abc" "ab" "def"]
-
-  (peg-match ~(sub (capture -7)
-                   (capture -1))
-             "abcdef")
-  # =>
-  @["" ""]
-
-  (peg-match ~(sequence (sub (capture -7)
-                             (capture -1))
-                        (capture 1))
-             "abcdef")
-  # =>
-  @["" "" "a"]
-
-  (peg-match ~(sequence (sub (capture (repeat 3 (range "ac")))
-                             (capture (repeat 2 (range "ab"))))
-                        (capture (repeat 3 (range "df"))))
-             "abcdef")
-  # =>
-  @["abc" "ab" "def"]
-
-  (peg-match ~(sequence (sub (capture (repeat 3 (set "abc")))
-                             (capture (repeat 2 (set "ab"))))
-                        (capture (repeat 3 (set "def"))))
-             "abcdef")
-  # =>
-  @["abc" "ab" "def"]
-
-  (peg-match ~(sequence (sub (capture "abcd")
-                             (int 1))
-                        (int 1))
-             "abcdef")
-  # =>
-  @["abcd" 97 101]
-
-  (peg-match ~(sequence (sub (capture "ab")
-                             (int 3)))
-             "abcdef")
-  # =>
-  nil
-
-  (peg-match ~(sub (capture "abcd")
-                   (sub (capture "abc")
-                        (capture "ab")))
-             "abcdef")
-  # =>
-  @["abcd" "abc" "ab"]
-
-  (peg-match ~(split "," (capture 1))
-             "a,b,c")
-  # =>
-  @["a" "b" "c"]
-
-  # drops captures from separator pattern
-  (peg-match ~(split (capture ",") (capture 1))
-             "a,b,c")
-  # =>
-  @["a" "b" "c"]
-
-  # can match empty subpatterns
-  (peg-match ~(split "," (capture :w*))
-             ",a,,bar,,,c,,")
-  # =>
-  @["" "a" "" "bar" "" "" "c" "" ""]
-
-  # subpattern is limited to only text before the separator
-  (peg-match ~(split "," (capture (to -1)))
-             "a,,bar,c")
-  # =>
-  @["a" "" "bar" "c"]
-
-  # fails if any subpattern fails
-  (peg-match ~(split "," (capture "a"))
-             "a,a,b")
-  # =>
-  nil
-
-  # separator does not have to match anything
-  (peg-match ~(split "x" (capture (to -1)))
-             "a,a,b")
-  # =>
-  @["a,a,b"]
-
-  # always consumes entire input
-  (peg-match ~(split 1 (capture ""))
-             "abc")
-  # =>
-  @["" "" "" ""]
-
-  # separator can be an arbitrary PEG
-  (peg-match ~(split :s+ (capture (to -1)))
-             "a   b      c")
-  # =>
-  @["a" "b" "c"]
-
-  (peg-match ~(sequence (number :d nil :tag)
-                        (capture (lenprefix (backref :tag) 1)))
-             "3abc")
-  # =>
-  @[3 "abc"]
+  @[1 1
+    [:tuple
+     @{:bc 1 :bl 1 :ec 18 :el 3}
+     [:symbol @{:bc 2 :bl 1 :ec 6 :el 1} "defn"]
+     [:whitespace @{:bc 6 :bl 1 :ec 7 :el 1} " "]
+     [:symbol @{:bc 7 :bl 1 :ec 12 :el 1} "my-fn"]
+     [:whitespace @{:bc 12 :bl 1 :ec 1 :el 2} "\n"]
+     [:whitespace @{:bc 1 :bl 2 :ec 3 :el 2} "  "]
+     [:bracket-tuple @{:bc 3 :bl 2 :ec 6 :el 2}
+      [:symbol @{:bc 4 :bl 2 :ec 5 :el 2} "x"]]
+     [:whitespace @{:bc 6 :bl 2 :ec 1 :el 3} "\n"]
+     [:whitespace @{:bc 1 :bl 3 :ec 3 :el 3} "  "]
+     [:tuple @{:bc 3 :bl 3 :ec 17 :el 3}
+      [:symbol @{:bc 4 :bl 3 :ec 12 :el 3} "math/pow"]
+      [:whitespace @{:bc 12 :bl 3 :ec 13 :el 3} " "]
+      [:symbol @{:bc 13 :bl 3 :ec 14 :el 3} "x"]
+      [:whitespace @{:bc 14 :bl 3 :ec 15 :el 3} " "]
+      [:symbol @{:bc 15 :bl 3 :ec 16 :el 3} "x"]]]
+    3 18]
 
   )
 
