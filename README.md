@@ -2,6 +2,9 @@
 
 This aims to be a pure-Janet implementation of Janet's `peg/match`.
 
+Apart from having fun, here are some reasons [why](doc/why.md) this
+could be of some interest.
+
 ## Background
 
 While reading bakpakin's [How Janet's PEG module
@@ -108,8 +111,7 @@ See [here](doc/tracing.md) for more.
 
 ## Other Docs
 
-* [Why?](doc/why.md)
-* [Tutorials](doc/tutorials.md)
-* [Testing](doc/testing.md)
-* [Implementation Notes](doc/implementation-notes.md)
-* [Credits](doc/credits.md)
+* [Tutorials](doc/tutorials.md) of a sort
+* [Testing](doc/testing.md) details
+* [Implementation Notes](doc/implementation-notes.md) for the curious
+* [Credits](doc/credits.md) to acknowledge help
