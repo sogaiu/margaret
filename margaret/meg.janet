@@ -400,6 +400,36 @@
 
   )
 
+(defn cap-save
+  [state]
+  {:scratch (length (get state :scratch))
+   :captures (length (get state :captures))
+   :tagged-captures (length (get state :tagged-captures))})
+
+(defn cap-load
+  [state cs]
+  (put state :scratch
+       (buffer/slice (get state :scratch)
+                     0 (get cs :scratch)))
+  (put state :captures
+       (array/slice (get state :captures)
+                    0 (get cs :captures)))
+  (put state :tags
+       (array/slice (get state :tags)
+                    0 (get cs :tagged-captures)))
+  (put state :tagged-captures
+       (array/slice (get state :tagged-captures)
+                    0 (get cs :tagged-captures))))
+
+(defn cap-load-keept
+  [state cs]
+  (put state :scratch
+       (buffer/slice (get state :scratch)
+                     0 (get cs :scratch)))
+  (put state :captures
+       (array/slice (get state :captures)
+                    0 (cs :captures))))
+
 (defn pushcap
   [state capture tag]
   (case (get state :mode)
@@ -440,36 +470,6 @@
                (>= (get-in state [:linemap 0]) position)))
     [1 (inc position)]
     [(+ lo 2) (- position (get-in state [:linemap lo]))]))
-
-(defn cap-save
-  [state]
-  {:scratch (length (get state :scratch))
-   :captures (length (get state :captures))
-   :tagged-captures (length (get state :tagged-captures))})
-
-(defn cap-load
-  [state cs]
-  (put state :scratch
-       (buffer/slice (get state :scratch)
-                     0 (get cs :scratch)))
-  (put state :captures
-       (array/slice (get state :captures)
-                    0 (get cs :captures)))
-  (put state :tags
-       (array/slice (get state :tags)
-                    0 (get cs :tagged-captures)))
-  (put state :tagged-captures
-       (array/slice (get state :tagged-captures)
-                    0 (get cs :tagged-captures))))
-
-(defn cap-load-keept
-  [state cs]
-  (put state :scratch
-       (buffer/slice (get state :scratch)
-                     0 (get cs :scratch)))
-  (put state :captures
-       (array/slice (get state :captures)
-                    0 (cs :captures))))
 
 (defn log-entry [& args]
   (when (os/getenv "VERBOSE")
