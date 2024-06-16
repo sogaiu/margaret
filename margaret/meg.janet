@@ -419,11 +419,10 @@
   [state position]
   (when (neg? (get state :linemaplen))
     (var nl-count 0)
-    (def nl-char (chr "\n"))
     (def original-text (get state :original-text))
     (forv i (get state :text-start) (get state :outer-text-end)
       (let [ch (in original-text i)]
-        (when (= ch nl-char)
+        (when (= ch (chr "\n"))
           (array/push (get state :linemap) i)
           (++ nl-count))))
     (put state :linemaplen nl-count))
@@ -504,10 +503,9 @@
     (do
       (log-entry [:index index] [:peg peg])
       (def ret
-        (when-let [result (if (true? peg)
-                            (peg-rule state 0 index grammar)
-                            (peg-rule state '(not 0) index grammar))]
-          result))
+        (if (true? peg)
+          (peg-rule state 0 index grammar)
+          (peg-rule state '(not 0) index grammar)))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -516,9 +514,7 @@
     (do
       (log-entry [:index index] [:peg peg])
       (def ret
-        (when-let [result
-                   (peg-rule state (get grammar peg) index grammar)]
-          result))
+        (peg-rule state (get grammar peg) index grammar))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -526,11 +522,9 @@
     (struct? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (assert (get peg :main)
-              "peg does not have :main")
+      (assert (get peg :main) "peg does not have :main")
       (def ret
-        (when-let [result (peg-rule state (get peg :main) index peg)]
-          result))
+        (peg-rule state (get peg :main) index peg))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
@@ -538,11 +532,9 @@
     (table? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (assert (get peg :main)
-              "peg does not have :main")
+      (assert (get peg :main) "peg does not have :main")
       (def ret
-        (when-let [result (peg-rule state (get peg :main) index peg)]
-          result))
+        (peg-rule state (get peg :main) index peg))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
 
