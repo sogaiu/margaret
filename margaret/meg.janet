@@ -497,6 +497,11 @@
   (log ":state: %M" state)
   (log ":grammar: %M" grammar)
 
+  (defn get-text
+    [index]
+    (string/slice (get state :original-text)
+                  index (get state :text-end)))
+
   (cond
     # true / false
     (boolean? peg)
@@ -542,11 +547,8 @@
     (string? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (def text
-        (string/slice (get state :original-text)
-                      index (get state :text-end)))
       (def ret
-        (when (string/has-prefix? peg text)
+        (when (string/has-prefix? peg (get-text index))
           (+ index (length peg))))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
@@ -555,11 +557,8 @@
     (nat? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (def text
-        (string/slice (get state :original-text)
-                      index (get state :text-end)))
       (def ret
-        (when (<= peg (length text))
+        (when (<= peg (length (get-text index)))
           (+ index peg)))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
@@ -569,12 +568,9 @@
          (neg? peg))
     (do
       (log-entry [:index index] [:peg peg])
-      (def text
-        (string/slice (get state :original-text)
-                      index (get state :text-end)))
       (def ret
         (when (not (<= (math/abs peg)
-                       (length text)))
+                       (length (get-text index))))
           index))
       (log-exit [:ret ret] [:index index] [:peg peg])
       ret)
@@ -594,9 +590,7 @@
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
-          (def text
-            (string/slice (get state :original-text)
-                          index (get state :text-end)))
+          (def text (get-text index))
           (def ret
             (when (pos? (length text))
               (let [target-bytes
@@ -626,9 +620,7 @@
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
-          (def text
-            (string/slice (get state :original-text)
-                          index (get state :text-end)))
+          (def text (get-text index))
           (def patt (in tail 0))
           (def ret
             (when (and (pos? (length text))
@@ -1322,9 +1314,7 @@
         (= 'backmatch op)
         (do
           (log-entry [:index index] [:peg peg])
-          (def text
-            (string/slice (get state :original-text)
-                          index (get state :text-end)))
+          (def text (get-text index))
           (def tag (when (next tail) (in tail 0)))
           (def ret
             (label result
@@ -1404,9 +1394,7 @@
           (assert (next tail)
                   (string/format "`%s` requires at least 1 argument"
                                  (string op)))
-          (def text
-            (string/slice (get state :original-text)
-                          index (get state :text-end)))
+          (def text (get-text index))
           (def width (in tail 0))
           (def tag (when (> (length tail) 1) (in tail 1)))
           (def ret
