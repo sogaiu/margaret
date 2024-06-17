@@ -26,5 +26,13 @@
   # =>
   @[:two]
 
+  (peg/match ~(sequence (argument 0 :tag)
+                        (backref :tag))
+             "ignored"
+             0
+             :smile)
+  # =>
+  @[:smile :smile]
+
   )
 
