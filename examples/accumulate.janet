@@ -15,6 +15,14 @@
   # =>
   @["abc"]
 
+  (peg/match ~(sequence (accumulate (sequence (capture "a")
+                                              (capture "b"))
+                                    :my-tag)
+                        (backref :my-tag))
+             "abc")
+  # =>
+  @["ab" "ab"]
+
   (peg/match ~(accumulate (sequence (capture "a")
                                     (capture "b")
                                     (capture "c")))
