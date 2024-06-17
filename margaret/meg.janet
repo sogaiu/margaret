@@ -116,167 +116,1137 @@
 
   )
 
-(defn has-backref?
+(defn analyze
   [peg]
   (defn visit-peg
-    [a-peg]
+    [a-peg a-state]
+    (defn assert-arity
+      [argv n &opt limit]
+      (def args (drop 1 argv))
+      (default limit -1)
+      (when (not (neg? limit))
+        (assert (<= n limit)
+                (string/format "n: %d not <= limit: %d" n limit)))
+      (def num-args (length args))
+      (if (neg? limit)
+        (assert (>= num-args n)
+                {:peg argv
+                 :msg (string/format "needs >= %d arg(s)" n)})
+        (assert (<= n num-args limit)
+                {:peg argv
+                 :msg (if (= n limit)
+                        (string/format "needs exactly %d arg(s)" n)
+                        (string/format "needs between %d and %d args"
+                                       n limit))})))
+    (defn check-range
+      [the-peg the-state]
+      (assert-arity the-peg 1)
+      (assert (all |(and (string? $)
+                         (= 2 (length $)))
+                   (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be length 2 strings"})
+      (assert (all |(<= (get $ 0) (get $ 1))
+                   (drop 1 the-peg))
+              {:peg the-peg
+               :msg "empty range detected"})
+      the-state)
+    (defn check-set
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (assert (string? (get the-peg 1))
+              {:peg the-peg
+               :msg "arg should be a string"})
+      the-state)
+    (defn check-look
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (assert (int? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be an integer"})
+      (merge the-state
+             (visit-peg (get the-peg 2) the-state)))
+    (defn check-choice
+      [the-peg the-state]
+      # can have zero args
+      # if any args exist, they should be pegs
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-sequence
+      [the-peg the-state]
+      # can have zero args
+      # if any args exist, they should be pegs
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-if
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-if-not
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-not
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-thru
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-to
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-between
+      [the-peg the-state]
+      (assert-arity the-peg 3 3)
+      (assert (nat? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (assert (nat? (get the-peg 2))
+              {:peg the-peg
+               :msg "2nd arg should be a non-neg integer"})
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-opt
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-any
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-some
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-at-least
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (assert (nat? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-at-most
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (assert (nat? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-repeat
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (assert (nat? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-backref
+      [the-peg the-state]
+      (assert-arity the-peg 1)
+      (assert (all |(keyword? $) (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be keywords"})
+      (merge the-state {:has-backref true}))
+    (defn check-position
+      [the-peg the-state]
+      (assert-arity the-peg 0 1)
+      (assert (all |(keyword? $) (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be keywords"})
+      the-state)
+    (defn check-line
+      [the-peg the-state]
+      (assert-arity the-peg 0 1)
+      (assert (all |(keyword? $) (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be keywords"})
+      the-state)
+    (defn check-column
+      [the-peg the-state]
+      (assert-arity the-peg 0 1)
+      (assert (all |(keyword? $) (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be keywords"})
+      the-state)
+    (defn check-argument
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (assert (and (nat? (get the-peg 1)))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      the-state)
+    (defn check-constant
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      the-state)
+    (defn check-capture
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-number
+      [the-peg the-state]
+      (assert-arity the-peg 1 3)
+      (when (> (length the-peg) 2)
+        (assert (or (nil? (get the-peg 2))
+                    (and (int? (get the-peg 2))
+                         (<= 2 (get the-peg 2) 36)))
+                {:peg the-peg
+                 :msg "2nd arg should be nil or an int between 2 and 36"}))
+      (when (> (length the-peg) 3)
+        (assert (keyword? (get the-peg 3))
+                {:peg the-peg
+                 :msg "third arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-accumulate
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-drop
+      [the-peg the-state]
+      (assert-arity the-peg 1 1)
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-group
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-sub
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-split
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-replace
+      [the-peg the-state]
+      (assert-arity the-peg 2 3)
+      (when (> (length the-peg) 3)
+        (assert (keyword? (get the-peg 3))
+                {:peg the-peg
+                 :msg "3rd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-cmt
+      [the-peg the-state]
+      (assert-arity the-peg 2 3)
+      (assert (get {:function true :cfunction true}
+                   (type (get the-peg 2)))
+              {:peg the-peg
+               :msg "2nd arg should be a function"})
+      (when (> (length the-peg) 3)
+        (assert (keyword? (get the-peg 3))
+                {:peg the-peg
+                 :msg "3rd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    (defn check-error
+      [the-peg the-state]
+      (assert-arity the-peg 0 1)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-backmatch
+      [the-peg the-state]
+      (assert-arity the-peg 0 1)
+      (assert (all |(keyword? $) (drop 1 the-peg))
+              {:peg the-peg
+               :msg "args should be keywords"})
+      (merge the-state {:has-backref true}))
+    (defn check-lenprefix
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
+    (defn check-readint
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (assert (and (int? (get the-peg 1))
+                   (<= 0 (get the-peg 1) 8))
+              {:peg the-peg
+               :msg "1st arg should be an integer between 0 and 8"})
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      the-state)
+    (defn check-unref
+      [the-peg the-state]
+      (assert-arity the-peg 1 2)
+      (when (> (length the-peg) 2)
+        (assert (keyword? (get the-peg 2))
+                {:peg the-peg
+                 :msg "2nd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 1) the-state)))
+    #
     (case (type a-peg)
       :boolean
-      false
+      a-state
       #
       :string
-      false
+      a-state
       #
       :number
-      false
+      a-state
       #
       :keyword
-      false
+      a-state
       #
       :tuple
-      (let [head (first a-peg)]
+      (let [op (first a-peg)]
+        (assert (not (empty? a-peg))
+                @{:peg a-peg
+                  :msg "peg tuple must be non-empty"})
         (cond
-          (empty? a-peg)
-          false
-          #
-          (get {'-> true
-                'backref true
-                'backmatch true}
-               head)
-          true
-          #
-          (or (get {'any true
-                    'not true '! true
-                    'some true
-                    'thru true
-                    'to true
-                    'unref true
-                    'opt true '? true
-                    #
-                    'accumulate true '% true
-                    'capture true 'quote true '<- true
-                    'cmt true
-                    'drop true
-                    'group true
-                    'number true
-                    'replace true '/ true}
-                   head)
-              (int? head))
-          (visit-peg (get a-peg 1))
-          #
-          (get {'at-least true
-                'at-most true
-                'if true
-                'if-not true
-                'look true '> true
-                'repeat true}
-               head)
-          (visit-peg (get a-peg 2))
-          #
-          (get {'between true}
-               head)
-          (visit-peg (get a-peg 3))
-          #
-          (get {'choice true '+ true
-                'sequence true '* true}
-               head)
-          (some true? (map visit-peg (drop 1 a-peg)))
-          #
-          (get {'split true
-                'sub true
-                #
-                'lenprefix true}
-               head)
-          (or (visit-peg (get a-peg 1))
-              (visit-peg (get a-peg 2)))
-          #
-          (get {'error true}
-               head)
-          (if (> (length a-peg) 1)
-            (visit-peg (get a-peg 1))
-            false)
-          #
-          (get {'range true
-                'set true
-                #
-                'argument true
-                'column true
-                'constant true
-                'int true
-                'int-be true
-                'line true
-                'position true '$ true
-                'uint true
-                'uint-be true}
-               head)
-          false
-          #
-          (errorf "Unexpected tuple: %n" a-peg)))
-      #
+          (int? op)
+          (do
+            (assert-arity a-peg 1 1)
+            (assert (nat? op)
+                    @{:peg a-peg
+                      :msg "1st arg should be non-neg integer"})
+            (merge a-state
+                   (visit-peg (get a-peg 1) a-state)))
+          (case op
+            'range (check-range a-peg a-state)
+            'set (check-set a-peg a-state)
+            'look (check-look a-peg a-state)
+            '> (check-look a-peg a-state)
+            'choice (check-choice a-peg a-state)
+            '+ (check-choice a-peg a-state)
+            'sequence (check-sequence a-peg a-state)
+            '* (check-sequence a-peg a-state)
+            'if (check-if a-peg a-state)
+            'if-not (check-if-not a-peg a-state)
+            'not (check-not a-peg a-state)
+            '! (check-not a-peg a-state)
+            'thru (check-thru a-peg a-state)
+            'to (check-to a-peg a-state)
+            'between (check-between a-peg a-state)
+            'opt (check-opt a-peg a-state)
+            '? (check-opt a-peg a-state)
+            'any (check-any a-peg a-state)
+            'some (check-some a-peg a-state)
+            'at-least (check-at-least a-peg a-state)
+            'at-most (check-at-most a-peg a-state)
+            'repeat (check-repeat a-peg a-state)
+            'backref (check-backref a-peg a-state)
+            '-> (check-backref a-peg a-state)
+            'position (check-position a-peg a-state)
+            '$ (check-position a-peg a-state)
+            'line (check-line a-peg a-state)
+            'column (check-column a-peg a-state)
+            'argument (check-argument a-peg a-state)
+            'constant (check-constant a-peg a-state)
+            'capture (check-capture a-peg a-state)
+            'quote (check-capture a-peg a-state)
+            '<- (check-capture a-peg a-state)
+            'number (check-number a-peg a-state)
+            'accumulate (check-accumulate a-peg a-state)
+            '% (check-accumulate a-peg a-state)
+            'drop (check-drop a-peg a-state)
+            'group (check-group a-peg a-state)
+            'sub (check-sub a-peg a-state)
+            'split (check-split a-peg a-state)
+            'replace (check-replace a-peg a-state)
+            '/ (check-replace a-peg a-state)
+            'cmt (check-cmt a-peg a-state)
+            'error (check-error a-peg a-state)
+            'backmatch (check-backmatch a-peg a-state)
+            'lenprefix (check-lenprefix a-peg a-state)
+            'int (check-readint a-peg a-state)
+            'int-be (check-readint a-peg a-state)
+            'uint (check-readint a-peg a-state)
+            'uint-be (check-readint a-peg a-state)
+            'unref (check-unref a-peg a-state)
+            (errorf "Unexpected tuple: %n" a-peg))))
       :struct
-      (some true? (map visit-peg (values a-peg)))
-      #
+      (do
+        (assert (get a-peg :main)
+                {:peg a-peg
+                 :msg "missing :main key"})
+        (merge a-state ;(map |(visit-peg $ a-state)
+                             (values a-peg))))
       :table
-      (some true? (map visit-peg (values a-peg)))
+      (do
+        (assert (get a-peg :main)
+                {:peg a-peg
+                 :msg "missing :main key"})
+        (merge a-state ;(map |(visit-peg $ a-state)
+                             (values a-peg))))
       # XXX: not sure if this is correct...
       (errorf "Unexpected type for peg %n: %n" a-peg (type a-peg))))
   #
-  (visit-peg peg))
+  (try
+    (let [results (visit-peg peg @{})]
+      (if (get results :has-backref)
+        results
+        (put results :has-backref false)))
+    ([e]
+      @{:error e})))
 
 (comment
 
-  (has-backref? 1)
+  (analyze [])
   # =>
-  false
+  '@{:error @{:msg "peg tuple must be non-empty"
+              :peg ()}}
 
-  (has-backref? true)
+  (analyze 1)
   # =>
-  false
+  @{:has-backref false}
 
-  (has-backref? "hello")
+  (analyze true)
   # =>
-  false
+  @{:has-backref false}
 
-  (has-backref? '(-> :a))
+  (analyze "hello")
   # =>
-  true
+  @{:has-backref false}
 
-  (has-backref? '(backref :xyz))
+  (analyze '[1 1])
   # =>
-  true
+  @{:has-backref false}
 
-  (has-backref? '{:main (some :sub)
-                  :sub (-> :b)})
+  (analyze '[-1 :a])
   # =>
-  true
+  '@{:error @{:msg "1st arg should be non-neg integer"
+              :peg [-1 :a]}}
 
-  (has-backref? '@{:main (any :hello)
-                   :hello (backmatch)})
+  (analyze '(range "az"))
   # =>
-  true
+  @{:has-backref false}
 
-  (has-backref? ~(some (backref :a)))
+  (analyze '(range "ba"))
   # =>
-  true
+  '@{:error {:msg "empty range detected"
+             :peg (range "ba")}}
 
-  (has-backref? ~{:main (some :sub)
-                  :sub {:main :inner
-                        :inner (choice "a"
-                                       (sequence (choice :s
-                                                         (backmatch :x)))
-                                       1)}})
+  (analyze '(range))
   # =>
-  true
+  '@{:error {:msg "needs >= 1 arg(s)"
+             :peg (range)}}
 
-  (has-backref? '(split ":"
-                        (sequence (backmatch :a) "b")))
+  (analyze '(range "az" 1))
   # =>
-  true
+  '@{:error {:msg "args should be length 2 strings"
+             :peg (range "az" 1)}}
 
-  (has-backref? ~(sequence (number :d nil :tag)
-                           (capture (lenprefix (backref :tag) 1))))
+  (analyze '(range "az" "!"))
   # =>
-  true
+  '@{:error {:msg "args should be length 2 strings"
+             :peg (range "az" "!")}}
+
+  (analyze '(set "a"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(set))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (set)}}
+
+  (analyze '(set 1))
+  # =>
+  '@{:error {:msg "arg should be a string"
+             :peg (set 1)}}
+
+  (analyze '(look -1 "a"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(look -1 (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(look))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (look)}}
+
+  (analyze '(look 1))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (look 1)}}
+
+  (analyze '(look :a "a"))
+  # =>
+  '@{:error {:msg "1st arg should be an integer"
+             :peg (look :a "a")}}
+
+  (analyze '(choice))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(choice 2 1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(choice 2 (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(sequence))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(sequence :a "i" 1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(sequence "hello" (backref :a)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(if 1 "a"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(if 1 (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(if 2))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (if 2)}}
+
+  (analyze '(if 2 "x" 1))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (if 2 "x" 1)}}
+
+  (analyze '(if-not "a" 3))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(if-not 1 (backref :a)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(if-not :x))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (if-not :x)}}
+
+  (analyze '(not "a"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(not (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(not))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (not)}}
+
+  (analyze '(not :a :b))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (not :a :b)}}
+
+  (analyze '(thru -1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(thru (backref :2)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(thru))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (thru)}}
+
+  (analyze '(to 3))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(to (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(to))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (to)}}
+
+  (analyze '(between 1 2 "x"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(between 2 7 (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(between -1 2 "x"))
+  # =>
+  '@{:error {:msg "1st arg should be a non-neg integer"
+             :peg (between -1 2 "x")}}
+
+  (analyze '(between 2 -3 "y"))
+  # =>
+  '@{:error {:msg "2nd arg should be a non-neg integer"
+             :peg (between 2 -3 "y")}}
+
+  (analyze '(between))
+  # =>
+  '@{:error {:msg "needs exactly 3 arg(s)"
+             :peg (between)}}
+
+  (analyze '(opt 1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(opt (backmatch :x)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(opt))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (opt)}}
+
+  (analyze '(some 2))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(some (backref :x :y)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(some))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (some)}}
+
+  (analyze '(at-least 2 :a))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(at-least 2 (-> :z)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(at-least -3 "a"))
+  # =>
+  '@{:error {:msg "1st arg should be a non-neg integer"
+             :peg (at-least -3 "a")}}
+
+  (analyze '(at-least))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (at-least)}}
+
+  (analyze '(at-most 1 "hi"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(at-most 9 (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(at-most -8 1))
+  # =>
+  '@{:error {:msg "1st arg should be a non-neg integer"
+             :peg (at-most -8 1)}}
+
+  (analyze '(at-most))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (at-most)}}
+
+  (analyze '(repeat 7 :a))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(repeat 2 (backref :x :y)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(repeat -7 (capture 1)))
+  # =>
+  '@{:error {:msg "1st arg should be a non-neg integer"
+             :peg (repeat -7 (capture 1))}}
+
+  (analyze '(repeat))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (repeat)}}
+
+  (analyze '(-> :a))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(backref :xyz))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(position))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(position :c))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(position :i :j))
+  # =>
+  '@{:error {:msg "needs between 0 and 1 args"
+             :peg (position :i :j)}}
+
+  (analyze '(line))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(line :p))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(line :x :y :z))
+  # =>
+  '@{:error {:msg "needs between 0 and 1 args"
+             :peg (line :x :y :z)}}
+
+  (analyze '(column))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(column :mark))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(column :one :two :three))
+  # =>
+  '@{:error {:msg "needs between 0 and 1 args"
+             :peg (column :one :two :three)}}
+
+  (analyze '(argument 0))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(argument 0 :joseph))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(argument 1 :x :fun))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (argument 1 :x :fun)}}
+
+  (analyze '(constant [:a :b :b]))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(constant {} :my-tag))
+  # =>
+  @{:has-backref false}
+
+  # trick question
+  (analyze '(constant (backmatch) :a))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(constant :jump 1))
+  # =>
+  '@{:error {:msg "2nd arg should be a keyword"
+             :peg (constant :jump 1)}}
+
+  (analyze '(constant @[:x :y] :a :b))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (constant @[:x :y] :a :b)}}
+
+  (analyze '(capture :a))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(capture "abc" :a-tag))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(capture (backmatch) :woah))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(capture 1 :mark :tom))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (capture 1 :mark :tom)}}
+
+  (analyze '(number :d))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(number :d 2))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(number :d+ 3 :tag))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(number :d+ nil :mark))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(number :d+ 0))
+  # =>
+  '@{:error {:msg "2nd arg should be nil or an int between 2 and 36"
+             :peg (number :d+ 0)}}
+
+  (analyze '(number :d nil 1))
+  # =>
+  '@{:error {:msg "third arg should be a keyword"
+             :peg (number :d nil 1)}}
+
+  (analyze '(number :d+ nil :jack :jill))
+  # =>
+  '@{:error {:msg "needs between 1 and 3 args"
+             :peg (number :d+ nil :jack :jill)}}
+
+  (analyze '(accumulate (sequence (capture 1)
+                                  (capture 1))))
+  # =>
+  @{:has-backref false}
+
+  (analyze ~(sequence (accumulate (sequence (capture "x")
+                                            (capture "y"))
+                                  :mark)
+                      (backref :mark)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(accumulate (sequence (capture 1)
+                                  (capture 1))
+                        :a
+                        :b))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (accumulate (sequence (capture 1) (capture 1)) :a :b)}}
+
+  (analyze '(drop (capture "a")))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(drop (backmatch)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(drop))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (drop)}}
+
+  (analyze '(drop :alice :bob))
+  # =>
+  '@{:error {:msg "needs exactly 1 arg(s)"
+             :peg (drop :alice :bob)}}
+
+  (analyze '(group (sequence (capture 1)
+                             (capture 1))))
+  # =>
+  @{:has-backref false}
+
+  (analyze ~(sequence (group (sequence (capture "x")
+                                       (capture "y"))
+                             :mark)
+                      (backref :mark)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(group (sequence (capture 1)
+                             (capture 1))
+                   :mark
+                   :extra))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (group (sequence (capture 1) (capture 1)) :mark :extra)}}
+
+  (analyze '(sub "xyz0" "xyz"))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(sub (capture 1 :x) (backref :x)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(sub))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (sub)}}
+
+  (analyze '(split "," (capture 1)))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(split (capture ";" :x) (backref :x)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(split :alice :bob :carol))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (split :alice :bob :carol)}}
+
+  (analyze '(replace (capture "turtle")
+                     {"turtle" "tortoise"}))
+  # =>
+  '@{:has-backref false}
+
+  (analyze '(replace (sequence (capture "turtle" :a)
+                               (backref :a))
+                     {"turtle" "tortoise"}))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(replace))
+  # =>
+  '@{:error {:msg "needs between 2 and 3 args"
+             :peg (replace)}}
+
+  (analyze '(replace (capture 1) :x))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(replace (capture "bat")
+                     {"bat" "rodent"}
+                     1))
+  # =>
+  '@{:error {:msg "3rd arg should be a keyword"
+             :peg (replace (capture "bat") {"bat" "rodent"} 1)}}
+
+  (analyze ~(cmt (capture 1) ,string?))
+  # =>
+  '@{:has-backref false}
+
+  (analyze ~(cmt (sequence (capture "turtle" :a)
+                           (backref :a))
+                 ,buffer))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(cmt))
+  # =>
+  '@{:error {:msg "needs between 2 and 3 args"
+             :peg (cmt)}}
+
+  (analyze '(cmt (capture 1) :eve))
+  '@{:error {:msg "2nd arg should be a function"
+             :peg (cmt (capture 1) :eve)}}
+
+  (analyze '(cmt (capture "the flag")
+                 ,tuple
+                 2r0010))
+  # =>
+  '@{:error {:msg "2nd arg should be a function"
+             :peg (cmt (capture "the flag") (unquote tuple) 2)}}
+
+  (analyze '(error))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(error (backmatch :a)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(error :heckle :jeckle))
+  # =>
+  '@{:error {:msg "needs between 0 and 1 args"
+             :peg (error :heckle :jeckle)}}
+
+  (analyze '(backmatch))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(backmatch :a))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(backmatch :e :f))
+  # =>
+  '@{:error {:msg "needs between 0 and 1 args"
+             :peg (backmatch :e :f)}}
+
+  (analyze ~(lenprefix
+              (replace (sequence (capture (any (if-not ":" 1)))
+                                 ":")
+                       ,scan-number)
+              1))
+  # =>
+  @{:has-backref false}
+
+  (analyze ~(sequence (number :d nil :tag)
+                      (capture (lenprefix (backref :tag)
+                                          1))))
+  # =>
+  @{:has-backref true}
+
+  (analyze ~(lenprefix))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (lenprefix)}}
+
+  (analyze '(int 1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(int 2 :a-tag))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(int))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (int)}}
+
+  (analyze '(int 9))
+  # =>
+  '@{:error {:msg "1st arg should be an integer between 0 and 8"
+             :peg (int 9)}}
+
+  (analyze '(int-be 2))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(int-be 3 :x))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(int-be :a))
+  # =>
+  '@{:error {:msg "1st arg should be an integer between 0 and 8" 
+             :peg (int-be :a)}}
+
+  (analyze '(int-be 10))
+  # =>
+  '@{:error {:msg "1st arg should be an integer between 0 and 8"
+             :peg (int-be 10)}}
+
+  (analyze '(uint 1))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(uint 5 :mark))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(uint 1 2))
+  # =>
+  '@{:error {:msg "2nd arg should be a keyword"
+             :peg (uint 1 2)}}
+
+  (analyze '(uint -1))
+  # =>
+  '@{:error {:msg "1st arg should be an integer between 0 and 8"
+             :peg (uint -1)}}
+
+  (analyze '(uint-be 3))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(uint 2 (backmatch)))
+  # =>
+  '@{:error {:msg "2nd arg should be a keyword"
+             :peg (uint 2 (backmatch))}}
+
+  (analyze '(uint-be math/inf))
+  # =>
+  '@{:error {:msg "1st arg should be an integer between 0 and 8"
+             :peg (uint-be math/inf)}}
+
+  (analyze ~{:main (sequence :thing -1)
+             :thing (choice (unref (sequence :open :thing :close))
+                            (capture (any (if-not "[" 1))))
+             :open (capture (sequence "[" (some "_") "]")
+                            :delim)
+             :close (capture (backmatch :delim))})
+  # =>
+  @{:has-backref true}
+
+  (analyze '(unref))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (unref)}}
+
+  (analyze '(unref :a 1))
+  # =>
+  '@{:error {:msg "2nd arg should be a keyword"
+             :peg (unref :a 1)}}
+
+  (analyze '{:main (some :sub)
+             :sub (-> :b)})
+  # =>
+  @{:has-backref true}
+
+  (analyze '@{:main (any :hello)
+              :hello (backmatch)})
+  # =>
+  @{:has-backref true}
+
+  (analyze {:a 1})
+  # =>
+  @{:error {:msg "missing :main key"
+            :peg {:a 1}}}
+
+  (analyze ~{:main (some :sub)
+             :sub {:main :inner
+                   :inner (choice "a"
+                                  (sequence (choice :s
+                                                    (backmatch :x)))
+                                  1)}})
+  # =>
+  @{:has-backref true}
+
+  (analyze '(split ":"
+                   (sequence (backmatch :a) "b")))
+  # =>
+  @{:has-backref true}
+
+  (analyze ~(sequence (number :d nil :tag)
+                      (capture (lenprefix (backref :tag) 1))))
+  # =>
+  @{:has-backref true}
 
   )
 
@@ -297,7 +1267,11 @@
       arg-0))
   (put ret :peg (tablify-peg non-fn-peg))
   #
-  (def backref? (has-backref? non-fn-peg))
+  (def results (analyze non-fn-peg))
+  (def err (get results :error))
+  (assert (nil? err)
+          (string/format "analysis error: %n" err))
+  (def backref? (get results :has-backref))
   #
   (if get-replace
     (do
@@ -527,7 +1501,6 @@
     (struct? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (assert (get peg :main) "peg does not have :main")
       (def ret
         (peg-rule state (get peg :main) index peg))
       (log-exit [:ret ret] [:index index] [:peg peg])
@@ -537,7 +1510,6 @@
     (table? peg)
     (do
       (log-entry [:index index] [:peg peg])
-      (assert (get peg :main) "peg does not have :main")
       (def ret
         (peg-rule state (get peg :main) index peg))
       (log-exit [:ret ret] [:index index] [:peg peg])
@@ -564,8 +1536,7 @@
       ret)
 
     # negative integer is RULE_NOTNCHAR
-    (and (int? peg)
-         (neg? peg))
+    (and (int? peg) (neg? peg))
     (do
       (log-entry [:index index] [:peg peg])
       (def ret
@@ -578,34 +1549,26 @@
     #
     (tuple? peg)
     (do
-      (assert (pos? (length peg))
-              "peg must have non-zero length")
       (def op (get peg 0))
-      (def tail (drop 1 peg))
+      (def args (drop 1 peg))
       (cond
         # RULE_RANGE
         (= 'range op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
           (def text (get-text index))
           (def ret
             (when (pos? (length text))
               (let [target-bytes
-                    # if more than one thing in tail, c version compiles
-                    # as a set.  we're not currently doing that here.
+                    # if more than one thing in args, c version compiles
+                    # as a set.  equivalent not done here.
                     (reduce (fn [acc elt]
-                              (assert (= 2 (length elt))
-                                      "`range` argument must be length 2")
                               (let [left (get elt 0)
                                     right (get elt 1)]
-                                (assert (<= left right) "empty range")
                                 (array/concat acc
                                               (range left (inc right)))))
                             @[]
-                            tail)
+                            args)
                     target-set (string/from-bytes ;target-bytes)]
                 (when (string/check-set target-set
                                         (string/slice text 0 1))
@@ -617,11 +1580,8 @@
         (= 'set op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
           (def text (get-text index))
-          (def patt (in tail 0))
+          (def patt (in args 0))
           (def ret
             (when (and (pos? (length text))
                        (string/check-set patt
@@ -635,12 +1595,7 @@
             (= '> op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (>= (length tail) 2)
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def offset (in tail 0))
-          (assert (int? offset)
-                  "offset argument should be an integer")
+          (def offset (in args 0))
           # XXX: can the call to peg-rule below lead to unwanted
           #      outcomes?  in peg.c, text (effectively an index) is
           #      incremented first, then peg_rule is called, and
@@ -654,7 +1609,7 @@
                 (when (or (< new-start 0)
                           (> new-start text-end))
                   (return result nil))
-                (def patt (in tail 1))
+                (def patt (in args 1))
                 (when (peg-rule state patt new-start grammar)
                   index))))
           (log-exit [:ret ret] [:index index] [:peg peg])
@@ -665,21 +1620,21 @@
             (= '+ op))
         (do
           (log-entry [:index index] [:peg peg])
-          (def len (length tail))
+          (def len (length args))
           (def ret
             (label result
               (when (zero? len)
                 (return result nil))
               (def cs (cap-save state))
               (forv i 0 (dec len)
-                (def sub-peg (get tail i))
+                (def sub-peg (get args i))
                 (def res-idx (peg-rule state sub-peg index grammar))
                 # XXX: should be ok?
                 (when res-idx
                   (return result res-idx))
                 (cap-load state cs))
-              # instead of goto :tail, make a call
-              (peg-rule state (get tail (dec len))
+              # instead of goto :args, make a call
+              (peg-rule state (get args (dec len))
                         index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -689,7 +1644,7 @@
             (= 'sequence op))
         (do
           (log-entry [:index index] [:peg peg])
-          (def len (length tail))
+          (def len (length args))
           (def ret
             (label result
               (when (zero? len)
@@ -698,14 +1653,14 @@
               (var i 0)
               (while (and cur-idx
                           (< i (dec len)))
-                (def sub-peg (get tail i))
+                (def sub-peg (get args i))
                 (set cur-idx (peg-rule state sub-peg cur-idx grammar))
                 (++ i))
               (when (not cur-idx)
                 (return result nil))
-              # instead of goto :tail, make a call
+              # instead of goto :args, make a call
               (when-let [last-idx
-                         (peg-rule state (get tail (dec len))
+                         (peg-rule state (get args (dec len))
                                    cur-idx grammar)]
                 last-idx)))
           (log-exit [:ret ret] [:index index] [:peg peg])
@@ -715,15 +1670,12 @@
         (= 'if op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (>= (length tail) 2)
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt-a (in tail 0))
-          (def patt-b (in tail 1))
+          (def patt-a (in args 0))
+          (def patt-b (in args 1))
           (def res-idx (peg-rule state patt-a index grammar))
           (def ret
             (when res-idx
-              # instead of goto :tail, make a call
+              # instead of goto :args, make a call
               (peg-rule state patt-b index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -732,17 +1684,14 @@
         (= 'if-not op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (>= (length tail) 2)
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt-a (in tail 0))
-          (def patt-b (in tail 1))
+          (def patt-a (in args 0))
+          (def patt-b (in args 1))
           (def cs (cap-save state))
           (def res-idx (peg-rule state patt-a index grammar))
           (def ret
             (when (not res-idx)
               (cap-load state cs)
-              # instead of goto :tail, make a call
+              # instead of goto :args, make a call
               (peg-rule state patt-b index grammar)))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
@@ -752,10 +1701,7 @@
             (= '! op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
+          (def patt (in args 0))
           (def cs (cap-save state))
           (def res-idx (peg-rule state patt index grammar))
           (def ret
@@ -769,10 +1715,7 @@
         (= 'thru op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
+          (def patt (in args 0))
           (def cs (cap-save state))
           (def ret
             (label result
@@ -797,10 +1740,7 @@
         (= 'to op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
+          (def patt (in args 0))
           (def cs (cap-save state))
           (def ret
             (label result
@@ -835,80 +1775,55 @@
             (int? op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
           (var lo 0)
           (var hi 1)
           (var patt nil)
           (cond
             (= 'between op)
             (do
-              (assert (<= 3 (length tail))
-                      "`between` requires at least 3 arguments")
-              (set lo (in tail 0))
-              (assert (nat? lo)
-                      (string "expected non-neg int, got: " lo))
-              (set hi (in tail 1))
-              (assert (nat? hi)
-                      (string "expected non-neg int, got: " hi))
-              (set patt (in tail 2)))
+              (set lo (in args 0))
+              (set hi (in args 1))
+              (set patt (in args 2)))
             #
             (or (= 'opt op)
                 (= '? op))
-            (set patt (in tail 0))
+            (set patt (in args 0))
             #
             (= 'any op)
             (do
-              (set patt (in tail 0))
+              (set patt (in args 0))
               # XXX: 2 ^ 32 - 1 not an integer...
               (set hi (math/pow 2 30)))
             #
             (= 'some op)
             (do
-              (set patt (in tail 0))
+              (set patt (in args 0))
               (set lo 1)
               # XXX: 2 ^ 32 - 1 not an integer...
               (set hi (math/pow 2 30)))
             #
             (= 'at-least op)
             (do
-              (assert (<= 2 (length tail))
-                      "`at-least` requires at least 2 arguments")
-              (set lo (in tail 0))
-              (set patt (in tail 1))
-              (assert (nat? lo)
-                      (string "expected non-neg int, got: " lo))
+              (set lo (in args 0))
+              (set patt (in args 1))
               # XXX: 2 ^ 32 - 1 not an integer...
               (set hi (math/pow 2 30)))
             #
             (= 'at-most op)
             (do
-              (assert (<= 2 (length tail))
-                      "`at-most` requires at least 2 arguments")
-              (set hi (in tail 0))
-              (set patt (in tail 1))
-              (assert (nat? hi)
-                      (string "expected non-neg int, got: " hi)))
+              (set hi (in args 0))
+              (set patt (in args 1)))
             #
             (= 'repeat op)
             (do
-              (assert (<= 2 (length tail))
-                      "`repeat` requires at least 2 arguments")
-              (def arg (in tail 0))
-              (set patt (in tail 1))
-              (assert (nat? arg)
-                      (string "expected non-neg int, got: " arg))
+              (def arg (in args 0))
+              (set patt (in args 1))
               (set lo arg)
               (set hi arg))
             #
             (int? op)
             (do
-              (assert (next tail)
-                      "`n` requires at least 1 argument")
-              (set patt (in tail 0))
-              (assert (nat? op)
-                      (string "expected non-neg int, got: " op))
+              (set patt (in args 0))
               (set lo op)
               (set hi op)))
           #
@@ -940,10 +1855,7 @@
             (= '-> op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def tag (in tail 0))
+          (def tag (in args 0))
           (def ret
             (label result
               (loop [i :down-to [(dec (length (get state :tags))) 0]]
@@ -962,7 +1874,7 @@
             (= '$ op))
         (do
           (log-entry [:index index] [:peg peg])
-          (def tag (when (next tail) (in tail 0)))
+          (def tag (when (next args) (in args 0)))
           (pushcap state
                    (- index (get state :text-start))
                    tag)
@@ -974,7 +1886,7 @@
         (= 'line op)
         (do
           (log-entry [:index index] [:peg peg])
-          (def tag (when (next tail) (in tail 0)))
+          (def tag (when (next args) (in args 0)))
           (def [line _]
             (get-linecol-from-position
               state
@@ -988,7 +1900,7 @@
         (= 'column op)
         (do
           (log-entry [:index index] [:peg peg])
-          (def tag (when (next tail) (in tail 0)))
+          (def tag (when (next args) (in args 0)))
           (def [_ col]
             (get-linecol-from-position
               state
@@ -1002,15 +1914,10 @@
         (= 'argument op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (assert (nat? patt)
-                  (string "expected non-negative integer, got: " patt))
+          (def patt (in args 0))
           (assert (< patt (length (get state :extrav)))
                   (string "expected smaller integer, got: " patt))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def tag (when (< 1 (length args)) (in args 1)))
           (def arg-n (in (get state :extrav) patt))
           (pushcap state arg-n tag)
           (def ret index)
@@ -1021,11 +1928,8 @@
         (= 'constant op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def patt (in args 0))
+          (def tag (when (< 1 (length args)) (in args 1)))
           (pushcap state patt tag)
           (def ret index)
           (log-exit [:ret ret] [:index index] [:peg peg])
@@ -1037,11 +1941,8 @@
             (= '<- op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def patt (in args 0))
+          (def tag (when (< 1 (length args)) (in args 1)))
           (def res-idx (peg-rule state patt index grammar))
           (def ret
             (when res-idx
@@ -1059,12 +1960,9 @@
         (= 'number op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def base (when (< 1 (length tail)) (in tail 1)))
-          (def tag (when (< 2 (length tail)) (in tail 2)))
+          (def patt (in args 0))
+          (def base (when (< 1 (length args)) (in args 1)))
+          (def tag (when (< 2 (length args)) (in args 2)))
           (def res-idx (peg-rule state patt index grammar))
           (def ret
             (when res-idx
@@ -1084,15 +1982,12 @@
             (= '% op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def patt (in args 0))
+          (def tag (when (< 1 (length args)) (in args 1)))
           (def old-mode (get state :mode))
           (when (and (not tag)
                      (= old-mode :peg-mode-accumulate))
-            # instead of goto :tail, make a call
+            # instead of goto :args, make a call
             (peg-rule state patt index grammar))
           (def cs (cap-save state))
           (put state :mode :peg-mode-accumulate)
@@ -1111,10 +2006,7 @@
         (= 'drop op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
+          (def patt (in args 0))
           (def cs (cap-save state))
           (def res-idx (peg-rule state patt index grammar))
           (def ret
@@ -1128,11 +2020,8 @@
         (= 'group op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def tag (when (< 1 (length tail)) (in tail 1)))
+          (def patt (in args 0))
+          (def tag (when (< 1 (length args)) (in args 1)))
           (def old-mode (get state :mode))
           (def cs (cap-save state))
           (put state :mode :peg-mode-normal)
@@ -1154,12 +2043,9 @@
         (= 'sub op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
           (def text-start-index index)
-          (def win-patt (in tail 0))
-          (def sub-patt (in tail 1))
+          (def win-patt (in args 0))
+          (def sub-patt (in args 1))
           (def ret
             (when-let [win-end
                        (peg-rule state win-patt index grammar)]
@@ -1178,8 +2064,8 @@
         (do
           (log-entry [:index index] [:peg peg])
           (def saved-end (get state :text-end))
-          (def sep-patt (in tail 0))
-          (def sub-patt (in tail 1))
+          (def sep-patt (in args 0))
+          (def sub-patt (in args 1))
           (var cur-idx index)
           (var sep-end nil)
           (def ret
@@ -1219,12 +2105,9 @@
             (= '/ op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def subst (in tail 1))
-          (def tag (when (> (length tail) 2) (in tail 2)))
+          (def patt (in args 0))
+          (def subst (in args 1))
+          (def tag (when (> (length args) 2) (in args 2)))
           (def old-mode (get state :mode))
           (def cs (cap-save state))
           (put state :mode :peg-mode-normal)
@@ -1254,15 +2137,9 @@
         (= 'cmt op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def patt (in tail 0))
-          (def subst (in tail 1))
-          (assert (or (function? subst)
-                      (cfunction? subst))
-                  (string "expected a function, got: " (type subst)))
-          (def tag (when (> (length tail) 2) (in tail 2)))
+          (def patt (in args 0))
+          (def subst (in args 1))
+          (def tag (when (> (length args) 2) (in args 2)))
           (def old-mode (get state :mode))
           (def cs (cap-save state))
           (put state :mode :peg-mode-normal)
@@ -1288,9 +2165,9 @@
         (do
           (log-entry [:index index] [:peg peg])
           (def patt
-            (if (empty? tail)
+            (if (empty? args)
               0 # determined via gdb
-              (in tail 0)))
+              (in args 0)))
           (def old-mode (get state :mode))
           (put state :mode :peg-mode-normal)
           (def old-cap (length (get state :captures)))
@@ -1315,7 +2192,7 @@
         (do
           (log-entry [:index index] [:peg peg])
           (def text (get-text index))
-          (def tag (when (next tail) (in tail 0)))
+          (def tag (when (next args) (in args 0)))
           (def ret
             (label result
               (loop [i :down-to [(dec (length (get state :tags))) 0]]
@@ -1342,11 +2219,8 @@
         (= 'lenprefix op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (not (< (length tail) 2))
-                  (string/format "`%s` requires at least 2 arguments"
-                                 (string op)))
-          (def n-patt (in tail 0))
-          (def patt (in tail 1))
+          (def n-patt (in args 0))
+          (def patt (in args 1))
           (def old-mode (get state :mode))
           (put state :mode :peg-mode-normal)
           (def cs (cap-save state))
@@ -1391,12 +2265,9 @@
             (= 'uint-be op))
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
           (def text (get-text index))
-          (def width (in tail 0))
-          (def tag (when (> (length tail) 1) (in tail 1)))
+          (def width (in args 0))
+          (def tag (when (> (length args) 1) (in args 1)))
           (def ret
             (label result
               (when (> (+ index width)
@@ -1455,11 +2326,8 @@
         (= 'unref op)
         (do
           (log-entry [:index index] [:peg peg])
-          (assert (next tail)
-                  (string/format "`%s` requires at least 1 argument"
-                                 (string op)))
-          (def rule (in tail 0))
-          (def tag (when (> (length tail) 1) (in tail 1)))
+          (def rule (in args 0))
+          (def tag (when (> (length args) 1) (in args 1)))
           (def tcap (length (get state :tags)))
           (def res-idx (peg-rule state rule index grammar))
           (def ret
