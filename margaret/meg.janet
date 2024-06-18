@@ -1155,7 +1155,7 @@
 
   (analyze '(int-be :a))
   # =>
-  '@{:error {:msg "1st arg should be an integer between 0 and 8" 
+  '@{:error {:msg "1st arg should be an integer between 0 and 8"
              :peg (int-be :a)}}
 
   (analyze '(int-be 10))
