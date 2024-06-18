@@ -255,7 +255,7 @@
                              (drop 1 the-peg))))
     (defn check-backref
       [the-peg the-state]
-      (assert-arity the-peg 1)
+      (assert-arity the-peg 1 2)
       (assert (all |(keyword? $) (drop 1 the-peg))
               {:peg the-peg
                :msg "args should be keywords"})
@@ -821,6 +821,15 @@
   (analyze '(backref :xyz))
   # =>
   @{:has-backref true}
+
+  (analyze '(backref :a :b))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(backref :a :b :c))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (backref :a :b :c)}}
 
   (analyze '(position))
   # =>
