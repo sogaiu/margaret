@@ -160,12 +160,14 @@
       the-state)
     (defn check-look
       [the-peg the-state]
-      (assert-arity the-peg 2 2)
+      (assert-arity the-peg 1 2)
       (assert (int? (get the-peg 1))
               {:peg the-peg
                :msg "1st arg should be an integer"})
-      (merge the-state
-             (visit-peg (get the-peg 2) the-state)))
+      (if (= (length the-peg) 3)
+        (merge the-state
+               (visit-peg (get the-peg 2) the-state))
+        the-state))
     (defn check-choice
       [the-peg the-state]
       # can have zero args
@@ -597,15 +599,14 @@
   # =>
   @{:has-backref true}
 
-  (analyze '(look))
-  # =>
-  '@{:error {:msg "needs exactly 2 arg(s)"
-             :peg (look)}}
-
   (analyze '(look 1))
   # =>
-  '@{:error {:msg "needs exactly 2 arg(s)"
-             :peg (look 1)}}
+  @{:has-backref false}
+
+  (analyze '(look))
+  # =>
+  '@{:error {:msg "needs between 1 and 2 args"
+             :peg (look)}}
 
   (analyze '(look :a "a"))
   # =>
@@ -1605,22 +1606,19 @@
         (do
           (log-entry [:index index] [:peg peg])
           (def offset (in args 0))
-          # XXX: can the call to peg-rule below lead to unwanted
-          #      outcomes?  in peg.c, text (effectively an index) is
-          #      incremented first, then peg_rule is called, and
-          #      finally text is decremented...specifically if
-          #      peg_rule calls something with `sub` or `split` in
-          #      it, quite unsure if things will be ok...
           (def ret
             (label result
-              (let [text-end (get state :text-end)
+              (let [text-start (get state :text-start)
+                    text-end (get state :text-end)
                     new-start (+ index offset)]
-                (when (or (< new-start 0)
+                (when (or (< new-start text-start)
                           (> new-start text-end))
                   (return result nil))
-                (def patt (in args 1))
-                (when (peg-rule state patt new-start grammar)
-                  index))))
+                (if-let [patt (get args 1)]
+                  (when (peg-rule state patt new-start grammar)
+                    index)
+                  (when (peg-rule state 0 offset grammar)
+                    index)))))
           (log-exit [:ret ret] [:index index] [:peg peg])
           ret)
 

@@ -1,6 +1,6 @@
 (import ../margaret/meg :as peg)
 
-# `(look offset patt)`
+# `(look offset ?patt)`
 
 # Matches only if `patt` matches at a fixed offset.
 
@@ -8,6 +8,9 @@
 
 # `patt` will not produce captures and the peg will not advance any
 # characters.
+
+# If `patt` is omitted, matching occurs as if the peg had been
+# `(look 0 offset)`.
 
 # `(> offset patt)` is an alias for `(look offset patt)`
 
@@ -46,6 +49,14 @@
              "my cat")
   # =>
   @[""]
+
+ (peg/match '(sequence (look 2) (capture 1)) "a")
+  # =>
+  nil
+
+  (peg/match '(sequence (look 2) (capture 1)) "ab")
+  # =>
+  @["a"]
 
   (peg/match ~(> 3 "cat")
              "my cat")
