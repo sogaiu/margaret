@@ -3,36 +3,12 @@
 The support for tracing is in its infancy, but it is perhaps somewhat
 better compared to having no information about execution flow (^^;
 
-## Caveats
-
-Due to implementation differences between `peg.c` and `margaret`,
-execution flow may differ in certain ways.
-
-Some known cases include:
-
-* Janet's native PEG implementation compiles a source PEG to a custom
-  bytecode first before "execution".  In this process of compilation,
-  some transformations can take place.  For example, at the time of
-  this writing, the PEG:
-
-    ```janet
-    (range "ac" "02")
-    ```
-
-  gets compiled to bytecode that would match the bytecode obtained by
-  compiling:
-
-    ```janet
-    (set "abc012")
-    ```
-
-  Thus, the execution flows of the two implementations can differ
-  in certain cases.
-
-* There is currently no attempt at protecting from too many recursive
-  calls in `margaret` so execution results may differ.
+Note `margaret`'s execution flow may differ from Janet's `peg.c` in
+some cases, see the Caveats section below for details.
 
 ## Example Output
+
+So, what does tracing output look like?
 
 ### Simple Example
 
@@ -150,7 +126,36 @@ It should be possible to pair each entry struct with a corresponding
 exit struct as they should share the same associated value for
 `:entry` and `:exit`, respectively.
 
----
+## Caveats
+
+Due to implementation differences between `peg.c` and `margaret`,
+execution flow may differ in certain ways.
+
+Some known cases include:
+
+* Janet's native PEG implementation compiles a source PEG to a custom
+  bytecode first before "execution".  In this process of compilation,
+  some transformations can take place.  For example, at the time of
+  this writing, the PEG:
+
+    ```janet
+    (range "ac" "02")
+    ```
+
+  gets compiled to bytecode that would match the bytecode obtained by
+  compiling:
+
+    ```janet
+    (set "abc012")
+    ```
+
+  Thus, the execution flows of the two implementations can differ
+  in certain cases.
+
+* There is currently no attempt at protecting from too many recursive
+  calls in `margaret` so execution results may differ.
+
+## Footnotes
 
 [1] This may be slightly different from what you might expect due to
 some internal preprocessing.  For example, if you specified:
