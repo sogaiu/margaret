@@ -1480,32 +1480,39 @@
   (array/clear steps)
   (array/push steps step))
 
-(defn log-entry [& args]
+(defn log-edge
+  [this-step the-type & args]
+  (when (os/getenv "VERBOSE")
+    (def mt (dyn :meg-trace (file/temp)))
+    (def spec
+      (if (dyn :meg-color) "N" "n"))
+    (xprin mt "{")
+    (xprinf mt (string the-type " %" spec " ")
+            this-step)
+    (each arg args
+      (if (and (tuple? arg) (= 2 (length arg)))
+        (xprinf mt (string "%" spec " %" spec " ")
+                ;(massage arg))
+        (xprinf mt (string "%" spec " ")
+                arg)))
+    (xprint mt "}")))
+
+(defn log-entry
+  [& args]
   (def this-step (++ step))
   (array/push steps this-step)
-  (when (os/getenv "VERBOSE")
-    (eprin "{")
-    (eprinf ":entry %N " this-step)
-    (each arg args
-      (if (and (tuple? arg) (= 2 (length arg)))
-        (eprinf "%N %N " ;(massage arg))
-        (eprinf "%N " arg)))
-    (eprint "}")))
+  (log-edge this-step ":entry" ;args))
 
-(defn log [msg & args]
-  (when (os/getenv "VERBOSE")
-    (eprintf msg ;args)))
-
-(defn log-exit [& args]
+(defn log-exit
+  [& args]
   (def this-step (array/pop steps))
+  (log-edge this-step ":exit" ;args))
+
+(defn log
+  [msg & args]
   (when (os/getenv "VERBOSE")
-    (eprin "{")
-    (eprinf ":exit %N " this-step)
-    (each arg args
-      (if (and (tuple? arg) (= 2 (length arg)))
-        (eprinf "%N %N " ;(massage arg))
-        (eprinf "%N " arg)))
-    (eprint "}")))
+    (def mt (dyn :meg-trace (file/temp)))
+    (xprintf mt msg ;args)))
 
 (defn peg-rule
   [state peg index grammar]
@@ -2479,6 +2486,8 @@
   (def new-peg (get peg-call :peg))
   (def start-peg (get new-peg :main))
   #
+  (setdyn :meg-trace (dyn :meg-trace stderr))
+  (setdyn :meg-color (dyn :meg-color true))
   (reset-steps)
   (log "[")
   (def result (peg-rule state start-peg start new-peg))
