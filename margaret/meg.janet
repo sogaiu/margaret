@@ -9,9 +9,6 @@
     (scan-number num-str)
     (scan-number (string base "r" num-str))))
 
-# janet.h
-(def recursion-guard 1024)
-
 # turn peg into table if needed
 (defn tablify-peg
   [peg]
@@ -1305,7 +1302,6 @@
       (put-in [:state :text-start] 0)
       (put-in [:state :text-end] (length (get ret :bytes)))
       (put-in [:state :outer-text-end] (get-in ret [:state :text-end]))
-      (put-in [:state :depth] recursion-guard)
       (put-in [:state :captures] @[])
       (put-in [:state :tagged-captures] @[])
       (put-in [:state :scratch] @"")
@@ -1325,7 +1321,6 @@
   @{:bytes "123"
     :peg @{:main peg}
     :state @{:captures @[]
-             :depth 1024
              :extrav @[]
              :has-backref false
              :linemap @[]
@@ -1345,7 +1340,6 @@
   @{:bytes "123"
     :peg @{:main '(some :d)}
     :state @{:captures @[]
-             :depth 1024
              :extrav [:hello :there]
              :has-backref false
              :linemap @[]
@@ -1367,7 +1361,6 @@
   @{:bytes "123"
     :peg @{:main '(backref :a)}
     :state @{:captures @[]
-             :depth 1024
              :extrav @[]
              :has-backref true
              :linemap @[]
