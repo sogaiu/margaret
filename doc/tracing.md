@@ -32,9 +32,9 @@ Currently, corresponding output looks like:
 
 ```janet
 [
-{:entry 0 :index 0 :peg "(sequence (capture (some \"smile\") :x) (backref :x))" :grammar "@{:main (sequence (capture (some \"smile\") :x) (backref :x))}" :state @{:captures "@[]" :depth 1024 :extrav "()" :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures "@[]" :tags @[] :text-end 6 :text-start 0} }
+{:entry 0 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @[] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @[] :tags @[] :text-end 6 :text-start 0} }
 ...
-{:exit 0 :ret 5 :index 0 :peg "(sequence (capture (some \"smile\") :x) (backref :x))" :grammar "@{:main (sequence (capture (some \"smile\") :x) (backref :x))}" :state @{:captures "@[\"smile\" \"smile\"]" :depth 1024 :extrav "()" :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures "@[\"smile\" \"smile\"]" :tags @[:x :x] :text-end 6 :text-start 0} }
+{:exit 0 :ret 5 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @["smile" "smile"] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @["smile" "smile"] :tags @[:x :x] :text-end 6 :text-start 0} }
 ]
 ```
 
@@ -42,64 +42,60 @@ Not very pretty for sure.  With a suitable terminal, there is some
 color involved, so for folks with sufficient visual color-processing
 capabilities, that might be of some help in perceiving the output.
 
-Reformatted, it could look something like this:
+Some rearrangement and modification might make it look something like:
 
 ```janet
 [
  {:entry 0
   :index 0
-  :peg "(sequence (capture (some \"smile\") :x) (backref :x))"
-  :grammar "@{:main (sequence (capture (some \"smile\") :x) (backref :x))}"
+  :peg (sequence (capture (some "smile") :x) (backref :x))
+  :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
   :state @{:original-text "smile!"
-           :extrav "()"
+           :extrav []
            :has-backref true
            :outer-text-end 6
            #
            :text-start 0
            :text-end 6
            #
-           :captures "@[]"
-           :tagged-captures "@[]"
+           :captures @[]
+           :tagged-captures @[]
            :tags @[]
            #
            :scratch @""
            :mode :peg-mode-normal
            #
            :linemap @[]
-           :linemaplen -1
-           :depth 1024}}
+           :linemaplen -1}}
  ...
  {:exit 0
   :ret 5
   :index 0
-  :peg "(sequence (capture (some \"smile\") :x) (backref :x))"
-  :grammar "@{:main (sequence (capture (some \"smile\") :x) (backref :x))}"
+  :peg (sequence (capture (some "smile") :x) (backref :x))
+  :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
   :state @{:original-text "smile!"
-           :extrav "()"
+           :extrav []
            :has-backref true
            :outer-text-end 6
            #
            :text-start 0
            :text-end 6
            #
-           :captures "@[\"smile\" \"smile\"]"
-           :tagged-captures "@[\"smile\" \"smile\"]"
+           :captures @["smile" "smile"]
+           :tagged-captures @["smile" "smile"]
            :tags @[:x :x]
            #
            :scratch @""
            :mode :peg-mode-normal
            #
            :linemap @[]
-           :linemaplen -1
-           :depth 1024}}
+           :linemaplen -1}}
 ]
 ```
 
-Discussion and ideas welcome (^^;
-
 ### Explanation of Output
 
-The above output should be "readable" / "parseable" by `janet`.
+The above output should be "readable" / "parseable" by `janet` [1].
 Further, it should correspond to a tuple where each element is a
 struct.
 
@@ -110,7 +106,7 @@ The common key-value pairs for the structs are:
 
 * `:index` - the index position of the text being matched over
 * `:peg` - the currently relevant peg "call"
-* `:grammar` - grammar being matched against [1]
+* `:grammar` - grammar being matched against [2]
 * `:state` - represents execution state for the peg; similar to
 [`PegState`](https://github.com/janet-lang/janet/blob/e2a8951f688fec8362f725e4a8afd3c79bc1854e/src/core/peg.c#L38-L62)
 in Janet's `peg.c`
@@ -157,7 +153,20 @@ Some known cases include:
 
 ## Footnotes
 
-[1] This may be slightly different from what you might expect due to
+[1] To handle "unreadable" values, strings are used instead, so
+e.g. something like:
+
+```janet
+(fn replacer [] :new-value)
+```
+
+might end up looking like:
+
+```janet
+"<function replacer>"
+```
+
+[2] This may be slightly different from what you might expect due to
 some internal preprocessing.  For example, if you specified:
 
 ```janet
