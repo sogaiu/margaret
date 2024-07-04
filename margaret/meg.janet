@@ -1297,17 +1297,30 @@
       (put-in ret [:state :extrav] @[])))
   #
   (-> ret
+      # the text passed as an argument originally, e.g. to peg-match
       (put-in [:state :original-text] (get ret :bytes))
+      # affects capturing behavior; :peg-mode-accumulate means use :scratch
       (put-in [:state :mode] :peg-mode-normal)
+      # index position of the start of :original-text
       (put-in [:state :text-start] 0)
+      # index position of the end of what's considered the current text;
+      # this makes a difference when sub or split is being processed
       (put-in [:state :text-end] (length (get ret :bytes)))
+      # index position of the end of :original-text
       (put-in [:state :outer-text-end] (get-in ret [:state :text-end]))
+      # array of captures
       (put-in [:state :captures] @[])
+      # array of captures corresponding to :tags
       (put-in [:state :tagged-captures] @[])
+      # buffer for capturing context in mode :peg-mode-accumulate
       (put-in [:state :scratch] @"")
+      # array of capture tags (keywords)
       (put-in [:state :tags] @[])
+      # array of positions of newlines in :original-text
       (put-in [:state :linemap] @[])
+      # number of newlines in :original-text
       (put-in [:state :linemaplen] -1)
+      # whether the grammar uses certain ref constructs, see `analyze`
       (put-in [:state :has-backref] backref?))
   #
   ret)
