@@ -1556,7 +1556,7 @@
 
 (defmacro log-out
   []
-  ~(log-exit [:ret ret]
+  ~(log-exit [:ret (or ret :nil)]
              [:index index] [:peg peg]
              [:grammar grammar] [:state state]))
 
