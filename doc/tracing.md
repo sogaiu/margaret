@@ -14,7 +14,7 @@ So, what does tracing output look like?
 
 As mentioned elsewhere, tracing output for `margaret` can be enabled
 by setting the `VERBOSE` environment variable to a non-empty string
-(e.g. "1").
+(e.g. "1") [1].
 
 ```janet
 (import margaret/meg)
@@ -95,7 +95,7 @@ Some rearrangement and modification might make it look something like:
 
 ### Explanation of Output
 
-The above output should be "readable" / "parseable" by `janet` [1].
+The above output should be "readable" / "parseable" by `janet` [2].
 Further, it should correspond to a tuple where each element is a
 struct.
 
@@ -106,7 +106,7 @@ The common key-value pairs for the structs are:
 
 * `:index` - the index position of the text being matched over
 * `:peg` - the currently relevant peg "call"
-* `:grammar` - grammar being matched against [2]
+* `:grammar` - grammar being matched against [3]
 * `:state` - represents execution state for the peg; similar to
 [`PegState`](https://github.com/janet-lang/janet/blob/e2a8951f688fec8362f725e4a8afd3c79bc1854e/src/core/peg.c#L38-L62)
 in Janet's `peg.c`
@@ -153,7 +153,13 @@ Some known cases include:
 
 ## Footnotes
 
-[1] To handle "unreadable" values, strings are used instead, so
+[1] Logging can be configured via two dynamic variables:
+
+* `:meg-trace` - default is `stderr`, set to some other `core/file`
+  (e.g. the return value of `(file/temp)`) to make output go elsewhere
+* `:meg-color` - default is `true`, set to `false` for no color
+
+[2] To handle "unreadable" values, strings are used instead, so
 e.g. something like:
 
 ```janet
@@ -166,7 +172,7 @@ might end up looking like:
 "<function replacer>"
 ```
 
-[2] This may be slightly different from what you might expect due to
+[3] This may be slightly different from what you might expect due to
 some internal preprocessing.  For example, if you specified:
 
 ```janet
