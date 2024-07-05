@@ -1272,6 +1272,7 @@
     (if (function? arg-0)
       (arg-0)
       arg-0))
+  (put-in ret [:state :grammar] non-fn-peg)
   (put ret :peg (tablify-peg non-fn-peg))
   #
   (def results (analyze non-fn-peg))
@@ -1290,10 +1291,10 @@
     (do
       # XXX: if more than min # of args, the arg after the min # is a
       #      starting offset
-      (put ret :start (get argv min_))
+      (put-in ret [:state :start] (get argv min_))
       (put-in ret [:state :extrav] (slice argv (inc min_))))
     (do
-      (put ret :start 0)
+      (put-in ret [:state :start] 0)
       (put-in ret [:state :extrav] @[])))
   #
   (-> ret
@@ -1335,6 +1336,7 @@
     :peg @{:main peg}
     :state @{:captures @[]
              :extrav @[]
+             :grammar peg
              :has-backref false
              :linemap @[]
              :linemaplen -1
@@ -1342,11 +1344,11 @@
              :original-text "123"
              :outer-text-end 3
              :scratch @""
+             :start 0
              :tagged-captures @[]
              :tags @[]
              :text-end 3
-             :text-start 0}
-    :start 0}
+             :text-start 0}}
 
   (peg-init [peg "123" 1 :hello :there])
   # =>
@@ -1354,6 +1356,7 @@
     :peg @{:main '(some :d)}
     :state @{:captures @[]
              :extrav [:hello :there]
+             :grammar peg
              :has-backref false
              :linemap @[]
              :linemaplen -1
@@ -1361,11 +1364,11 @@
              :original-text "123"
              :outer-text-end 3
              :scratch @""
+             :start 1
              :tagged-captures @[]
              :tags @[]
              :text-end 3
-             :text-start 0}
-    :start 1}
+             :text-start 0}}
 
   (def peg-with-backref ~(backref :a))
 
@@ -1375,6 +1378,7 @@
     :peg @{:main '(backref :a)}
     :state @{:captures @[]
              :extrav @[]
+             :grammar peg-with-backref
              :has-backref true
              :linemap @[]
              :linemaplen -1
@@ -1382,11 +1386,11 @@
              :original-text "123"
              :outer-text-end 3
              :scratch @""
+             :start 0
              :tagged-captures @[]
              :tags @[]
              :text-end 3
-             :text-start 0}
-    :start 0}
+             :text-start 0}}
 
   )
 
