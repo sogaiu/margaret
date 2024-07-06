@@ -605,3 +605,11 @@
                                (get (array/peek stack) :entry)))
         (array/pop stack)))))
 
+(defn render
+  [peg text &opt start & args]
+  (default start 0)
+  (default args [])
+  (main {:peg peg
+         :text text
+         :start start
+         :args args}))
