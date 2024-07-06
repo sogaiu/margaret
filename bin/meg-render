@@ -1,0 +1,5 @@
+(import margaret/render :as r)
+
+(defn main
+  [& argv]
+  (r/main ;argv))

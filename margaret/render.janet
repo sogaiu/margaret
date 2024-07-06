@@ -401,96 +401,154 @@
 
 ########################################################################
 
+(comment
+
+  '(meg/match ~(sequence (capture (some "smile") :x)
+                         (backref :x))
+              "smile!")
+
+  '(meg/match "a" "b")
+
+  '(meg/match ~(sequence (capture "a") "b" (capture "c"))
+              "abc")
+
+  '(meg/match ~(sub (capture "abcd") (capture "abc"))
+              "abcdef")
+
+  '(meg/match ~(sub (capture "abcd")
+                    (sub (capture "abc")
+                         (capture "ab")))
+              "abcdef")
+
+  '(meg/match ~(sequence (to "jane")
+                         (sub (thru "bits")
+                              (split ", " (capture (some 1)))) :s+
+                         (to "us")
+                         (capture "us"))
+              "all your janet, c, bits are belong to us")
+
+  '(meg/match ~(split "," (capture 1))
+              "a,b,c")
+
+  '(meg/match ~(cmt (capture 1)
+                    ,(fn [cap]
+                       (= cap "a")))
+              "ab")
+
+  '(meg/match ~(capture "a") "ba" 1)
+
+  '(meg/match ~(capture "a") "ba" 0 :a :b)
+
+  '(meg/match ~(accumulate (sequence (capture 1)
+                                     (capture 1)
+                                     (capture 1)))
+              "abc")
+
+  '(meg/match ~(look 3 (capture "cat"))
+              "my cat")
+
+  '(meg/match ~(sequence (number :d nil :tag)
+                         (capture (lenprefix (backref :tag)
+                                             1)))
+              "3abc")
+
+  '(meg/match ~{:main (sequence :tagged -1)
+                :tagged (unref (replace (sequence :open-tag :value :close-tag)
+                                        ,struct))
+                :open-tag (sequence (constant :tag)
+                                    "<"
+                                    (capture :w+ :tag-name)
+                                    ">")
+                :value (sequence (constant :value)
+                                 (group (any (choice :tagged :untagged))))
+                :close-tag (sequence "</"
+                                     (backmatch :tag-name)
+                                     ">")
+                :untagged (capture (any (if-not "<" 1)))}
+              "<p><em>Hello</em></p>")
+
+  '(meg/match ~{:space (some " ")
+                :trailing '(any (if-not (set "\0\r\n") 1))
+                :middle '(some (if-not (set " \0\r\n") 1))
+                :params (+ -1 (* :space
+                                 (+ (* ":" :trailing)
+                                    (* :middle :params))))
+                :command (+ '(some (range "az" "AZ"))
+                            (/ '(between 3 3 (range "09"))
+                               ,scan-number))
+                :word (some (if-not " " 1))
+                :prefix ':word
+                :main (* (? (* (constant :prefix)
+                               ":" :prefix :space))
+                         (constant :command)
+                         :command
+                         (constant :params)
+                         (group :params))}
+              ":okwhatever OPER ASMR asmr")
+
+  )
+
+########################################################################
+
+(defn args-from-cmd-line
+  [& argv]
+  (assert (>= (length argv) 2)
+          (string/format "at least peg and string required"))
+
+  (def peg
+    (let [cand (get argv 0)]
+      (assert cand "expected peg, got nothing")
+      (def [success? result] (protect (parse cand)))
+      (assert success?
+              (string/format "failed to parse peg, got:\n  `%s`"
+                             result))
+      result))
+
+  (assert (meg/analyze peg)
+          (string/format "problem with peg: %n" peg))
+
+  (def text
+    (let [result (get argv 1)]
+      (assert result "expected text, got nothing")
+      result))
+
+  (def start
+    (let [result (scan-number (get argv 2 "0"))]
+      (assert result
+              (string/format "expected number or nothing, got: %s"
+                             (get argv 2)))
+      result))
+
+  # XXX: should check for errors and report here...
+  (def args
+    (map parse (drop 3 argv)))
+
+  {:peg peg
+   :text text
+   :start start
+   :args args})
+
+########################################################################
+
 (defn main
   [& argv]
+  (def {:peg peg
+        :text text
+        :start start
+        :args args}
+    # XXX: is there a better check?
+    (if (dictionary? (get argv 0))
+      (get argv 0)
+      (args-from-cmd-line ;(drop 1 argv))))
+
+  # XXX: check peg, text, start, and args?
 
   (with [of (file/temp)]
     (os/setenv "VERBOSE" "1")
     (setdyn :meg-trace of)
     (setdyn :meg-color false)
 
-    '(meg/match ~(sequence (capture (some "smile") :x)
-                          (backref :x))
-               "smile!")
-
-    '(meg/match "a" "b")
-
-    '(meg/match ~(sequence (capture "a") "b" (capture "c"))
-               "abc")
-
-    '(meg/match ~(sub (capture "abcd") (capture "abc"))
-               "abcdef")
-
-    '(meg/match ~(sub (capture "abcd")
-                   (sub (capture "abc")
-                        (capture "ab")))
-             "abcdef")
-
-    '(meg/match ~(sequence (to "jane")
-                          (sub (thru "bits")
-                               (split ", " (capture (some 1)))) :s+
-                          (to "us")
-                          (capture "us"))
-               "all your janet, c, bits are belong to us")
-
-    '(meg/match ~(split "," (capture 1))
-               "a,b,c")
-
-    '(meg/match ~(cmt (capture 1)
-                   ,(fn [cap]
-                      (= cap "a")))
-               "ab")
-
-    '(meg/match ~(capture "a") "ba" 1)
-
-    '(meg/match ~(capture "a") "ba" 0 :a :b)
-
-    '(meg/match ~(accumulate (sequence (capture 1)
-                                      (capture 1)
-                                      (capture 1)))
-               "abc")
-
-    '(meg/match ~(look 3 (capture "cat"))
-             "my cat")
-
-    '(meg/match ~(sequence (number :d nil :tag)
-                          (capture (lenprefix (backref :tag)
-                                              1)))
-               "3abc")
-
-    (meg/match ~{:main (sequence :tagged -1)
-                 :tagged (unref (replace (sequence :open-tag :value :close-tag)
-                                         ,struct))
-                 :open-tag (sequence (constant :tag)
-                                     "<"
-                                     (capture :w+ :tag-name)
-                                     ">")
-                 :value (sequence (constant :value)
-                                  (group (any (choice :tagged :untagged))))
-                 :close-tag (sequence "</"
-                                      (backmatch :tag-name)
-                                      ">")
-                 :untagged (capture (any (if-not "<" 1)))}
-               "<p><em>Hello</em></p>")
-
-    '(meg/match ~{:space (some " ")
-                 :trailing '(any (if-not (set "\0\r\n") 1))
-                 :middle '(some (if-not (set " \0\r\n") 1))
-                 :params (+ -1 (* :space
-                                  (+ (* ":" :trailing)
-                                     (* :middle :params))))
-                 :command (+ '(some (range "az" "AZ"))
-                             (/ '(between 3 3 (range "09"))
-                                ,scan-number))
-                 :word (some (if-not " " 1))
-                 :prefix ':word
-                 :main (* (? (* (constant :prefix)
-                                ":" :prefix :space))
-                          (constant :command)
-                          :command
-                          (constant :params)
-                          (group :params))}
-               ":okwhatever OPER ASMR asmr")
+    (meg/match peg text start ;args)
 
     (file/seek of :set 0)
 
