@@ -530,7 +530,66 @@
 
 ########################################################################
 
+(defn events?
+  [cand]
+  (assert (tuple? cand)
+          (string/format "expected tuple but found %s" (type cand)))
+  #
+  (each item cand
+    (assert (event? item)
+            (string/format "invalid event: %n" item)))
+  #
+  true)
+
+########################################################################
+
 (defn main
+  ````
+  Render HTML files to represent a `meg/match` call.
+
+  Input:
+
+  If the first argument is a dictionary, it may have the keys:
+
+  * :peg
+  * :text
+  * :start (optional)
+  * :args (optional)
+
+  with associated values to correspond to a call to `meg/match`.
+
+  An example dictionary is:
+
+  ```
+  {:peg '(sequence "e")
+   :text "hello"
+   :start 1
+   :args []}
+  ```
+
+  Otherwise, the arguments are assumed to result from a command line
+  invocation and should all be strings.  The first argument will be
+  ignored as it represents the "executing" file.  The subsequent
+  arguments should be strings representing values (which the code will
+  try to "cast" appropriately) that are to be passed to `meg/match`.
+
+  A suitable command line invocation might be:
+
+  ```
+  render.janet '(capture "b")' "ab" 1
+  ```
+
+  Output:
+
+  The resulting HTML files have names like `0.html`, `1.html`, etc.
+  That is, an integer followed by `.html`.  These are created in the
+  current directory.
+
+  Each file represents an "event" in a trace of the execution of the
+  `meg/match` call.  The first event is represented by `0.html`, the
+  next event by `1.html`, etc.
+
+  ````
   [& argv]
   (def {:peg peg
         :text text
@@ -554,23 +613,13 @@
 
     (def content (file/read of :all))
 
-    (assert (not (empty? content))
-            "expected non-empty content")
+    (assert (not (empty? content)) "trace empty")
 
     (def [success? events] (protect (parse content)))
 
-    (when (not success?)
-      (eprintf "failed to parse trace data")
-      (os/exit 1))
+    (assert success? "failed to parse trace data")
 
-    (assert (tuple? events)
-            (string/format "expected tuple but found %s" (type events)))
-
-    (assert (all |(if (event? $)
-                    true
-                    (pp [:event $]))
-                 events)
-            (string/format "expected all elements to be events"))
+    (assert (events? events) "invalid events")
 
     # XXX: raw log for debugging
     (spit "dump.jdn" (string/format "%n" events))
@@ -598,6 +647,9 @@
         (array/pop stack)))))
 
 (defn render
+  ``
+  Convenience function for tersely invoking `main`.
+  ``
   [peg text &opt start & args]
   (default start 0)
   (default args [])
