@@ -186,7 +186,7 @@
         (if (= "nil" ret-str)
           "nil"
           (string/format "%n" (get-in event [:state :captures]))))
-      (buffer/push buf "; peg/match returns: ")
+      (buffer/push buf "; meg/match returns: ")
       (buffer/push buf
                    (if (= "nil" ret)
                      `<font color="red">`
@@ -199,10 +199,10 @@
 (defn render-match-params
   [buf event]
   (def spaces
-    (string/repeat " " (length "(peg/match ")))
+    (string/repeat " " (length "(meg/match ")))
   # XXX: hard-wiring tilde here...is that good enough?
   (buffer/push buf
-               "<pre>(peg/match ~"
+               "<pre>(meg/match ~"
                (escape (string/format "%n"
                                       (get-in event [:state :grammar]))))
   (buffer/push buf
