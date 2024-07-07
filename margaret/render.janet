@@ -1,6 +1,6 @@
 (import ./meg)
 
-(defn frame?
+(defn event?
   [cand]
   (and (dictionary? cand)
        (or (has-key? cand :entry)
@@ -13,7 +13,7 @@
 
 (comment
 
-  (frame? '{:entry 0
+  (event? '{:entry 0
             :index 0
             :peg (sequence (capture (some "smile") :x) (backref :x))
             :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
@@ -37,7 +37,7 @@
   # =>
   true
 
-  (frame? '{:exit 0
+  (event? '{:exit 0
             :ret 5
             :index 0
             :peg (sequence (capture (some "smile") :x) (backref :x))
@@ -62,7 +62,7 @@
   # =>
   true
 
-  (frame? {:exit 1})
+  (event? {:exit 1})
   # =>
   false
 
@@ -88,35 +88,35 @@
 
   )
 
-(defn idx-for-frame-no
-  [frame-no frames]
-  (def frame (find |(cond
+(defn idx-for-event-no
+  [event-no events]
+  (def event (find |(cond
                       (has-key? $ :entry)
-                      (= (get $ :entry) frame-no)
+                      (= (get $ :entry) event-no)
                       #
                       (has-key? $ :exit)
-                      (= (get $ :exit) frame-no))
-                   frames))
-  (assert frame
-          (string/format "failed to find frame for frame-no: %d" frame-no))
+                      (= (get $ :exit) event-no))
+                   events))
+  (assert event
+          (string/format "failed to find event for event-no: %d" event-no))
   #
-  (get frame :idx))
+  (get event :idx))
 
 (comment
 
-  (idx-for-frame-no 2 @[{:entry 1 :idx 0} {:exit 2 :idx 1}])
+  (idx-for-event-no 2 @[{:entry 1 :idx 0} {:exit 2 :idx 1}])
   # =>
   1
 
   )
 
-(defn first-frame?
-  [frame frames]
-  (deep= frame (first frames)))
+(defn first-event?
+  [event events]
+  (deep= event (first events)))
 
-(defn last-frame?
-  [frame frames]
-  (deep= frame (last frames)))
+(defn last-event?
+  [event events]
+  (deep= event (last events)))
 
 (defn render-nav
   [buf beg entry prv nxt exit end]
@@ -152,25 +152,25 @@
   (buffer/push buf "</pre>"))
 
 (defn render-summary
-  [buf frame ret frames]
+  [buf event ret events]
   (buffer/push buf "<pre>[")
   #
   (cond
-    (has-key? frame :entry)
+    (has-key? event :entry)
     (buffer/push buf `<font color="green">` "entered" `</font>`)
     #
-    (has-key? frame :exit)
+    (has-key? event :exit)
     (buffer/push buf `<font color="red">` "exiting" `</font>`))
-  (def frame-no
-    (get frame :entry (get frame :exit)))
-  (assert frame-no
-          (string/format "failed to find frame number for frame: %n"
-                         frame))
+  (def event-no
+    (get event :entry (get event :exit)))
+  (assert event-no
+          (string/format "failed to find event number for event: %n"
+                         event))
   (buffer/push buf
-               " frame "
-               `<font color="orange">` (string frame-no) `</font>`)
+               " event "
+               `<font color="orange">` (string event-no) `</font>`)
   #
-  (when (has-key? frame :exit)
+  (when (has-key? event :exit)
     (def ret-str
       (cond
         (= :nil ret)
@@ -181,11 +181,11 @@
         #
         (errorf "ret not :nil or number: %n" ret)))
     (buffer/push buf " with value: " ret-str)
-    (when (last-frame? frame frames)
+    (when (last-event? event events)
       (def outer-ret
         (if (= "nil" ret-str)
           "nil"
-          (string/format "%n" (get-in frame [:state :captures]))))
+          (string/format "%n" (get-in event [:state :captures]))))
       (buffer/push buf "; peg/match returns: ")
       (buffer/push buf
                    (if (= "nil" ret)
@@ -197,28 +197,28 @@
   (buffer/push buf "]</pre>"))
 
 (defn render-match-params
-  [buf frame]
+  [buf event]
   (def spaces
     (string/repeat " " (length "(peg/match ")))
   # XXX: hard-wiring tilde here...is that good enough?
   (buffer/push buf
                "<pre>(peg/match ~"
                (escape (string/format "%n"
-                                      (get-in frame [:state :grammar]))))
+                                      (get-in event [:state :grammar]))))
   (buffer/push buf
                "\n" spaces
                `"`
                `<font color="green">`
-               (escape (string/slice (get-in frame [:state :original-text])
-                                     0 (get frame :index)))
+               (escape (string/slice (get-in event [:state :original-text])
+                                     0 (get event :index)))
                `</font>`
                `<font color="red">`
-               (escape (string/slice (get-in frame [:state :original-text])
-                                     (get frame :index)))
+               (escape (string/slice (get-in event [:state :original-text])
+                                     (get event :index)))
                `</font>`
                `"`)
-  (def start (get-in frame [:state :start]))
-  (def args (get-in frame [:state :extrav]))
+  (def start (get-in event [:state :start]))
+  (def args (get-in event [:state :extrav]))
   (cond
     (not (empty? args))
     (do
@@ -238,20 +238,20 @@
   (buffer/push buf ")</pre>"))
 
 (defn render-captures-et-al
-  [buf frame]
+  [buf event]
   (buffer/push buf
                "<pre>captures: "
-               (escape (string/format "%n" (get-in frame [:state :captures])))
+               (escape (string/format "%n" (get-in event [:state :captures])))
                "</pre>")
-  (def tags (get-in frame [:state :tags]))
+  (def tags (get-in event [:state :tags]))
   (when (not (empty? tags))
-    (def tagged-captures (get-in frame [:state :tagged-captures]))
+    (def tagged-captures (get-in event [:state :tagged-captures]))
     (def tag-map (zipcoll tags tagged-captures))
     (buffer/push buf
                  "<pre>tagged-captures: "
                  (escape (string/format "%n" tag-map))
                  "</pre>"))
-  (def mode (get-in frame [:state :mode]))
+  (def mode (get-in event [:state :mode]))
   (when (= mode :peg-mode-accumulate)
     (buffer/push buf
                  "<pre>mode: "
@@ -260,24 +260,24 @@
     (buffer/push buf
                  "<pre>scratch: "
                  `@"`
-                 (escape (get-in frame [:state :scratch]))
+                 (escape (get-in event [:state :scratch]))
                  `"`
                  "</pre>")))
 
-(defn render-frame-params
-  [buf frame ret]
+(defn render-event-params
+  [buf event ret]
   (buffer/push buf
                "<pre>peg: "
                `<font color="orange">`
-               (escape (string/format "%n" (get frame :peg)))
+               (escape (string/format "%n" (get event :peg)))
                `</font>`)
   (buffer/push buf " ")
   #
   (def text
-    (string/slice (get-in frame [:state :original-text])
-                  (get-in frame [:state :text-start])
-                  (get-in frame [:state :text-end])))
-  (def index (get frame :index))
+    (string/slice (get-in event [:state :original-text])
+                  (get-in event [:state :text-start])
+                  (get-in event [:state :text-end])))
+  (def index (get event :index))
   #
   (buffer/push buf "</pre>")
   #
@@ -293,10 +293,10 @@
   #
   (buffer/push buf
                "<pre>index: "
-               (string (get frame :index))
+               (string (get event :index))
                "</pre>")
   #
-  (when (has-key? frame :exit)
+  (when (has-key? event :exit)
     (buffer/push buf "<pre>matched: ")
     (cond
       (= ret :nil)
@@ -310,92 +310,92 @@
     (buffer/push buf "</pre>")))
 
 (defn render-backtrace
-  [buf stack frames]
+  [buf stack events]
   (def backtrace (reverse stack))
   (def top (first backtrace))
-  (def top-frame-no (get top :entry))
-  (def top-idx (idx-for-frame-no top-frame-no frames))
+  (def top-event-no (get top :entry))
+  (def top-idx (idx-for-event-no top-event-no events))
   (buffer/push buf
                "<pre>"
                `<font color="orange">`
                (string `<a color="orange" href="` top-idx ".html" `">`
-                       top-frame-no `</a>`
+                       top-event-no `</a>`
                        " " (escape (string/format "%n" (get top :peg)))
                        "\n")
                `</font>`
-               ;(map |(let [frame-no (get $ :entry)
-                            idx (idx-for-frame-no frame-no frames)
+               ;(map |(let [event-no (get $ :entry)
+                            idx (idx-for-event-no event-no events)
                             peg (get $ :peg)]
                         (string `<a href="` idx ".html" `">`
-                                frame-no `</a>`
+                                event-no `</a>`
                                 " " (escape (string/format "%n" peg))
                                 "\n"))
                      (drop 1 backtrace))
                "</pre>"))
 
 (defn find-entry
-  [frame frames]
-  (assert (has-key? frame :exit)
-          (string/format "expected exit, got: %n" frame))
-  (def frame-no (get frame :exit))
+  [event events]
+  (assert (has-key? event :exit)
+          (string/format "expected exit, got: %n" event))
+  (def event-no (get event :exit))
   (def entry
-    (find |(= frame-no (get $ :entry))
-          frames))
+    (find |(= event-no (get $ :entry))
+          events))
   (assert entry
-          (string/format "failed to find entry for: %n" frame))
+          (string/format "failed to find entry for: %n" event))
   #
   (get entry :idx))
 
 (defn find-exit
-  [frame frames]
-  (assert (has-key? frame :entry)
-          (string/format "expected entry, got: %n" frame))
-  (def frame-no (get frame :entry))
+  [event events]
+  (assert (has-key? event :entry)
+          (string/format "expected entry, got: %n" event))
+  (def event-no (get event :entry))
   (def exit
-    (find |(= frame-no (get $ :exit))
-          frames))
+    (find |(= event-no (get $ :exit))
+          events))
   (assert exit
-          (string/format "failed to find exit for: %n" frame))
+          (string/format "failed to find exit for: %n" event))
   #
   (get exit :idx))
 
-(defn render-frame
-  [frame prv nxt stack frames]
-  (assert (or (has-key? frame :entry)
-              (has-key? frame :exit))
-          (string/format "frame must have :entry or :exit: %n" frame))
+(defn render-event
+  [event prv nxt stack events]
+  (assert (or (has-key? event :entry)
+              (has-key? event :exit))
+          (string/format "event must have :entry or :exit: %n" event))
   (def buf @"")
   (def ret
-    (when (has-key? frame :exit)
-      (get frame :ret)))
+    (when (has-key? event :exit)
+      (get event :ret)))
   (def beg
-    (when (not (first-frame? frame frames))
+    (when (not (first-event? event events))
       0))
   (def end
-    (when (not (last-frame? frame frames))
-      (dec (length frames))))
+    (when (not (last-event? event events))
+      (dec (length events))))
   (def entry
-    (when (has-key? frame :exit)
-      (find-entry frame frames)))
+    (when (has-key? event :exit)
+      (find-entry event events)))
   (def exit
-    (when (has-key? frame :entry)
-      (find-exit frame frames)))
+    (when (has-key? event :entry)
+      (find-exit event events)))
   #
-  (render-summary buf frame ret frames)
+  (render-summary buf event ret events)
   (buffer/push buf "\n")
   (render-nav buf beg entry prv nxt exit end)
   (buffer/push buf "<hr>")
 
-  (render-match-params buf frame)
+  (render-match-params buf event)
   (buffer/push buf "<hr>")
 
-  (render-captures-et-al buf frame)
+  (render-captures-et-al buf event)
   (buffer/push buf "<hr>")
 
-  (render-frame-params buf frame ret)
+  (render-event-params buf event ret)
   (buffer/push buf "<hr>")
 
-  (render-backtrace buf stack frames)
+  (render-backtrace buf stack events)
   #
   buf)
 
@@ -557,51 +557,43 @@
     (assert (not (empty? content))
             "expected non-empty content")
 
-    (def [success? results] (protect (parse content)))
+    (def [success? events] (protect (parse content)))
 
     (when (not success?)
-      (eprintf "failed to parse content")
+      (eprintf "failed to parse trace data")
       (os/exit 1))
 
-    (assert (tuple? results)
-            (string/format "expected tuple but found %s" (type results)))
+    (assert (tuple? events)
+            (string/format "expected tuple but found %s" (type events)))
 
-    (assert (all |(if (frame? $)
+    (assert (all |(if (event? $)
                     true
-                    (pp [:frame $]))
-                 results)
-            (string/format "expected all elements to be frames"))
+                    (pp [:event $]))
+                 events)
+            (string/format "expected all elements to be events"))
 
     # XXX: raw log for debugging
-    (spit "dump.jdn" (string/format "%n" results))
-
-    (def frames @[])
-
-    # replace frames within results
-    (eachp [idx frame] results
-      (def frame-mod (struct/to-table frame))
-      (put frame-mod :idx idx)
-      (put frames idx frame-mod))
+    (spit "dump.jdn" (string/format "%n" events))
 
     (def stack @[])
 
-    (eachp [idx frame] frames
-      (when (has-key? frame :entry)
-        (array/push stack frame))
+    (eachp [idx event] events
+      (when (has-key? event :entry)
+        (array/push stack event))
       #
       (def prv
         (if (zero? idx) nil (dec idx)))
       (def nxt
-        (if (= idx (dec (length frames))) nil (inc idx)))
+        (if (= idx (dec (length events))) nil (inc idx)))
       #
       (spit (string/format "%d.html" idx)
-            (render-frame frame prv nxt stack frames))
+            (render-event event prv nxt stack events))
       #
-      (when (has-key? frame :exit)
-        (assert (= (get frame :exit)
+      (when (has-key? event :exit)
+        (assert (= (get event :exit)
                    (get (array/peek stack) :entry))
                 (string/format "mismatch - expected: %d, but got: %d"
-                               (get frame :exit)
+                               (get event :exit)
                                (get (array/peek stack) :entry)))
         (array/pop stack)))))
 
