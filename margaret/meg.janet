@@ -1394,6 +1394,52 @@
 
   )
 
+(defn state?
+  [cand]
+  (and (dictionary? cand)
+       (has-key? cand :captures)
+       (has-key? cand :extrav)
+       (has-key? cand :grammar)
+       (has-key? cand :has-backref)
+       (has-key? cand :linemap)
+       (has-key? cand :linemaplen)
+       (has-key? cand :mode)
+       (has-key? cand :original-text)
+       (has-key? cand :outer-text-end)
+       (has-key? cand :scratch)
+       (has-key? cand :start)
+       (has-key? cand :tagged-captures)
+       (has-key? cand :tags)
+       (has-key? cand :text-end)
+       (has-key? cand :text-start)))
+
+(comment
+
+  (state? @{:captures @[]
+             :extrav @[]
+             :grammar ~(capture "a" :x)
+             :has-backref true
+             :linemap @[]
+             :linemaplen -1
+             :mode :peg-mode-normal
+             :original-text "123"
+             :outer-text-end 3
+             :scratch @""
+             :start 0
+             :tagged-captures @[]
+             :tags @[]
+             :text-end 3
+             :text-start 0})
+  # =>
+  true
+
+  (state? (get (peg-init [~(sequence "a" "b") "abc"])
+               :state))
+  # =>
+  true
+
+  )
+
 ########################################################################
 
 (defn fake-readable
@@ -1633,8 +1679,19 @@
     [1 (inc position)]
     [(+ lo 2) (- position (get-in state [:linemap lo]))]))
 
+(defn check-params
+  [state peg index grammar]
+  (assert (state? state)
+          (string/format "invalid state: %n" state))
+  (assert (analyze peg) "analysis of peg failed")
+  (assert (number? index) "index was not a number")
+  (assert (analyze grammar) "analysis of grammar failed"))
+
 (defn peg-rule
   [state peg index grammar]
+
+  (when (dyn :meg-debug)
+    (check-params state peg index grammar))
 
   (defn get-text
     [index]
