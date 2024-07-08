@@ -532,8 +532,8 @@
 
 (defn events?
   [cand]
-  (assert (tuple? cand)
-          (string/format "expected tuple but found %s" (type cand)))
+  (assert (array? cand)
+          (string/format "expected array but found %s" (type cand)))
   #
   (each item cand
     (assert (event? item)
@@ -615,7 +615,7 @@
 
     (assert (not (empty? content)) "trace empty")
 
-    (def [success? events] (protect (parse content)))
+    (def [success? events] (protect (parse-all content)))
 
     (assert success? "failed to parse trace data")
 

@@ -2594,9 +2594,7 @@
   (setdyn :meg-trace (dyn :meg-trace stderr))
   (setdyn :meg-color (dyn :meg-color true))
   (reset-steps)
-  (log "[")
   (def result (peg-rule state start-peg start new-peg))
-  (log "]")
   #
   (when result (get state :captures)))
 
