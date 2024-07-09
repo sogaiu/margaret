@@ -28,7 +28,6 @@ with some tests:
   * [sub](../examples/sub.janet)
   * [thru](../examples/thru.janet)
   * [to](../examples/to.janet)
-  * [unref](../examples/unref.janet)
 
 * Captures
   * [accumulate, %](../examples/accumulate.janet)
@@ -50,3 +49,4 @@ with some tests:
   * [replace, /](../examples/replace.janet)
   * [uint](../examples/uint.janet)
   * [uint-be](../examples/uint-be.janet)
+  * [unref](../examples/unref.janet)
