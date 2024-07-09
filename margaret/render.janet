@@ -293,8 +293,13 @@
   #
   (buffer/push buf
                "<pre>index: "
-               (string (get event :index))
-               "</pre>")
+               (string (get event :index)))
+  (when (has-key? event :exit)
+    (when (and (number? ret) (> ret index))
+      (buffer/push buf
+                   " advanced to: "
+                   `<font color="green">` (string ret) `</font>`)))
+  (buffer/push buf "</pre>")
   #
   (when (has-key? event :exit)
     (buffer/push buf "<pre>matched: ")
