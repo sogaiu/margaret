@@ -167,7 +167,7 @@
           (string/format "failed to find event number for event: %n"
                          event))
   (buffer/push buf
-               " event "
+               " frame "
                `<font color="orange">` (string event-no) `</font>`)
   #
   (when (has-key? event :exit)
@@ -441,7 +441,7 @@
              "ab")
 
   (meg/match ~(capture "a") "ba" 1)
-  
+
   (meg/match ~(capture "a") "ba" 0 :a :b)
 
   (meg/match ~(accumulate (sequence (capture 1)
