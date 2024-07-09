@@ -1,6 +1,6 @@
 (import ../margaret/meg :as peg)
 
-# `(range r1 ?r1 .. ?rn)`
+# `(range r1 ?r2 .. ?rn)`
 
 # Matches characters in a range and advances 1 character.
 
