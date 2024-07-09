@@ -31,11 +31,9 @@ by setting the `VERBOSE` environment variable to a non-empty string
 Currently, corresponding output looks like:
 
 ```janet
-[
-{:entry 0 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @[] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @[] :tags @[] :text-end 6 :text-start 0} }
+{:entry 0 :event-num 0 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @[] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @[] :tags @[] :text-end 6 :text-start 0} }
 ...
-{:exit 0 :ret 5 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @["smile" "smile"] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @["smile" "smile"] :tags @[:x :x] :text-end 6 :text-start 0} }
-]
+{:event-num 11 :exit 0 :ret 5 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @["smile" "smile"] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @["smile" "smile"] :tags @[:x :x] :text-end 6 :text-start 0} }
 ```
 
 Not very pretty for sure.  With a suitable terminal, there is some
@@ -45,65 +43,65 @@ capabilities, that might be of some help in perceiving the output.
 Some rearrangement and modification might make it look something like:
 
 ```janet
-[
- {:entry 0
-  :index 0
-  :peg (sequence (capture (some "smile") :x) (backref :x))
-  :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
-  :state @{:original-text "smile!"
-           :extrav []
-           :has-backref true
-           :outer-text-end 6
-           #
-           :text-start 0
-           :text-end 6
-           #
-           :captures @[]
-           :tagged-captures @[]
-           :tags @[]
-           #
-           :scratch @""
-           :mode :peg-mode-normal
-           #
-           :linemap @[]
-           :linemaplen -1}}
- ...
- {:exit 0
-  :ret 5
-  :index 0
-  :peg (sequence (capture (some "smile") :x) (backref :x))
-  :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
-  :state @{:original-text "smile!"
-           :extrav []
-           :has-backref true
-           :outer-text-end 6
-           #
-           :text-start 0
-           :text-end 6
-           #
-           :captures @["smile" "smile"]
-           :tagged-captures @["smile" "smile"]
-           :tags @[:x :x]
-           #
-           :scratch @""
-           :mode :peg-mode-normal
-           #
-           :linemap @[]
-           :linemaplen -1}}
-]
+{:entry 0
+ :event-num 0
+ :index 0
+ :peg (sequence (capture (some "smile") :x) (backref :x))
+ :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
+ :state @{:original-text "smile!"
+          :extrav []
+          :has-backref true
+          :outer-text-end 6
+          #
+          :text-start 0
+          :text-end 6
+          #
+          :captures @[]
+          :tagged-captures @[]
+          :tags @[]
+          #
+          :scratch @""
+          :mode :peg-mode-normal
+          #
+          :linemap @[]
+          :linemaplen -1}}
+...
+{:exit 0
+ :event-num 11
+ :ret 5
+ :index 0
+ :peg (sequence (capture (some "smile") :x) (backref :x))
+ :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
+ :state @{:original-text "smile!"
+          :extrav []
+          :has-backref true
+          :outer-text-end 6
+          #
+          :text-start 0
+          :text-end 6
+          #
+          :captures @["smile" "smile"]
+          :tagged-captures @["smile" "smile"]
+          :tags @[:x :x]
+          #
+          :scratch @""
+          :mode :peg-mode-normal
+          #
+          :linemap @[]
+          :linemaplen -1}}
 ```
 
 ### Explanation of Output
 
 The above output should be "readable" / "parseable" by `janet` [2].
-Further, it should correspond to a tuple where each element is a
-struct.
+Further, it should correspond to a series of structs.
 
 There are two types of structs, one for entry into processing a
 particular peg special and the other for exiting.
 
 The common key-value pairs for the structs are:
 
+* `:event-num` - number representing the sequential order of the event
 * `:index` - the index position of the text being matched over
 * `:peg` - the currently relevant peg "call"
 * `:grammar` - grammar being matched against [3]
@@ -112,10 +110,10 @@ The common key-value pairs for the structs are:
 in Janet's `peg.c`
 
 Each entry struct has an `:entry` key with a corresponding number
-representing the current step of execution.
+representing the current frame of execution.
 
 Each exit struct has an `:exit` key with a corresponding number
-representing the current step of execution, along with a `:ret` key
+representing the current frame of execution, along with a `:ret` key
 associated with a return value (index position).
 
 It should be possible to pair each entry struct with a corresponding
