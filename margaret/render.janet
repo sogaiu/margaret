@@ -342,6 +342,26 @@
                      (drop 1 backtrace))
                "</pre>"))
 
+(defn prerender-all-events
+  [buf events]
+  (buffer/push buf
+               "<pre>"
+               ;(map |(let [frame-num (get $ :entry (get $ :exit))
+                            event-num (event-num-for-frame-num frame-num events)
+                            peg (get $ :peg)]
+                        (string `<a href="` event-num ".html" `">`
+                                frame-num `</a>`
+                                " " (escape (string/format "%n" peg))
+                                "\n"))
+                     events)
+               "</pre>"))
+
+(var cached-content nil)
+
+(defn render-all-events
+  [buf events]
+  (buffer/push buf cached-content))
+
 (defn find-entry
   [event events]
   (assert (has-key? event :exit)
@@ -405,6 +425,9 @@
   (buffer/push buf "<hr>")
 
   (render-backtrace buf stack events)
+  (buffer/push buf "<hr>")
+
+  (render-all-events buf events)
   #
   buf)
 
@@ -634,6 +657,8 @@
     (spit "dump.jdn" (string/format "%n" events))
 
     (def stack @[])
+
+    (set cached-content (prerender-all-events @"" events))
 
     (eachp [idx event] events
       (when (has-key? event :entry)
