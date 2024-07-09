@@ -14,7 +14,3 @@
 (declare-source
  :source [src-root])
 
-(declare-binscript
-  :main "bin/meg-render"
-  :is-janet true)
-
