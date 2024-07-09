@@ -6,6 +6,7 @@
        (or (has-key? cand :entry)
            (and (has-key? cand :exit)
                 (has-key? cand :ret)))
+       (has-key? cand :event-num)
        (has-key? cand :index)
        (has-key? cand :peg)
        (has-key? cand :grammar)
@@ -14,6 +15,7 @@
 (comment
 
   (event? '{:entry 0
+            :event-num 0
             :index 0
             :peg (sequence (capture (some "smile") :x) (backref :x))
             :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
@@ -38,6 +40,7 @@
   true
 
   (event? '{:exit 0
+            :event-num 11
             :ret 5
             :index 0
             :peg (sequence (capture (some "smile") :x) (backref :x))
@@ -88,23 +91,24 @@
 
   )
 
-(defn idx-for-event-no
-  [event-no events]
+(defn event-num-for-frame-num
+  [frame-num events]
   (def event (find |(cond
                       (has-key? $ :entry)
-                      (= (get $ :entry) event-no)
+                      (= (get $ :entry) frame-num)
                       #
                       (has-key? $ :exit)
-                      (= (get $ :exit) event-no))
+                      (= (get $ :exit) frame-num))
                    events))
   (assert event
-          (string/format "failed to find event for event-no: %d" event-no))
+          (string/format "failed to find event for frame-num: %d" frame-num))
   #
-  (get event :idx))
+  (get event :event-num))
 
 (comment
 
-  (idx-for-event-no 2 @[{:entry 1 :idx 0} {:exit 2 :idx 1}])
+  (event-num-for-frame-num 2 @[{:entry 1 :event-num 0}
+                               {:exit 2 :event-num 1}])
   # =>
   1
 
@@ -161,14 +165,14 @@
     #
     (has-key? event :exit)
     (buffer/push buf `<font color="red">` "exiting" `</font>`))
-  (def event-no
+  (def frame-num
     (get event :entry (get event :exit)))
-  (assert event-no
+  (assert frame-num
           (string/format "failed to find event number for event: %n"
                          event))
   (buffer/push buf
                " frame "
-               `<font color="orange">` (string event-no) `</font>`)
+               `<font color="orange">` (string frame-num) `</font>`)
   #
   (when (has-key? event :exit)
     (def ret-str
@@ -318,21 +322,21 @@
   [buf stack events]
   (def backtrace (reverse stack))
   (def top (first backtrace))
-  (def top-event-no (get top :entry))
-  (def top-idx (idx-for-event-no top-event-no events))
+  (def top-frame-num (get top :entry))
+  (def top-event-num (event-num-for-frame-num top-frame-num events))
   (buffer/push buf
                "<pre>"
                `<font color="orange">`
-               (string `<a color="orange" href="` top-idx ".html" `">`
-                       top-event-no `</a>`
+               (string `<a color="orange" href="` top-event-num ".html" `">`
+                       top-frame-num `</a>`
                        " " (escape (string/format "%n" (get top :peg)))
                        "\n")
                `</font>`
-               ;(map |(let [event-no (get $ :entry)
-                            idx (idx-for-event-no event-no events)
+               ;(map |(let [frame-num (get $ :entry)
+                            event-num (event-num-for-frame-num frame-num events)
                             peg (get $ :peg)]
-                        (string `<a href="` idx ".html" `">`
-                                event-no `</a>`
+                        (string `<a href="` event-num ".html" `">`
+                                frame-num `</a>`
                                 " " (escape (string/format "%n" peg))
                                 "\n"))
                      (drop 1 backtrace))
@@ -342,27 +346,27 @@
   [event events]
   (assert (has-key? event :exit)
           (string/format "expected exit, got: %n" event))
-  (def event-no (get event :exit))
+  (def frame-num (get event :exit))
   (def entry
-    (find |(= event-no (get $ :entry))
+    (find |(= frame-num (get $ :entry))
           events))
   (assert entry
           (string/format "failed to find entry for: %n" event))
   #
-  (get entry :idx))
+  (get entry :event-num))
 
 (defn find-exit
   [event events]
   (assert (has-key? event :entry)
           (string/format "expected entry, got: %n" event))
-  (def event-no (get event :entry))
+  (def frame-num (get event :entry))
   (def exit
-    (find |(= event-no (get $ :exit))
+    (find |(= frame-num (get $ :exit))
           events))
   (assert exit
           (string/format "failed to find exit for: %n" event))
   #
-  (get exit :idx))
+  (get exit :event-num))
 
 (defn render-event
   [event prv nxt stack events]

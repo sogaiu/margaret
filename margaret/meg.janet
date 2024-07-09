@@ -1554,23 +1554,23 @@
 
 (var step nil)
 (def steps @[])
-(var event-idx nil)
+(var event-num nil)
 
 (defn reset-steps
   []
   (set step -1)
-  (set event-idx -1)
+  (set event-num -1)
   (array/clear steps)
   (array/push steps step))
 
 (defn log-edge
-  [this-step this-idx the-type & args]
+  [this-step ev-num the-type & args]
   (when (os/getenv "VERBOSE")
     (def mt (dyn :meg-trace (file/temp)))
     (def spec
       (if (dyn :meg-color) "N" "n"))
     (xprin mt "{")
-    (xprint mt ":idx" " " this-idx " ")
+    (xprint mt ":event-num" " " ev-num " ")
     (xprinf mt (string the-type " %" spec " ")
             this-step)
     (each arg args
@@ -1584,15 +1584,15 @@
 (defn log-entry
   [& args]
   (def this-step (++ step))
-  (def this-idx (++ event-idx))
+  (def ev-num (++ event-num))
   (array/push steps this-step)
-  (log-edge this-step this-idx ":entry" ;args))
+  (log-edge this-step ev-num ":entry" ;args))
 
 (defn log-exit
   [& args]
   (def this-step (array/pop steps))
-  (def this-idx (++ event-idx))
-  (log-edge this-step this-idx ":exit" ;args))
+  (def ev-num (++ event-num))
+  (log-edge this-step ev-num ":exit" ;args))
 
 (defn log
   [msg & args]
