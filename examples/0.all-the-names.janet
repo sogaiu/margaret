@@ -1,51 +1,51 @@
 #
 # Primitive Patterns
 #   Integer (..., -1, 0, 1, ...)
-#   range
-#   set
+#   range                  =  (range r1 ?r2 ... ?rn)
+#   set                    =  (set chars)
 #   String ("...")
 #   Boolean (true, false)
 #
 # Combining Patterns
-#   any
-#   at-least
-#   at-most
-#   backmatch
-#   between (opt, ?)
-#   choice (+)
-#   if
-#   if-not
-#   look (>)
-#   not (!)
-#   repeat (0, 1, 2, ...)
-#   sequence (*)
-#   some
-#   split
-#   sub
-#   thru
-#   to
-#   unref
+#   any                    =  (any patt)
+#   at-least               =  (at-least n patt)
+#   at-most                =  (at-most n patt)
+#   backmatch              =  (backmatch ?tag)
+#   between (opt, ?)       =  (between min max patt)
+#   choice (+)             =  (choice patt-1 patt-2 ...)
+#   if                     =  (if cond patt)
+#   if-not                 =  (if-not cond patt)
+#   look (>)               =  (look offset ?patt)
+#   not (!)                =  (not patt)
+#   repeat (0, 1, 2, ...)  =  (repeat n patt)
+#   sequence (*)           =  (sequence patt-1 patt-2 ...)
+#   some                   =  (some patt)
+#   split                  =  (split sep patt)
+#   sub                    =  (sub window-patt patt)
+#   thru                   =  (thru patt)
+#   to                     =  (to patt)
 #
 # Captures
-#   accumulate (%)
-#   argument
-#   backref (->)
-#   capture (<-, quote)
-#   cmt
-#   column
-#   constant
-#   drop
-#   error
-#   group
-#   int
-#   int-be
-#   lenprefix
-#   line
-#   number
-#   position ($)
-#   replace (/)
-#   uint
-#   uint-be
+#   accumulate (%)         =  (accumulate pat ?tag)
+#   argument               =  (argument n ?tag)
+#   backref (->)           =  (backref prev-tag ?tag)
+#   capture (<-, quote)    =  (capture patt ?tag)
+#   cmt                    =  (cmt patt fun ?tag)
+#   column                 =  (column ?tag)
+#   constant               =  (constant k ?tag)
+#   drop                   =  (drop patt)
+#   error                  =  (error ?patt)
+#   group                  =  (group patt ?tag)
+#   int                    =  (int n ?tag)
+#   int-be                 =  (int-be n ?tag)
+#   lenprefix              =  (lenprefix n patt)
+#   line                   =  (line ?tag)
+#   number                 =  (number patt ?base ?tag)
+#   position ($)           =  (position ?tag)
+#   replace (/)            =  (replace patt subst ?tag)
+#   uint                   =  (uint n ?tag)
+#   uint-be                =  (uint-be n ?tag)
+#   unref                  =  (unref rule ?tag)
 #
 # Built-ins
 #   :a                     =  (range "AZ" "az")
@@ -88,7 +88,7 @@
 #   (-> prev-tag ?tag)     =  (backref prev-tag ?tag)
 #   (/ patt subst ?tag)    =  (replace patt subst ?tag)
 #   (<- patt ?tag)         =  (capture patt ?tag)
-#   (> offset patt)        =  (look offset patt)
+#   (> offset ?patt)       =  (look offset ?patt)
 #   (? patt)               =  (between 0 1 patt)
 #   (1 patt)               =  (repeat 1 patt)
 #   (2 patt)               =  (repeat 2 patt)
