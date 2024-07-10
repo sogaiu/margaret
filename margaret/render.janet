@@ -166,7 +166,7 @@
 
 (defn render-summary
   [buf event ret events]
-  (buffer/push buf "<pre>[")
+  (buffer/push buf "<pre>status: ")
   #
   (cond
     (has-key? event :entry)
@@ -193,7 +193,13 @@
         (string ret)
         #
         (errorf "ret not :nil or number: %n" ret)))
-    (buffer/push buf " with value: " ret-str)
+    (buffer/push buf
+                 " with value: "
+                 (if (= "nil" ret)
+                   `<font color="red">`
+                   `<font color="green">`)
+                 ret-str
+                 `</font>`)
     (when (last-event? event events)
       (def outer-ret
         (if (= "nil" ret-str)
@@ -207,10 +213,10 @@
                    outer-ret
                    `</font>`)))
   #
-  (buffer/push buf "]</pre>"))
+  (buffer/push buf "</pre>"))
 
 (defn render-match-params
-  [buf event]
+  [buf event ret]
   (def spaces
     (string/repeat " " (length "(meg/match ")))
   # XXX: hard-wiring tilde here...is that good enough?
@@ -218,16 +224,20 @@
                "<pre>(meg/match ~"
                (escape (string/format "%n"
                                       (get-in event [:state :grammar]))))
+  (def original-text (get-in event [:state :original-text]))
+  (def boundary
+    (if (or (has-key? event :entry)
+            (= ret :nil))
+      (get event :index)
+      ret))
   (buffer/push buf
                "\n" spaces
                `"`
                `<font color="green">`
-               (escape (string/slice (get-in event [:state :original-text])
-                                     0 (get event :index)))
+               (escape (string/slice original-text 0 boundary))
                `</font>`
                `<font color="red">`
-               (escape (string/slice (get-in event [:state :original-text])
-                                     (get event :index)))
+               (escape (string/slice original-text boundary))
                `</font>`
                `"`)
   (def start (get-in event [:state :start]))
@@ -252,6 +262,7 @@
 
 (defn render-captures-et-al
   [buf event]
+  (buffer/push buf "<pre><u>captures and tags</u></pre>")
   (buffer/push buf
                "<pre>captures: "
                (escape (string/format "%n" (get-in event [:state :captures])))
@@ -278,7 +289,10 @@
                  "</pre>")))
 
 (defn render-event-params
-  [buf event ret]
+  [buf event ret events]
+  (buffer/push buf "<pre><u>current frame</u></pre>")
+  (render-summary buf event ret events)
+  #
   (buffer/push buf
                "<pre>peg: "
                `<font color="orange">`
@@ -294,15 +308,24 @@
   #
   (buffer/push buf "</pre>")
   #
-  (buffer/push buf
-               "<pre>text: "
-               `<font color="green">`
-               (escape (string/slice text 0 index))
-               `</font>`
-               `<font color="red">`
-               (escape (string/slice text index))
-               `</font>`
-               "</pre>")
+  (buffer/push buf `<pre>text: "`)
+  (if (or (has-key? event :entry)
+          (= ret :nil))
+    (buffer/push buf
+                 `<font color="green">`
+                 (escape (string/slice text 0 index))
+                 `</font>`
+                 `<font color="red">`
+                 (escape (string/slice text index))
+                 `</font>`)
+    (buffer/push buf
+                 `<font color="green">`
+                 (escape (string/slice text 0 ret))
+                 `</font>`
+                 `<font color="red">`
+                 (escape (string/slice text ret))
+                 `</font>`))
+  (buffer/push buf `"</pre>`)
   #
   (buffer/push buf
                "<pre>index: "
@@ -333,6 +356,7 @@
   (def top (first backtrace))
   (def top-frame-num (get top :entry))
   (def top-event-num (event-num-for-frame-num top-frame-num events))
+  (buffer/push buf "<pre><u>frames call stack</u></pre>")
   (buffer/push buf
                "<pre>"
                `<font color="orange">`
@@ -354,6 +378,7 @@
 (defn render-all-events
   [buf events]
   (buffer/push buf
+               "<pre><u>event log</u></pre>"
                "<pre>"
                ;(map |(let [frame-num (get $ :entry (get $ :exit))
                             event-num (event-num-for-frame-num frame-num events)
@@ -413,18 +438,16 @@
     (when (has-key? event :entry)
       (find-exit event events)))
   #
-  (render-summary buf event ret events)
-  (buffer/push buf "\n")
   (render-nav buf beg entry prv nxt exit end)
   (buffer/push buf "<hr>")
 
-  (render-match-params buf event)
+  (render-match-params buf event ret)
   (buffer/push buf "<hr>")
 
   (render-captures-et-al buf event)
   (buffer/push buf "<hr>")
 
-  (render-event-params buf event ret)
+  (render-event-params buf event ret events)
   (buffer/push buf "<hr>")
 
   (render-backtrace buf stack events)
