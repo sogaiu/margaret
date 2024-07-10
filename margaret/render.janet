@@ -1,5 +1,11 @@
 (import ./meg)
 
+(def all-events-filename "all.html")
+
+(def dump-filename "dump.jdn")
+
+########################################################################
+
 (defn event?
   [cand]
   (and (dictionary? cand)
@@ -125,6 +131,9 @@
 (defn render-nav
   [buf beg entry prv nxt exit end]
   (buffer/push buf "<pre>")
+  (buffer/push buf `<a href="` all-events-filename `">[all]</a>`)
+  (buffer/push buf " ")
+  #
   (if beg
     (buffer/push buf `<a href="` (string beg) ".html" `">[start]</a>`)
     (buffer/push buf "[start]"))
@@ -604,13 +613,20 @@
 
   Output:
 
-  The resulting HTML files have names like `0.html`, `1.html`, etc.
-  That is, an integer followed by `.html`.  These are created in the
-  current directory.
+  Resulting HTML files representing individual "events" have names
+  like `0.html`, `1.html`, etc.  That is, an integer followed by
+  `.html`.
 
-  Each file represents an "event" in a trace of the execution of the
-  `meg/match` call.  The first event is represented by `0.html`, the
-  next event by `1.html`, etc.
+  Each "event" represents a peg "call" in a trace of the execution
+  of the "outer" `meg/match` call.  The first event is represented by
+  `0.html`, the next event by `1.html`, etc.
+
+  A file with links to all event files is also created with name
+  "all.html".
+
+  A raw log of events is also created with name "dump.jdn".
+
+  All files are created in the current directory.
 
   ````
   [& argv]
@@ -645,11 +661,11 @@
     (assert (events? events) "invalid events")
 
     # XXX: raw log for debugging
-    (spit "dump.jdn" (string/format "%n" events))
+    (spit dump-filename (string/format "%n" events))
 
     (def stack @[])
 
-    (spit "trace-log.html" (render-all-events @"" events))
+    (spit all-events-filename (render-all-events @"" events))
 
     (eachp [idx event] events
       (when (has-key? event :entry)
