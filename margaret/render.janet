@@ -164,6 +164,17 @@
     (buffer/push buf "[end]"))
   (buffer/push buf "</pre>"))
 
+(defn ret-as-str
+  [ret]
+  (cond
+    (= :nil ret)
+    "nil"
+    #
+    (number? ret)
+    (string ret)
+    #
+    (errorf "ret not :nil or number: %n" ret)))
+
 (defn render-summary
   [buf event ret events]
   (buffer/push buf "<pre>status: ")
@@ -184,39 +195,19 @@
                `<font color="orange">` (string frame-num) `</font>`)
   #
   (when (has-key? event :exit)
-    (def ret-str
-      (cond
-        (= :nil ret)
-        "nil"
-        #
-        (number? ret)
-        (string ret)
-        #
-        (errorf "ret not :nil or number: %n" ret)))
+    (def ret-str (ret-as-str ret))
     (buffer/push buf
                  " with value: "
                  (if (= "nil" ret)
                    `<font color="red">`
                    `<font color="green">`)
                  ret-str
-                 `</font>`)
-    (when (last-event? event events)
-      (def outer-ret
-        (if (= "nil" ret-str)
-          "nil"
-          (string/format "%n" (get-in event [:state :captures]))))
-      (buffer/push buf "; meg/match returns: ")
-      (buffer/push buf
-                   (if (= "nil" ret)
-                     `<font color="red">`
-                     `<font color="green">`)
-                   outer-ret
-                   `</font>`)))
+                 `</font>`))
   #
   (buffer/push buf "</pre>"))
 
 (defn render-match-params
-  [buf event ret]
+  [buf event ret events]
   (def spaces
     (string/repeat " " (length "(meg/match ")))
   # XXX: hard-wiring tilde here...is that good enough?
@@ -258,7 +249,24 @@
     (buffer/push buf
                  "\n" spaces
                  (escape (string start))))
-  (buffer/push buf ")</pre>"))
+  (buffer/push buf ")")
+  # XXX: might not be right if trace log is incomplete
+  (when (and (has-key? event :exit)
+             (last-event? event events))
+    (def ret-str (ret-as-str ret))
+    (def outer-ret
+      (if (= "nil" ret-str)
+        "nil"
+        (string/format "%n" (get-in event [:state :captures]))))
+    (buffer/push buf "\n# =>\n")
+    (buffer/push buf
+                 (if (= "nil" ret)
+                   `<font color="red">`
+                   `<font color="green">`)
+                 outer-ret
+                 `</font>`))
+  #
+  (buffer/push buf "</pre>"))
 
 (defn render-captures-et-al
   [buf event]
@@ -441,7 +449,7 @@
   (render-nav buf beg entry prv nxt exit end)
   (buffer/push buf "<hr>")
 
-  (render-match-params buf event ret)
+  (render-match-params buf event ret events)
   (buffer/push buf "<hr>")
 
   (render-captures-et-al buf event)
