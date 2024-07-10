@@ -97,13 +97,28 @@
 
   )
 
-(defn event-num-for-frame-num
+(defn entry-event-num
   [frame-num events]
-  (def event (find |(cond
-                      (has-key? $ :entry)
-                      (= (get $ :entry) frame-num)
-                      #
-                      (has-key? $ :exit)
+  (def event (find |(when (has-key? $ :entry)
+                      (= (get $ :entry) frame-num))
+                   events))
+  (assert event
+          (string/format "failed to find event for frame-num: %d" frame-num))
+  #
+  (get event :event-num))
+
+(comment
+
+  (entry-event-num 1 @[{:entry 1 :event-num 0}
+                       {:exit 2 :event-num 1}])
+  # =>
+  0
+
+  )
+
+(defn exit-event-num
+  [frame-num events]
+  (def event (find |(when (has-key? $ :exit)
                       (= (get $ :exit) frame-num))
                    events))
   (assert event
@@ -113,8 +128,8 @@
 
 (comment
 
-  (event-num-for-frame-num 2 @[{:entry 1 :event-num 0}
-                               {:exit 2 :event-num 1}])
+  (exit-event-num 2 @[{:entry 1 :event-num 0}
+                      {:exit 2 :event-num 1}])
   # =>
   1
 
@@ -363,7 +378,7 @@
   (def backtrace (reverse stack))
   (def top (first backtrace))
   (def top-frame-num (get top :entry))
-  (def top-event-num (event-num-for-frame-num top-frame-num events))
+  (def top-event-num (entry-event-num top-frame-num events))
   (buffer/push buf "<pre><u>frames call stack</u></pre>")
   (buffer/push buf
                "<pre>"
@@ -374,7 +389,7 @@
                        "\n")
                `</font>`
                ;(map |(let [frame-num (get $ :entry)
-                            event-num (event-num-for-frame-num frame-num events)
+                            event-num (entry-event-num frame-num events)
                             peg (get $ :peg)]
                         (string `<a href="` event-num ".html" `">`
                                 frame-num `</a>`
@@ -389,7 +404,9 @@
                "<pre><u>event log</u></pre>"
                "<pre>"
                ;(map |(let [frame-num (get $ :entry (get $ :exit))
-                            event-num (event-num-for-frame-num frame-num events)
+                            event-num (if (has-key? $ :entry)
+                                        (entry-event-num frame-num events)
+                                        (exit-event-num frame-num events))
                             peg (get $ :peg)]
                         (string `<a href="` event-num ".html" `">`
                                 frame-num `</a>`
