@@ -342,7 +342,7 @@
                      (drop 1 backtrace))
                "</pre>"))
 
-(defn prerender-all-events
+(defn render-all-events
   [buf events]
   (buffer/push buf
                "<pre>"
@@ -355,12 +355,6 @@
                                 "\n"))
                      events)
                "</pre>"))
-
-(var cached-content nil)
-
-(defn render-all-events
-  [buf events]
-  (buffer/push buf cached-content))
 
 (defn find-entry
   [event events]
@@ -425,9 +419,6 @@
   (buffer/push buf "<hr>")
 
   (render-backtrace buf stack events)
-  (buffer/push buf "<hr>")
-
-  (render-all-events buf events)
   #
   buf)
 
@@ -658,7 +649,7 @@
 
     (def stack @[])
 
-    (set cached-content (prerender-all-events @"" events))
+    (spit "trace-log.html" (render-all-events @"" events))
 
     (eachp [idx event] events
       (when (has-key? event :entry)
