@@ -1594,6 +1594,12 @@
   (def ev-num (++ event-num))
   (log-edge this-step ev-num ":exit" ;args))
 
+(defn log-error
+  [& args]
+  (def this-step (array/pop steps))
+  (def ev-num (++ event-num))
+  (log-edge this-step ev-num ":error" ;args))
+
 (defn log
   [msg & args]
   (when (os/getenv "VERBOSE")
@@ -1610,6 +1616,14 @@
   ~(log-exit [:ret (or ret :nil)]
              [:index index] [:peg peg]
              [:grammar grammar] [:state state]))
+
+(defmacro log-and-err
+  []
+  ~(do
+     (log-error [:err err]
+                [:index index] [:peg peg]
+                [:grammar grammar] [:state state])
+     (error err)))
 
 ########################################################################
 
@@ -2400,12 +2414,16 @@
           (def ret
             (when res-idx
               (if (> (length (get state :captures)) old-cap)
-                (error (string (last (get state :captures))))
+                (let [err (string (last (get state :captures)))]
+                  (log-and-err))
                 (let [[line col]
                       (get-linecol-from-position
                         state
-                        (- index (get state :text-start)))]
-                  (errorf "match error at line %d, column %d" line col)))
+                        (- index (get state :text-start)))
+                      err 
+                      (string/format "match error at line %d, column %d"
+                                     line col)]
+                  (log-and-err)))
               # XXX: should not get here
               nil))
           (log-out)
@@ -2577,9 +2595,11 @@
           ret)
 
         #
-        (errorf "unknown tuple op: %n" op)))
-    #
-    (errorf "unknown peg: %n" peg)))
+        (let [err (string/format "unknown tuple op: %n" op)]
+          (log-and-err))))
+    #    
+    (let [err (string/format "unknown peg: %n" peg)]
+      (log-and-err))))
 
 (defn peg-match
   [peg text &opt start & args]
