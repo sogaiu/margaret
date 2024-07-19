@@ -2414,7 +2414,7 @@
           (def ret
             (when res-idx
               (if (> (length (get state :captures)) old-cap)
-                (let [err (string (last (get state :captures)))]
+                (let [err (last (get state :captures))]
                   (log-and-err))
                 (let [[line col]
                       (get-linecol-from-position
