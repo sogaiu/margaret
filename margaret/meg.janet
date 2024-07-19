@@ -2595,10 +2595,10 @@
           ret)
 
         #
-        (let [err (string/format "unknown tuple op: %n" op)]
+        (let [err (string/format "unexpected tuple op: %n" op)]
           (log-and-err))))
     #    
-    (let [err (string/format "unknown peg: %n" peg)]
+    (let [err (string/format "unexpected peg: %n" peg)]
       (log-and-err))))
 
 (defn peg-match
