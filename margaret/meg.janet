@@ -1623,6 +1623,7 @@
      (log-error [:err err]
                 [:index index] [:peg peg]
                 [:grammar grammar] [:state state])
+     (setdyn :meg-error true)
      (error err)))
 
 ########################################################################
@@ -2611,6 +2612,7 @@
   (def new-peg (get peg-call :peg))
   (def start-peg (get new-peg :main))
   #
+  (setdyn :meg-error false)
   (setdyn :meg-trace (dyn :meg-trace stderr))
   (setdyn :meg-color (dyn :meg-color true))
   (reset-steps)
