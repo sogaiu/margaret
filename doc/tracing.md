@@ -31,9 +31,9 @@ by setting the `VERBOSE` environment variable to a non-empty string
 Currently, corresponding output looks like:
 
 ```janet
-{:entry 0 :event-num 0 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @[] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @[] :tags @[] :text-end 6 :text-start 0} }
+{:event-num 0 :type :entry :frame-num 0 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @[] :extrav () :grammar (sequence (capture (some "smile") :x) (backref :x)) :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :start 0 :tagged-captures @[] :tags @[] :text-end 6 :text-start 0} }
 ...
-{:event-num 11 :exit 0 :ret 5 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @["smile" "smile"] :extrav () :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :tagged-captures @["smile" "smile"] :tags @[:x :x] :text-end 6 :text-start 0} }
+{:event-num 11 :type :exit :frame-num 0 :ret 5 :index 0 :peg (sequence (capture (some "smile") :x) (backref :x)) :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))} :state @{:captures @["smile" "smile"] :extrav () :grammar (sequence (capture (some "smile") :x) (backref :x)) :has-backref true :linemap @[] :linemaplen -1 :mode :peg-mode-normal :original-text "smile!" :outer-text-end 6 :scratch @"" :start 0 :tagged-captures @["smile" "smile"] :tags @[:x :x] :text-end 6 :text-start 0} }
 ```
 
 Not very pretty for sure.  With a suitable terminal, there is some
@@ -43,8 +43,9 @@ capabilities, that might be of some help in perceiving the output.
 Some rearrangement and modification might make it look something like:
 
 ```janet
-{:entry 0
- :event-num 0
+{:event-num 0
+ :type :entry
+ :frame-num 0
  :index 0
  :peg (sequence (capture (some "smile") :x) (backref :x))
  :grammar @{:main (sequence (capture (some "smile") :x) (backref :x))}
@@ -64,10 +65,14 @@ Some rearrangement and modification might make it look something like:
           :mode :peg-mode-normal
           #
           :linemap @[]
-          :linemaplen -1}}
+          :linemaplen -1
+          #
+          :start 0
+          ...}}
 ...
-{:exit 0
- :event-num 11
+{:event-num 11
+ :type :exit
+ :frame-num 0
  :ret 5
  :index 0
  :peg (sequence (capture (some "smile") :x) (backref :x))
@@ -88,7 +93,10 @@ Some rearrangement and modification might make it look something like:
           :mode :peg-mode-normal
           #
           :linemap @[]
-          :linemaplen -1}}
+          :linemaplen -1
+          #
+          :start 0
+          ...}}
 ```
 
 ### Explanation of Output
@@ -96,29 +104,30 @@ Some rearrangement and modification might make it look something like:
 The above output should be "readable" / "parseable" by `janet` [2].
 Further, it should correspond to a series of structs.
 
-There are two types of structs, one for entry into processing a
-particular peg special and the other for exiting.
+There are three types of structs:
+
+* one for entry into processing a particular peg special,
+* another for exiting, and
+* lastly one for errors
 
 The common key-value pairs for the structs are:
 
 * `:event-num` - number representing the sequential order of the event
+* `:type` - keyword specifying which of the three event types the event is
+* `:frame-num` - number representing a single peg call frame (multiple
+  events share a single frame)
 * `:index` - the index position of the text being matched over
-* `:peg` - the currently relevant peg "call"
+* `:peg`- the currently relevant peg "call"
 * `:grammar` - grammar being matched against [3]
 * `:state` - represents execution state for the peg; similar to
 [`PegState`](https://github.com/janet-lang/janet/blob/e2a8951f688fec8362f725e4a8afd3c79bc1854e/src/core/peg.c#L38-L62)
 in Janet's `peg.c`
 
-Each entry struct has an `:entry` key with a corresponding number
-representing the current frame of execution.
+Each exit event also has a `:ret` key associated with a return value
+(index position or `:nil`).
 
-Each exit struct has an `:exit` key with a corresponding number
-representing the current frame of execution, along with a `:ret` key
-associated with a return value (index position).
-
-It should be possible to pair each entry struct with a corresponding
-exit struct as they should share the same associated value for
-`:entry` and `:exit`, respectively.
+Each error event also has an `:err` key associated with a string
+describing the error.
 
 ## Caveats
 
