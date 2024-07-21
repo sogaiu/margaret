@@ -2421,7 +2421,7 @@
                       (get-linecol-from-position
                         state
                         (- index (get state :text-start)))
-                      err 
+                      err
                       (string/format "match error at line %d, column %d"
                                      line col)]
                   (log-and-err)))
@@ -2598,7 +2598,7 @@
         #
         (let [err (string/format "unexpected tuple op: %n" op)]
           (log-and-err))))
-    #    
+    #
     (let [err (string/format "unexpected peg: %n" peg)]
       (log-and-err))))
 
