@@ -1552,27 +1552,28 @@
 
   )
 
-(var step nil)
-(def steps @[])
+(var frame-num nil)
+(def frame-nums @[])
 (var event-num nil)
 
-(defn reset-steps
+(defn reset-frame-nums
   []
-  (set step -1)
+  (set frame-num -1)
   (set event-num -1)
-  (array/clear steps)
-  (array/push steps step))
+  (array/clear frame-nums)
+  # XXX: why is the first thing -1...
+  (array/push frame-nums frame-num))
 
 (defn log-edge
-  [this-step ev-num the-type & args]
+  [frame-num ev-num the-type & args]
   (when (os/getenv "VERBOSE")
     (def mt (dyn :meg-trace (file/temp)))
     (def spec
       (if (dyn :meg-color) "N" "n"))
     (xprin mt "{")
-    (xprint mt ":event-num" " " ev-num " ")
-    (xprinf mt (string the-type " %" spec " ")
-            this-step)
+    (xprin mt (string ":event-num " ev-num " "))
+    (xprinf mt (string ":type %" spec " ") (keyword the-type))
+    (xprinf mt (string ":frame-num %" spec " ") frame-num)
     (each arg args
       (if (and (tuple? arg) (= 2 (length arg)))
         (xprinf mt (string "%" spec " %" spec " ")
@@ -1583,22 +1584,22 @@
 
 (defn log-entry
   [& args]
-  (def this-step (++ step))
+  (def frame-num (++ frame-num))
   (def ev-num (++ event-num))
-  (array/push steps this-step)
-  (log-edge this-step ev-num ":entry" ;args))
+  (array/push frame-nums frame-num)
+  (log-edge frame-num ev-num "entry" ;args))
 
 (defn log-exit
   [& args]
-  (def this-step (array/pop steps))
+  (def frame-num (array/pop frame-nums))
   (def ev-num (++ event-num))
-  (log-edge this-step ev-num ":exit" ;args))
+  (log-edge frame-num ev-num "exit" ;args))
 
 (defn log-error
   [& args]
-  (def this-step (array/pop steps))
+  (def frame-num (array/pop frame-nums))
   (def ev-num (++ event-num))
-  (log-edge this-step ev-num ":error" ;args))
+  (log-edge frame-num ev-num "error" ;args))
 
 (defn log
   [msg & args]
@@ -2615,7 +2616,7 @@
   (setdyn :meg-error false)
   (setdyn :meg-trace (dyn :meg-trace stderr))
   (setdyn :meg-color (dyn :meg-color true))
-  (reset-steps)
+  (reset-frame-nums)
   (def result (peg-rule state start-peg start new-peg))
   #
   (when result (get state :captures)))
