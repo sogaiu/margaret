@@ -26,6 +26,10 @@
   # =>
   @["1"]
 
+  )
+
+(comment
+
   (let [text (if (< (math/random) 0.5)
                "b"
                "y")]
