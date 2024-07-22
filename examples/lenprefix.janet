@@ -9,6 +9,16 @@
 
 (comment
 
+  (peg/match ~(lenprefix (number :d) 1)
+             "2xy")
+  # =>
+  @[]
+
+  (peg/match ~(capture (lenprefix (number :d) 1))
+             "2xy")
+  # =>
+  @["2xy"]
+
   (peg/match ~(sequence (number :d nil :tag)
                         (capture (lenprefix (backref :tag)
                                             1)))
