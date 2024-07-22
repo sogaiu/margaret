@@ -14,10 +14,9 @@
   # =>
   @[25185]
 
-  (deep= (peg/match ~(int 8) "abcdefgh")
-         @[(int/s64 "7523094288207667809")])
+  (peg/match ~(int 8) "abcdefgh")
   # =>
-  true
+  @[(int/s64 "7523094288207667809")]
 
   (peg/match ~(sequence (int 2 :a)
                         (backref :a))
@@ -33,17 +32,15 @@
   # =>
   @[0x7fff]
 
-  (deep= (peg/match '(int 8)
-                    "\xff\x7f\x00\x00\x00\x00\x00\x00")
-         @[(int/s64 0x7fff)])
+  (peg/match '(int 8)
+             "\xff\x7f\x00\x00\x00\x00\x00\x00")
   # =>
-  true
+  @[(int/s64 0x7fff)]
 
-  (deep=  (peg/match '(int 7)
-                     "\xff\x7f\x00\x00\x00\x00\x00")
-          @[(int/s64 0x7fff)])
+  (peg/match '(int 7)
+             "\xff\x7f\x00\x00\x00\x00\x00")
   # =>
-  true
+  @[(int/s64 0x7fff)]
 
   (peg/match '(sequence (int 2) -1)
              "123")
