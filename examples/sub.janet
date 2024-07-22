@@ -74,14 +74,6 @@
   # =>
   @[]
 
-  (try
-    (peg/match ~(sequence "a"
-                          (sub "bcd" (error "bc")))
-               "abcdef")
-    ([e] e))
-  # =>
-  "match error at line 1, column 2"
-
  (peg/match ~(sequence (sub (capture "abcd" :a)
                             (capture "abc"))
                        (capture (backmatch)))
@@ -224,3 +216,15 @@
 
   )
 
+(comment
+
+  (try
+    (peg/match ~(sequence "a"
+                          (sub "bcd" (error "bc")))
+               "abcdef")
+    ([e] e))
+  # =>
+  "match error at line 1, column 2"
+
+
+  )

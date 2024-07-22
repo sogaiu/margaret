@@ -11,6 +11,16 @@
 
 (comment
 
+  # error match failure
+  (peg/match ~(error "ho")
+             "")
+  # =>
+  nil
+
+  )
+
+(comment
+
   (try
     (peg/match ~(sequence "a"
                           "\n"
@@ -22,12 +32,6 @@
     ([e] e))
   # =>
   "match error at line 3, column 2"
-
-  # error match failure
-  (peg/match ~(error "ho")
-             "")
-  # =>
-  nil
 
   (try
     (peg/match ~(error (capture "a"))
@@ -67,4 +71,3 @@
   :match-error
 
   )
-

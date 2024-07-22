@@ -20,16 +20,6 @@
   # =>
   nil
 
-  (string/has-prefix?
-    "start "
-    (try
-      (peg/match ~(capture 1)
-                 "xy"
-                 3)
-      ([e] e)))
-  # =>
-  true
-
   (peg/match ~(capture 1)
              "xy"
              -1)
@@ -48,6 +38,20 @@
   # =>
   @["x"]
 
+  )
+
+(comment
+
+  (string/has-prefix?
+    "start "
+    (try
+      (peg/match ~(capture 1)
+                 "xy"
+                 3)
+      ([e] e)))
+  # =>
+  true
+
   (string/has-prefix?
     "start "
     (try
@@ -59,4 +63,3 @@
   true
 
   )
-
