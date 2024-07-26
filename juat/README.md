@@ -111,8 +111,8 @@ Some repositories that use this method include:
 * [janet-totp](https://github.com/sogaiu/janet-totp "TOTP in Janet")
 * [janet-zipper](https://github.com/sogaiu/janet-zipper "Zippers in
   Janet")
-* [simple-peg-tracer](https://github.com/sogaiu/simple-peg-tracer
-  "Simple Janet PEG tracer")
+* [small-peg-tracer](https://github.com/sogaiu/small-peg-tracer
+  "Small Janet PEG tracer")
 
 [*] If you chose a subdirectory name other than `juat`, the path will
 likely need to be edited to match.

@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/sogaiu/janet-usages-as-tests
 	branch = master
-	commit = c56f25adee41d677fec70213c928a88fb0f24419
-	parent = 6558e2a222c957288173eadde9ef60b7eb6adaa9
+	commit = 4df88ef52ff840d7d5d3dcd7e74247e8472280c4
+	parent = ee07d8a69d14658ceb125a8ca9193c39c47a5562
 	method = merge
-	cmdver = 0.4.6
+	cmdver = 0.4.9
