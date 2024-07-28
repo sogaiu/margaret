@@ -43,156 +43,159 @@
         ;(slice $& 2 -4)]))
 
 (def loc-grammar
-  ~{:main (sequence (line) (column)
-                    (some :input)
-                    (line) (column))
-    #
-    :input (choice :non-form
-                   :form)
-    #
-    :non-form (choice :whitespace
-                      :comment)
-    #
-    :whitespace ,(atom-node :whitespace
-                            '(choice (some (set " \0\f\t\v"))
-                                     (choice "\r\n"
-                                             "\r"
-                                             "\n")))
-    # :whitespace
-    # (cmt (capture (sequence (line) (column)
-    #                         (choice (some (set " \0\f\t\v"))
-    #                                 (choice "\r\n"
-    #                                         "\r"
-    #                                         "\n"))
-    #                         (line) (column)))
-    #      ,|[:whitespace (make-attrs ;(slice $& 0 -2)) (last $&)])
-    #
-    :comment ,(atom-node :comment
-                         '(sequence "#"
-                                    (any (if-not (set "\r\n") 1))))
-    #
-    :form (choice # reader macros
-                  :fn
-                  :quasiquote
-                  :quote
-                  :splice
-                  :unquote
-                  # collections
-                  :array
-                  :bracket-array
-                  :tuple
-                  :bracket-tuple
-                  :table
-                  :struct
-                  # atoms
-                  :number
-                  :constant
-                  :buffer
-                  :string
-                  :long-buffer
-                  :long-string
-                  :keyword
-                  :symbol)
-    #
-    :fn ,(reader-macro-node :fn "|")
-    # :fn (cmt (capture (sequence (line) (column)
-    #                             "|"
-    #                             (any :non-form)
-    #                             :form
-    #                             (line) (column)))
-    #          ,|[:fn (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
-    #             ;(slice $& 2 -4)])
-    #
-    :quasiquote ,(reader-macro-node :quasiquote "~")
-    #
-    :quote ,(reader-macro-node :quote "'")
-    #
-    :splice ,(reader-macro-node :splice ";")
-    #
-    :unquote ,(reader-macro-node :unquote ",")
-    #
-    :array ,(collection-node :array "@(" ")")
-    # :array
-    # (cmt
-    #   (capture
-    #     (sequence
-    #       (line) (column)
-    #       "@("
-    #       (any :input)
-    #       (choice ")"
-    #               (error
-    #                 (replace (sequence (line) (column))
-    #                          ,|(string/format
-    #                              "line: %p column: %p missing %p for %p"
-    #                              $0 $1 ")" :array))))
-    #       (line) (column)))
-    #   ,|[:array (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
-    #      ;(slice $& 2 -4)])
-    #
-    :tuple ,(collection-node :tuple "(" ")")
-    #
-    :bracket-array ,(collection-node :bracket-array "@[" "]")
-    #
-    :bracket-tuple ,(collection-node :bracket-tuple "[" "]")
-    #
-    :table ,(collection-node :table "@{" "}")
-    #
-    :struct ,(collection-node :struct "{" "}")
-    #
-    :number ,(atom-node :number
-                        ~(drop (cmt
-                                 (capture (some :name-char))
-                                 ,scan-number)))
-    #
-    :name-char (choice (range "09" "AZ" "az" "\x80\xFF")
-                       (set "!$%&*+-./:<?=>@^_"))
-    #
-    :constant ,(atom-node :constant
-                          '(sequence (choice "false" "nil" "true")
-                                     (not :name-char)))
-    #
-    :buffer ,(atom-node :buffer
-                        '(sequence `@"`
-                                   (any (choice :escape
-                                                (if-not "\"" 1)))
-                                   `"`))
-    #
-    :escape (sequence "\\"
-                      (choice (set `"'0?\abefnrtvz`)
-                              (sequence "x" (2 :h))
-                              (sequence "u" (4 :h))
-                              (sequence "U" (6 :h))
-                              (error (constant "bad escape"))))
-    #
-    :string ,(atom-node :string
-                        '(sequence `"`
-                                   (any (choice :escape
-                                                (if-not "\"" 1)))
-                                   `"`))
-    #
-    :long-string ,(atom-node :long-string
-                             :long-bytes)
-    #
-    :long-bytes {:main (drop (sequence :open
-                                       (any (if-not :close 1))
-                                       :close))
-                 :open (capture :delim :n)
-                 :delim (some "`")
-                 :close (cmt (sequence (not (look -1 "`"))
-                                       (backref :n)
-                                       (capture :delim))
-                             ,=)}
-    #
-    :long-buffer ,(atom-node :long-buffer
-                             '(sequence "@" :long-bytes))
-    #
-    :keyword ,(atom-node :keyword
-                         '(sequence ":"
-                                    (any :name-char)))
-    #
-    :symbol ,(atom-node :symbol
-                        '(some :name-char))
-    })
+  ~@{:main (sequence (line) (column)
+                     (some :input)
+                     (line) (column))
+     #
+     :input (choice :non-form
+                    :form)
+     #
+     :non-form (choice :whitespace
+                       :comment)
+     #
+     :whitespace ,(atom-node :whitespace
+                             '(choice (some (set " \0\f\t\v"))
+                                      (choice "\r\n"
+                                              "\r"
+                                              "\n")))
+     # :whitespace
+     # (cmt (capture (sequence (line) (column)
+     #                         (choice (some (set " \0\f\t\v"))
+     #                                 (choice "\r\n"
+     #                                         "\r"
+     #                                         "\n"))
+     #                         (line) (column)))
+     #      ,|[:whitespace (make-attrs ;(slice $& 0 -2)) (last $&)])
+     #
+     :comment ,(atom-node :comment
+                          '(sequence "#"
+                                     (any (if-not (set "\r\n") 1))))
+     #
+     :form (choice # reader macros
+                   :fn
+                   :quasiquote
+                   :quote
+                   :splice
+                   :unquote
+                   # collections
+                   :array
+                   :bracket-array
+                   :tuple
+                   :bracket-tuple
+                   :table
+                   :struct
+                   # atoms
+                   :number
+                   :constant
+                   :buffer
+                   :string
+                   :long-buffer
+                   :long-string
+                   :keyword
+                   :symbol)
+     #
+     :fn ,(reader-macro-node :fn "|")
+     # :fn (cmt (capture (sequence (line) (column)
+     #                             "|"
+     #                             (any :non-form)
+     #                             :form
+     #                             (line) (column)))
+     #          ,|[:fn (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
+     #             ;(slice $& 2 -4)])
+     #
+     :quasiquote ,(reader-macro-node :quasiquote "~")
+     #
+     :quote ,(reader-macro-node :quote "'")
+     #
+     :splice ,(reader-macro-node :splice ";")
+     #
+     :unquote ,(reader-macro-node :unquote ",")
+     #
+     :array ,(collection-node :array "@(" ")")
+     # :array
+     # (cmt
+     #   (capture
+     #     (sequence
+     #       (line) (column)
+     #       "@("
+     #       (any :input)
+     #       (choice ")"
+     #               (error
+     #                 (replace (sequence (line) (column))
+     #                          ,|(string/format
+     #                              "line: %p column: %p missing %p for %p"
+     #                              $0 $1 ")" :array))))
+     #       (line) (column)))
+     #   ,|[:array (make-attrs ;(slice $& 0 2) ;(slice $& -4 -2))
+     #      ;(slice $& 2 -4)])
+     #
+     :tuple ,(collection-node :tuple "(" ")")
+     #
+     :bracket-array ,(collection-node :bracket-array "@[" "]")
+     #
+     :bracket-tuple ,(collection-node :bracket-tuple "[" "]")
+     #
+     :table ,(collection-node :table "@{" "}")
+     #
+     :struct ,(collection-node :struct "{" "}")
+     #
+     :number ,(atom-node :number
+                         ~(drop (sequence (cmt (capture (some :num-char))
+                                               ,scan-number)
+                                          (opt (sequence ":" (range "AZ" "az"))))))
+     #
+     :num-char (choice (range "09" "AZ" "az")
+                       (set "&+-._"))
+     #
+     :constant ,(atom-node :constant
+                           '(sequence (choice "false" "nil" "true")
+                                      (not :name-char)))
+     #
+     :name-char (choice (range "09" "AZ" "az" "\x80\xFF")
+                        (set "!$%&*+-./:<?=>@^_"))
+     #
+     :buffer ,(atom-node :buffer
+                         '(sequence `@"`
+                                    (any (choice :escape
+                                                 (if-not "\"" 1)))
+                                    `"`))
+     #
+     :escape (sequence "\\"
+                       (choice (set `"'0?\abefnrtvz`)
+                               (sequence "x" (2 :h))
+                               (sequence "u" (4 :h))
+                               (sequence "U" (6 :h))
+                               (error (constant "bad escape"))))
+     #
+     :string ,(atom-node :string
+                         '(sequence `"`
+                                    (any (choice :escape
+                                                 (if-not "\"" 1)))
+                                    `"`))
+     #
+     :long-string ,(atom-node :long-string
+                              :long-bytes)
+     #
+     :long-bytes {:main (drop (sequence :open
+                                        (any (if-not :close 1))
+                                        :close))
+                  :open (capture :delim :n)
+                  :delim (some "`")
+                  :close (cmt (sequence (not (look -1 "`"))
+                                        (backref :n)
+                                        (capture (backmatch :n)))
+                              ,=)}
+     #
+     :long-buffer ,(atom-node :long-buffer
+                              '(sequence "@" :long-bytes))
+     #
+     :keyword ,(atom-node :keyword
+                          '(sequence ":"
+                                     (any :name-char)))
+     #
+     :symbol ,(atom-node :symbol
+                         '(some :name-char))
+     })
 
 (comment
 
@@ -216,9 +219,41 @@
   # =>
   '(:comment @{:bc 1 :bl 1 :ec 11 :el 1} "# hi there")
 
+  (get (peg/match loc-grammar "1_000_000") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 10 :el 1} "1_000_000")
+
   (get (peg/match loc-grammar "8.3") 2)
   # =>
   '(:number @{:bc 1 :bl 1 :ec 4 :el 1} "8.3")
+
+  (get (peg/match loc-grammar "1e2") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 4 :el 1} "1e2")
+
+  (get (peg/match loc-grammar "0xfe") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 5 :el 1} "0xfe")
+
+  (get (peg/match loc-grammar "2r01") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 5 :el 1} "2r01")
+
+  (get (peg/match loc-grammar "3r101&01") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 9 :el 1} "3r101&01")
+
+  (get (peg/match loc-grammar "2:u") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 4 :el 1} "2:u")
+
+  (get (peg/match loc-grammar "-8:s") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 5 :el 1} "-8:s")
+
+  (get (peg/match loc-grammar "1e2:n") 2)
+  # =>
+  '(:number @{:bc 1 :bl 1 :ec 6 :el 1} "1e2:n")
 
   (get (peg/match loc-grammar "printf") 2)
   # =>
@@ -272,12 +307,10 @@
   )
 
 (def loc-top-level-ast
-  (let [ltla (table ;(kvs loc-grammar))]
-    (put ltla
-         :main ~(sequence (line) (column)
-                          :input
-                          (line) (column)))
-    (table/to-struct ltla)))
+  (put (table ;(kvs loc-grammar))
+       :main ~(sequence (line) (column)
+                        :input
+                        (line) (column))))
 
 (defn par
   [src &opt start single]
