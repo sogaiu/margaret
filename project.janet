@@ -2,8 +2,8 @@
 
 (declare-project
   :name "margaret"
-  :url "https://codeberg.org/sogaiu/margaret"
-  :repo "git+https://codeberg.org/sogaiu/margaret.git")
+  :url "https://github.com/sogaiu/margaret"
+  :repo "git+https://github.com/sogaiu/margaret.git")
 
 (def proj-root
   (os/cwd))
