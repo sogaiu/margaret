@@ -1,6 +1,129 @@
 # based on code by corasaurus-hex
 
-(import ./zip-support :as s)
+# `slice` doesn't necessarily preserve the input type
+
+# XXX: differs from clojure's behavior
+#      e.g. (butlast [:a]) would yield nil(?!) in clojure
+(defn s/butlast
+  [indexed]
+  (if (empty? indexed)
+    nil
+    (if (tuple? indexed)
+      (tuple/slice indexed 0 -2)
+      (array/slice indexed 0 -2))))
+
+(comment
+
+  (s/butlast @[:a :b :c])
+  # =>
+  @[:a :b]
+
+  (s/butlast [:a])
+  # =>
+  []
+
+  )
+
+(defn s/rest
+  [indexed]
+  (if (empty? indexed)
+    nil
+    (if (tuple? indexed)
+      (tuple/slice indexed 1 -1)
+      (array/slice indexed 1 -1))))
+
+(comment
+
+  (s/rest [:a :b :c])
+  # =>
+  [:b :c]
+
+  (s/rest @[:a])
+  # =>
+  @[]
+
+  )
+
+# XXX: can pass in array - will get back tuple
+(defn s/tuple-push
+  [tup x & xs]
+  (if tup
+    [;tup x ;xs]
+    [x ;xs]))
+
+(comment
+
+  (s/tuple-push [:a :b] :c)
+  # =>
+  [:a :b :c]
+
+  (s/tuple-push nil :a)
+  # =>
+  [:a]
+
+  (s/tuple-push @[] :a)
+  # =>
+  [:a]
+
+  )
+
+(defn s/to-entries
+  [val]
+  (if (dictionary? val)
+    (pairs val)
+    val))
+
+(comment
+
+  (s/to-entries {:a 1 :b 2})
+  # =>
+  @[[:a 1] [:b 2]]
+
+  (s/to-entries {})
+  # =>
+  @[]
+
+  (s/to-entries @{:a 1})
+  # =>
+  @[[:a 1]]
+
+  # XXX: leaving non-dictionaries alone and passing through...
+  #      is this desirable over erroring?
+  (s/to-entries [:a :b :c])
+  # =>
+  [:a :b :c]
+
+  )
+
+# XXX: when xs is empty, "all" becomes nil
+(defn s/first-rest-maybe-all
+  [xs]
+  (if (or (nil? xs) (empty? xs))
+    [nil nil nil]
+    [(first xs) (s/rest xs) xs]))
+
+(comment
+
+  (s/first-rest-maybe-all [:a :b])
+  # =>
+  [:a [:b] [:a :b]]
+
+  (s/first-rest-maybe-all @[:a])
+  # =>
+  [:a @[] @[:a]]
+
+  (s/first-rest-maybe-all [])
+  # =>
+  [nil nil nil]
+
+  # XXX: is this what we want?
+  (s/first-rest-maybe-all nil)
+  # =>
+  [nil nil nil]
+
+  )
+
+########################################################################
 
 (defn zipper
   ``
