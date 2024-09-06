@@ -43,35 +43,28 @@
                   ,preq)
       :main (* (drop :definitions) (some :request))
       })
-  
-  (deep=
-    #
-    (peg/match
-      request-grammar
-      ``
-      # definitions
-      Accept: application/json
-      
-      # Patching on url
-      PATCH https://my.api/products
-      Authorization: Bearer Avsdfasdfasdf
-      Content-Type: application/json
-      
-      {
-        "price": "bambilion"
-      }
-      ``)
-    #
-    @[@{:headers @{"Accept" "application/json"
-                   "Authorization" "Bearer Avsdfasdfasdf"
-                   "Content-Type" "application/json"}
-        :start 4
-        :method "PATCH"
-        :title "Patching on url"
-        :url "https://my.api/products"
-        :end 8}]
-    )
-  # =>
-  true
 
-)
+  (peg/match
+    request-grammar
+    (string "# definitions\n"
+            "Accept: application/json\n"
+            "\n"
+            "# Patching on url\n"
+            "PATCH https://my.api/products\n"
+            "Authorization: Bearer Avsdfasdfasdf\n"
+            "Content-Type: application/json\n"
+            "\n"
+            "{\n"
+            `"price": "bambilion"` "\n"
+            "}"))
+  # =>
+  @[@{:headers @{"Accept" "application/json"
+                 "Authorization" "Bearer Avsdfasdfasdf"
+                 "Content-Type" "application/json"}
+      :start 4
+      :method "PATCH"
+      :title "Patching on url"
+      :url "https://my.api/products"
+      :end 8}]
+
+  )

@@ -383,53 +383,43 @@
   #     @[:role] "backend"]
   # ``
 
-  (peg/match
-    toml-grammar
-    ``
-    # This is a TOML comment
-    #
-    # This is a multiline
-    # TOML comment
-    ``)
+  (peg/match toml-grammar
+             (string "# This is a TOML comment\n"
+                     "#\n"
+                     "# This is a multiline\n"
+                     "# TOML comment\n"))
   # =>
   @[]
 
-  (deep=
-    #
-    (peg/match
-      toml-grammar
-      ``
-      #offset datetime
-      odt1 = 1979-05-27T07:32:00Z
-      odt2 = 1979-05-27T00:32:00-07:00
-      odt3 = 1979-05-27T00:32:00.999999-07:00
-      ``)
-    #
-    @[@[:odt1]
-      @{:day 27
-        :hour 7
-        :secs 0
-        :year 1979
-        :month 5
-        :mins 32
-        :offset "Z"}
-      @[:odt2]
-      @{:day 27
-        :hour 0
-        :secs 0
-        :year 1979
-        :month 5
-        :mins 32
-        :offset @{:mins 0 :hour -7}}
-      @[:odt3]
-      @{:day 27
-        :hour 0
-        :secs 0
-        :year 1979
-        :month 5
-        :mins 32
-        :offset @{:mins 0 :hour -7} :secfracs 999999}])
+  (peg/match toml-grammar
+             (string "#offset datetime\n"
+                     "odt1 = 1979-05-27T07:32:00Z\n"
+                     "odt2 = 1979-05-27T00:32:00-07:00\n"
+                     "odt3 = 1979-05-27T00:32:00.999999-07:00\n"))
   # =>
-  true
+  @[@[:odt1]
+    @{:day 27
+      :hour 7
+      :secs 0
+      :year 1979
+      :month 5
+      :mins 32
+      :offset "Z"}
+    @[:odt2]
+    @{:day 27
+      :hour 0
+      :secs 0
+      :year 1979
+      :month 5
+      :mins 32
+      :offset @{:mins 0 :hour -7}}
+    @[:odt3]
+    @{:day 27
+      :hour 0
+      :secs 0
+      :year 1979
+      :month 5
+      :mins 32
+      :offset @{:mins 0 :hour -7} :secfracs 999999}]
 
   )
