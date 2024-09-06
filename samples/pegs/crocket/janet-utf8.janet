@@ -26,11 +26,13 @@
                         (band w 0x3F))))
      :main (any (+ :1byte :2bytes :3bytes :4bytes
                    (error "Not UTF-8")))})
- 
+
   (peg/match utf8-string-decoder "a")
-  # => @[97]
+  # =>
+  @[97]
 
   (peg/match utf8-string-decoder "☣")
-  # => @[9763]
+  # =>
+  @[9763]
 
 )

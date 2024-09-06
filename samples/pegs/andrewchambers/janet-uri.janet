@@ -104,7 +104,8 @@
       })
 
   (peg/match uri-grammar "foo://127.0.0.1")
-  # => @[:scheme "foo" :host "127.0.0.1" :raw-path ""]
+  # =>
+  @[:scheme "foo" :host "127.0.0.1" :raw-path ""]
 
   (deep=
     (peg/match uri-grammar
@@ -112,21 +113,27 @@
     #
     @[:scheme "foo"
       :host "example.com"
-      :port "8042" 
+      :port "8042"
       :raw-path "/over%20there"
       :raw-query "name=fer%20ret"
-      :raw-fragment "nose"]) # => true
-  
+      :raw-fragment "nose"])
+  # =>
+  true
+
   (peg/match uri-grammar "/over/there?name=ferret#nose")
-  # => @[:raw-path "/over/there" :raw-query "name=ferret" :raw-fragment "nose"]
+  # =>
+  @[:raw-path "/over/there" :raw-query "name=ferret" :raw-fragment "nose"]
 
   (peg/match uri-grammar "//")
-  # => @[:host "" :raw-path ""]
+  # =>
+  @[:host "" :raw-path ""]
 
   (peg/match uri-grammar "/")
-  # => @[:raw-path "/"]
-  
+  # =>
+  @[:raw-path "/"]
+
   (peg/match uri-grammar "")
-  # => @[]
+  # =>
+  @[]
 
 )

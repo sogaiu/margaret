@@ -391,7 +391,8 @@
     # This is a multiline
     # TOML comment
     ``)
-  # => @[]
+  # =>
+  @[]
 
   (deep=
     #
@@ -427,6 +428,8 @@
         :year 1979
         :month 5
         :mins 32
-        :offset @{:mins 0 :hour -7} :secfracs 999999}]) # => true
+        :offset @{:mins 0 :hour -7} :secfracs 999999}])
+  # =>
+  true
 
   )

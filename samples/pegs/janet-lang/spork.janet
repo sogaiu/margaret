@@ -50,8 +50,9 @@
         }))
 
   (peg/match parse-peg "(defn a [] 1)")
-  # => @['(:ptuple @[(:span "defn") (:span "a") (:btuple @[]) (:span "1")])]
-  
+  # =>
+  @['(:ptuple @[(:span "defn") (:span "a") (:btuple @[]) (:span "1")])]
+
   )
 
 (comment
@@ -60,7 +61,7 @@
   (defn- postfix-modify
     "Apply regex postfix operators to a pattern."
     [cc suffix &opt suf2]
-    (case suffix 
+    (case suffix
       "?" ['? cc]
       "*" ['any cc]
       "+" ['some cc]
@@ -133,7 +134,7 @@
         :invbrack (/ (* "[^" :make-range "]") ,|['if-not $ 1])
 
         # Other single characters
-        :escapedchar2 
+        :escapedchar2
         (+ (/ `\s` (set "\n\t\r\v\f "))
            (/ `\d` (range "09"))
            (/ `\a` (range "AZ" "az"))
@@ -158,11 +159,11 @@
 
         # Captures and groupings
         :grouping (* "(?:" :node ")")
-        :capture (/ (* "(" :node ")") 
+        :capture (/ (* "(" :node ")")
                     ,|['capture $])
-        :node1 (/ (* (+ :grouping :capture :span) :postfix) 
+        :node1 (/ (* (+ :grouping :capture :span) :postfix)
                   ,postfix-modify)
-        :node-span (/ (some :node1) 
+        :node-span (/ (some :node1)
                       ,make-sequence)
         :node (/ (* :node-span (? (* "|" :node)))
                  ,make-choice)
@@ -170,37 +171,48 @@
         :main (* :node (+ -1 (error "")))}))
 
   (peg/match peg "abc")
-  # => @["abc"]
+  # =>
+  @["abc"]
 
   (peg/match peg "a.c")
-  # => @['(* "a" 1 "c")]
+  # =>
+  @['(* "a" 1 "c")]
 
   (peg/match peg `a\s+c`)
-  # => @['(* "a" (some (set "\n\t\r\v\f ")) "c")]
+  # =>
+  @['(* "a" (some (set "\n\t\r\v\f ")) "c")]
 
   (peg/match peg `(?:abc){4}`)
-  # => @['(repeat 4 "abc")]
+  # =>
+  @['(repeat 4 "abc")]
 
   (peg/match peg `(?:(abc)){4}`)
-  # => @['(repeat 4 (capture "abc"))]
-  
+  # =>
+  @['(repeat 4 (capture "abc"))]
+
   (peg/match peg `\a+`)
-  # => @['(some (range "AZ" "az"))]
+  # =>
+  @['(some (range "AZ" "az"))]
 
   (peg/match peg `\w+`)
-  # => @['(some (range "AZ" "az" "09"))]
+  # =>
+  @['(some (range "AZ" "az" "09"))]
 
   (peg/match peg `cat|dog`)
-  # => @['(choice "cat" "dog")]
+  # =>
+  @['(choice "cat" "dog")]
 
   (peg/match peg `cat|dog|mouse`)
-  # => @['(choice "cat" "dog" "mouse")]
+  # =>
+  @['(choice "cat" "dog" "mouse")]
 
   (peg/match peg `(cat|dog|mouse)+`)
-  # => @['(some (capture (choice "cat" "dog" "mouse")))]
+  # =>
+  @['(some (capture (choice "cat" "dog" "mouse")))]
 
   (peg/match peg `a(cat|dog|mouse)+`)
-  # => @['(* "a" (some (capture (choice "cat" "dog" "mouse"))))]
+  # =>
+  @['(* "a" (some (capture (choice "cat" "dog" "mouse"))))]
 
   )
 

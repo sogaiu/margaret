@@ -29,12 +29,14 @@
   (peg/match
     time-grammar
     "1 hour 10 mins")
-  # => @[3600]
+  # =>
+  @[3600]
 
   (peg/match
     time-grammar
     "1:10")
-  # => @[3600 600]
+  # =>
+  @[3600 600]
 
   (defn dc [t]
     (fn [a] {t a}))
@@ -63,7 +65,9 @@
     #
     @[{:from @{:month 2 :year 2001 :month-day 7}}
       {:to @{:month 1 :year 2002 :month-day 25}}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -73,6 +77,8 @@
     #
     @[{:from @{:month 7 :year 1997 :month-day 7}}
       {:to @{:month 7 :year 1997 :month-day 9}}]
-    ) # => true
+    )
+  # =>
+  true
 
 )

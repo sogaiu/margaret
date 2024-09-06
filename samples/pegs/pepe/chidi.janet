@@ -11,7 +11,7 @@
   (defn- colhs [& hs] {:headers (freeze (merge ;hs))})
   (defn- capb [b] {:body b})
   (defn- colr [& xs] (freeze (merge ;xs)))
-  
+
   (def request-grammar
     ~{:sp " "
       :crlf "\r\n"
@@ -24,7 +24,7 @@
       :headers (/ (* (some :header) :crlf) ,colhs)
       :body (/ '(any (if-not -1 1)) ,capb)
       :main (/ (* :request :headers :body) ,colr)})
-  
+
   (deep=
     (peg/match
       request-grammar
@@ -37,7 +37,9 @@
        :uri "/"
        :method "GET"
        :http-version "1.1"
-       :query-string ""}]) # => true
+       :query-string ""}])
+  # =>
+  true
 
   (deep=
     (peg/match
@@ -51,6 +53,8 @@
        :uri "/fun"
        :method "GET"
        :http-version "1.1"
-       :query-string "key=value"}]) # => true
+       :query-string "key=value"}])
+  # =>
+  true
 
 )

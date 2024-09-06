@@ -16,9 +16,10 @@
       :main (any :value)
       })
 
-  (deep= 
+  (deep=
     (peg/match grammar ` "c d \" f" ' y z'  a b a\ b --cflags `)
     @["c d \" f" " y z" "a" "b" "a b" "--cflags"])
-  # => true
+  # =>
+  true
 
 )

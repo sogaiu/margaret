@@ -28,7 +28,8 @@
         :main (some (group :row))}))
 
   (peg/match csv-lang "great,scott,tiger,woods")
-  # => @[@["great" "scott" "tiger" "woods"]]
+  # =>
+  @[@["great" "scott" "tiger" "woods"]]
 
   (deep=
     #
@@ -42,6 +43,8 @@
     #
     @[@["header1" "header2" "header3"]
       @["this" "is" "nice"]
-      @["" "" ""]]) # => true
+      @["" "" ""]])
+  # =>
+  true
 
   )

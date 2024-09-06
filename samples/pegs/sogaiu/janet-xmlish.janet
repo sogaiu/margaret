@@ -85,14 +85,16 @@
     <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <hi>hello</hi>
     ``)
-  # => @[{:content @["hello"] :tag "hi"}]
+  # =>
+  @[{:content @["hello"] :tag "hi"}]
 
   (peg/match
     xmlish-peg
     ``
     <hi/>
     ``)
-  # => @[{:tag "hi"}]
+  # =>
+  @[{:tag "hi"}]
 
   (deep=
     #
@@ -101,7 +103,9 @@
     #
     @[{:tag "hi"
        :attrs @{"a" "1" "b" "2"}}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -111,14 +115,17 @@
     @[{:content @["hello"]
        :tag "hi"
        :attrs @{"a" "smile" "b" "breath"}}]
-    ) # => true
+    )
+  # =>
+  true
 
   (peg/match
       xmlish-peg
       ``
       <ho></ho>
       ``)
-  # => @[{:tag "ho"}]
+  # =>
+  @[{:tag "ho"}]
 
   (deep=
     #
@@ -128,7 +135,9 @@
     @[{:content @[{:content @["there"]
                    :tag "hi"}]
        :tag "bye"}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -140,7 +149,9 @@
                               "re"]
                    :tag "hi"}]
        :tag "bye"}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -152,7 +163,9 @@
     #
     @[{:content @["hello" {:tag "bye"}]
        :tag "hi"}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -160,7 +173,9 @@
     #
     @[{:content @[{:tag "a"}]
        :tag "a"}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -170,7 +185,9 @@
                    :attrs @{"c" "8"}}]
        :tag "a"
        :attrs @{"b" "0"}}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -184,7 +201,9 @@
     @[{:content @[{:content @[{:tag "e"}]
                    :tag "c"}]
        :tag "a"}]
-    ) # => true
+    )
+  # =>
+  true
 
   (deep=
     #
@@ -197,7 +216,9 @@
     #
     @[{:content @["\xF0\x9F\x92\xA9"]
        :tag "oops"}]
-    ) # => true
+    )
+  # =>
+  true
 
   # pushing the bounds of reasonableness for expressing this way?
   (deep=
@@ -272,6 +293,8 @@
          "\n"]
        :tag "rss"
        :attrs @{"version" "2.0"}}]
-    ) # => true
+    )
+  # =>
+  true
 
 )

@@ -78,11 +78,11 @@
 # ------------
 
 # This is a tutorial for becoming familiar with some
-# essential characteristics and constructs of Janet's PEG 
+# essential characteristics and constructs of Janet's PEG
 # system.
 
 # Specifically, the `peg/match` function, Janet PEG grammars,
-# and a select set of specials will be covered in an incremental 
+# and a select set of specials will be covered in an incremental
 # fashion.
 
 # The following is meant to give an overview of coverage, but not
@@ -100,7 +100,7 @@
 #     * Capture Stack
 #     * Tags Table
 
-# * Familiarity with Useful Specials 
+# * Familiarity with Useful Specials
 #   * Primitive Patterns
 #     * string literals
 #     * integers
@@ -164,73 +164,82 @@
 # Returns an array of captured data if the text matches.
 
 (peg/match "cat" "cat")
-# => @[]
+# =>
+@[]
 
-# N.B. 1. matching succeeded and the returned array is the 
+# N.B. 1. matching succeeded and the returned array is the
 #         capture stack
 
-# N.B. 2. array is empty because there was a match, but no 
+# N.B. 2. array is empty because there was a match, but no
 #         capture
 
 (peg/match ~(capture "cat") "cat")
-# => @["cat"]
+# =>
+@["cat"]
 
-# N.B. matching succeeded and there was a capture, so the 
+# N.B. matching succeeded and there was a capture, so the
 #      returned array (capture stack) is not empty
 
 # `peg/match` returns nil if there is no match.
 
 (peg/match "cat" "ca")
-# => nil
+# =>
+nil
 
 # N.B. matching was not successful so the return value is nil
 
-# The caller of `peg/match` can provide an optional start index 
-# to begin matching, otherwise the PEG starts on the first 
+# The caller of `peg/match` can provide an optional start index
+# to begin matching, otherwise the PEG starts on the first
 # character of text.
 
 (peg/match "cat" "cat" 0)
-# => @[]
+# =>
+@[]
 
 (peg/match "cat" "cat")
-# => @[]
+# =>
+@[]
 
 (peg/match "cat" "notcat" 3)
-# => @[]
+# =>
+@[]
 
 (peg/match "cat" "notcat" 2)
-# => nil
+# =>
+nil
 
 # A PEG can either be a compiled PEG object or PEG source.
 
 # N.B. examples before this point have been using "PEG source"
 
 (type (peg/compile "cat"))
-# => :core/peg
+# =>
+:core/peg
 
 (let [cat-peg (peg/compile "cat")]
   [(peg/match cat-peg "cat")
    (peg/match cat-peg "category")])
-# => [@[] @[]]
+# =>
+[@[] @[]]
 
 # The variadic `args` argument to `peg/match` is used by the
-# as-yet-unintroduced capture form `argument` and will be 
+# as-yet-unintroduced capture form `argument` and will be
 # described later.
 
 # Primitive Patterns
 # ------------------
 
-# Larger patterns are built up with primitive patterns, which 
+# Larger patterns are built up with primitive patterns, which
 # recognize:
 
 #   * string literals
 #   * individual characters
 #   * a given number of characters
 
-# A character in Janet is considered a byte, so PEGs will work 
+# A character in Janet is considered a byte, so PEGs will work
 # on any string of bytes.
 
-# No special meaning is given to the 0 byte, or the string 
+# No special meaning is given to the 0 byte, or the string
 # terminator as in many languages.
 
 # String Patterns
@@ -249,19 +258,24 @@
 #      described in the documentation.
 
 (peg/match "cat" "cat")
-# => @[]
+# =>
+@[]
 
 (peg/match "cat" "cat1")
-# => @[]
+# =>
+@[]
 
 (peg/match "" "")
-# => @[]
+# =>
+@[]
 
 (peg/match "" "a")
-# => @[]
+# =>
+@[]
 
 (peg/match "cat" "dog")
-# => nil
+# =>
+nil
 
 # Integer Patterns
 # ----------------
@@ -269,13 +283,16 @@
 # Matches a number of characters, and advances that many characters.
 
 (peg/match 3 "cat")
-# => @[]
+# =>
+@[]
 
 (peg/match 2 "cat")
-# => @[]
+# =>
+@[]
 
 (peg/match 4 "cat")
-# => nil
+# =>
+nil
 
 # If negative, matches if not that many characters and does not advance.
 
@@ -284,16 +301,20 @@
 # characters").
 
 (peg/match -1 "cat")
-# => nil
+# =>
+nil
 
 (peg/match -1 "")
-# => @[]
+# =>
+@[]
 
 (peg/match -2 "")
-# => @[]
+# =>
+@[]
 
 (peg/match -2 "o")
-# => @[]
+# =>
+@[]
 
 # Range Patterns
 # --------------
@@ -301,19 +322,22 @@
 # Matches characters in a range and advances 1 character.
 
 (peg/match '(range "ac") "b")
-# => @[]
+# =>
+@[]
 
 # N.B. in this case the grammar needs to be quoted
 
 (peg/match ~(range "ac") "b")
-# => @[]
+# =>
+@[]
 
 # N.B. using quasiquoting (~) means unquoting can be used within
 #      the grammar expression
 
 (let [a-range "ac"]
   (peg/match ~(range ,a-range) "b"))
-# => @[]
+# =>
+@[]
 
 # Multiple ranges can be combined together.
 
@@ -321,7 +345,8 @@
                "b"
                "y")]
   (peg/match ~(range "ac" "xz") text))
-# => @[]
+# =>
+@[]
 
 # Set Patterns
 # ------------
@@ -329,13 +354,16 @@
 # Match any character in the argument string. Advances 1 character.
 
 (peg/match ~(set "cat") "cat")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(set "act!") "cat!")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(set "bo") "bob")
-# => @[]
+# =>
+@[]
 
 # Combining Patterns
 # ------------------
@@ -357,20 +385,24 @@
 # Will succeed on the first successful match,
 
 (peg/match ~(choice "a" "b") "a")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(choice "a" "b") "b")
-# => @[]
+# =>
+@[]
 
 # and fails if none of the arguments match the text.
 
 (peg/match ~(choice "a" "b") "c")
-# => nil
+# =>
+nil
 
 # `(+ a b c ...)` is an alias for `(choice a b c ...)`
 
 (peg/match ~(+ "a" "b") "a")
-# => @[]
+# =>
+@[]
 
 # `sequence` aka `*`
 # ------------------
@@ -380,20 +412,24 @@
 # Tries to match a, b, c and so on in sequence.
 
 (peg/match ~(sequence "a" "b" "c") "abc")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(sequence "a" "b" "c") "abcd")
-# => @[]
+# =>
+@[]
 
 # If any of these arguments fail to match the text, the whole pattern fails.
 
 (peg/match ~(sequence "a" "b" "c") "abx")
-# => nil
+# =>
+nil
 
 # `(* a b c ...)` is an alias for `(sequence a b c ...)`
 
 (peg/match ~(* "a" "b" "c") "abc")
-# => @[]
+# =>
+@[]
 
 # `any`
 # -----
@@ -403,10 +439,12 @@
 # Matches 0 or more repetitions of `patt`
 
 (peg/match ~(any "a") "aaa")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(any "bo") "")
-# => @[]
+# =>
+@[]
 
 # `some`
 # ------
@@ -416,10 +454,12 @@
 # Matches 1 or more repetitions of `patt`
 
 (peg/match ~(some "a") "aa")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(some "a") "")
-# => nil
+# =>
+nil
 
 # `if`
 # ----
@@ -432,11 +472,13 @@
 
 (peg/match ~(if 5 (set "eilms"))
            "smile")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(if 5 (set "eilms"))
            "wink")
-# => nil
+# =>
+nil
 
 # `if-not`
 # --------
@@ -449,7 +491,8 @@
 
 (peg/match ~(if-not 5 (set "iknw"))
            "wink")
-# => @[]
+# =>
+@[]
 
 # `not` aka `!`
 # -------------
@@ -461,17 +504,20 @@
 # Will not produce captures or advance any characters.
 
 (peg/match ~(not "cat") "dog")
-# => @[]
+# =>
+@[]
 
 (peg/match ~(sequence (not "cat")
                       (set "dgo"))
            "dog")
-# => @[]
+# =>
+@[]
 
 # `(! patt)` is an alias for `(not patt)`
 
 (peg/match ~(! "cat") "dog")
-# => @[]
+# =>
+@[]
 
 # Greediness and Backtracking
 # ---------------------------
@@ -524,16 +570,20 @@
 #      to capturing)
 
 (peg/match ~(capture "a") "a")
-# => @["a"]
+# =>
+@["a"]
 
 (peg/match ~(capture 2) "hi")
-# => @["hi"]
+# =>
+@["hi"]
 
 (peg/match ~(capture -1) "")
-# => @[""]
+# =>
+@[""]
 
 (peg/match ~(capture (range "ac")) "b")
-# => @["b"]
+# =>
+@["b"]
 
 (let [text (if (< (math/random) 0.5)
                "b"
@@ -542,24 +592,30 @@
                        text)]
   (or (= cap "b")
       (= cap "y")))
-# => true
+# =>
+true
 
 (peg/match ~(capture (set "cat")) "cat")
-# => @["c"]
+# =>
+@["c"]
 
 # `(<- patt ?tag)` is an alias for `(capture patt ?tag)`
 
 (peg/match ~(<- "a") "a")
-# => @["a"]
+# =>
+@["a"]
 
 (peg/match ~(<- 2) "hi")
-# => @["hi"]
+# =>
+@["hi"]
 
 (peg/match ~(<- -1) "")
-# => @[""]
+# =>
+@[""]
 
 (peg/match ~(<- (range "ac")) "b")
-# => @["b"]
+# =>
+@["b"]
 
 (let [text (if (< (math/random) 0.5)
                "b"
@@ -568,38 +624,48 @@
                        text)]
   (or (= cap "b")
       (= cap "y")))
-# => true
+# =>
+true
 
 (peg/match ~(<- (set "cat")) "cat")
-# => @["c"]
+# =>
+@["c"]
 
 # `(quote patt ?tag)` is an alias for `(capture patt ?tag)`
 
 # This allows code like `'patt` to capture a pattern
 
 (peg/match ~(quote "a") "a")
-# => @["a"]
+# =>
+@["a"]
 
 (peg/match ~'"a" "a")
-# => @["a"]
+# =>
+@["a"]
 
 (peg/match ~(quote 2) "hi")
-# => @["hi"]
+# =>
+@["hi"]
 
 (peg/match ~'2 "hi")
-# => @["hi"]
+# =>
+@["hi"]
 
 (peg/match ~(quote -1) "")
-# => @[""]
+# =>
+@[""]
 
 (peg/match ~'-1 "")
-# => @[""]
+# =>
+@[""]
 
 (peg/match ~(quote (range "ac")) "b")
-# => @["b"]
+# =>
+@["b"]
 
 (peg/match ~'(range "ac") "b")
-# => @["b"]
+# =>
+@["b"]
 
 (let [text (if (< (math/random) 0.5)
                "b"
@@ -608,7 +674,8 @@
                        text)]
   (or (= cap "b")
       (= cap "y")))
-# => true
+# =>
+true
 
 (let [text (if (< (math/random) 0.5)
                "b"
@@ -617,13 +684,16 @@
                        text)]
   (or (= cap "b")
       (= cap "y")))
-# => true
+# =>
+true
 
 (peg/match ~(quote (set "cat")) "cat")
-# => @["c"]
+# =>
+@["c"]
 
 (peg/match ~'(set "cat") "cat")
-# => @["c"]
+# =>
+@["c"]
 
 # `group`
 # -------
@@ -637,7 +707,8 @@
                                (capture (any (if-not ")" 1)))
                                (capture ")")))
              "(defn hi [] 1)"))
-# => @["(" "defn hi [] 1" ")"]
+# =>
+@["(" "defn hi [] 1" ")"]
 
 # `constant`
 # ----------
@@ -648,16 +719,19 @@
 
 (peg/match ~(constant "smile")
            "whatever")
-# => @["smile"]
+# =>
+@["smile"]
 
 (peg/match ~(constant {:fun :value})
            "whatever")
-# => @[{:fun :value}]
+# =>
+@[{:fun :value}]
 
 (peg/match ~(sequence (constant :relax)
                       (position))
             "whatever")
-# => @[:relax 0]
+# =>
+@[:relax 0]
 
 # `position` aka `$`
 # ------------------
@@ -667,22 +741,26 @@
 # Captures the current index into the text and advances no input.
 
 (peg/match ~(position) "a")
-# => @[0]
+# =>
+@[0]
 
 (peg/match ~(sequence "a"
                       (position))
            "ab")
-# => @[1]
+# =>
+@[1]
 
 # `($ ?tag)` is an alias for `(position ?tag)`
 
 (peg/match ~($) "a")
-# => @[0]
+# =>
+@[0]
 
 (peg/match ~(sequence "a"
                       ($))
            "ab")
-# => @[1]
+# =>
+@[1]
 
 # `accumulate` aka `%`
 # --------------------
@@ -697,7 +775,8 @@
                                   (capture "b")
                                   (capture "c")))
            "abc")
-# => @["abc"]
+# =>
+@["abc"]
 
 (peg/match ~(accumulate (sequence (capture "a")
                                   (position)
@@ -706,7 +785,8 @@
                                   (capture "c")
                                   (position)))
            "abc")
-# => @["a1b2c3"]
+# =>
+@["a1b2c3"]
 
 # `(% ?tag)` is an alias for `(accumulate ?tag)`
 
@@ -714,7 +794,8 @@
                          (capture "b")
                          (capture "c")))
            "abc")
-# => @["abc"]
+# =>
+@["abc"]
 
 (peg/match ~(% (sequence (capture "a")
                          (position)
@@ -723,7 +804,8 @@
                          (capture "c")
                          (position)))
            "abc")
-# => @["a1b2c3"]
+# =>
+@["a1b2c3"]
 
 # `cmt`
 # -----
@@ -741,7 +823,8 @@
                  ,(fn [cap]
                     (string cap "!")))
            "hello")
-# => @["hello!"]
+# =>
+@["hello!"]
 
 (peg/match ~(cmt (sequence (capture "hello")
                            (some (set " ,"))
@@ -749,7 +832,8 @@
                  ,(fn [cap1 cap2]
                     (string cap2 ": yes, " cap1 "!")))
            "hello, world")
-# => @["world: yes, hello!"]
+# =>
+@["world: yes, hello!"]
 
 # `backref` aka `->`
 # ------------------
@@ -763,38 +847,44 @@
 (peg/match ~(sequence (capture "a" :target)
                       (backref :target))
            "a")
-# => @["a" "a"]
+# =>
+@["a" "a"]
 
 (peg/match ~(sequence (capture "a" :target)
                       (backref :target))
            "b")
-# => nil
+# =>
+nil
 
 (peg/match ~(sequence (capture "a" :target)
                       (capture "b" :target-2)
                       (backref :target-2)
                       (backref :target))
            "ab")
-# => @["a" "b" "b" "a"]
+# =>
+@["a" "b" "b" "a"]
 
 # `(-> prev-tag ?tag)` is an alias for `(backref prev-tag ?tag)`
 
 (peg/match ~(sequence (capture "a" :target)
                       (-> :target))
            "a")
-# => @["a" "a"]
+# =>
+@["a" "a"]
 
 (peg/match ~(sequence (capture "a" :target)
                       (capture "b" :target-2)
                       (-> :target-2)
                       (-> :target))
            "ab")
-# => @["a" "b" "b" "a"]
+# =>
+@["a" "b" "b" "a"]
 
 (peg/match ~(sequence (capture "a" :target)
                       (-> :target))
            "b")
-# => nil
+# =>
+nil
 
 # `error`
 # -------
@@ -813,7 +903,8 @@
              "abc")
   ([err]
    err))
-# => "c"
+# =>
+"c"
 
 (try
   (peg/match ~(choice "a"
@@ -822,7 +913,8 @@
              "c")
   ([err]
    err))
-# => "match error at line 1, column 1"
+# =>
+"match error at line 1, column 1"
 
 (try
   (peg/match ~(choice "a"
@@ -831,7 +923,8 @@
              "c")
   ([err]
    :match-error))
-# => :match-error
+# =>
+:match-error
 
 # `drop`
 # ------
@@ -842,7 +935,8 @@
 
 (peg/match ~(drop (capture "a"))
            "a")
-# => @[]
+# =>
+@[]
 
 # /* Hold captured patterns and match state */
 # typedef struct {
@@ -859,7 +953,7 @@
 #     int32_t extrac;              // for `argument`
 #     int32_t depth;               // "stack" overflow protection
 #     int32_t linemaplen;          // for `line`, `column`, and `error`
-#     int32_t has_backref;         // 
+#     int32_t has_backref;         //
 #     enum {
 #         PEG_MODE_NORMAL,         // `group`, `replace`, `cmt`, `error`, etc.
 #         PEG_MODE_ACCUMULATE      // `accumulate` and `capture` (but see below)

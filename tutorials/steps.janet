@@ -37,7 +37,8 @@
 
   (peg/match "Content-"
              "Content")
-  # => nil
+  # =>
+  nil
 
   # the first argument, "Content-", is a pattern that describes the
   # desired "matching" (somewhat analogous to a "regular expression").
@@ -62,7 +63,8 @@
 
   (peg/match "Content-Type:"
              "Content-Type:")
-  # => @[]
+  # =>
+  @[]
 
   # in this case the strings are equal and matching succeeds:
 
@@ -88,7 +90,8 @@
 
   (peg/match "Content"
              "Content-Type:")
-  # => @[]
+  # =>
+  @[]
 
   # in this case, the first argument is a substring of the second
   # argument and matching succeeds.
@@ -108,7 +111,8 @@
 
   (peg/match ~(capture "Content-Type:")
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # the peg is not a string in this case, but rather a tuple:
 
@@ -141,7 +145,8 @@
 
   (peg/match ~(capture "Content")
              "Content-Type:")
-  # => @["Content"]
+  # =>
+  @["Content"]
 
   # here the captured content is "Content" -- "advancing" through the
   # "string to match", only occured up through the end of the word
@@ -162,7 +167,8 @@
 
   (peg/match ~(set "ABC")
              "Content-Type:")
-  # => @[]
+  # =>
+  @[]
 
   # here only the initial "C" was matched.  `set` enables one to match
   # choosing from some number of characters.
@@ -176,7 +182,8 @@
 
   (peg/match ~(capture (set "ABC"))
              "Content-Type:")
-  # => @["C"]
+  # =>
+  @["C"]
 
   # if one wanted to match against the capital letters "A" through
   # "Z", that seems like it could be a lot of typing...
@@ -187,7 +194,8 @@
 
   (peg/match ~(range "AZ")
              "Content-Type:")
-  # => @[]
+  # =>
+  @[]
 
   # somewhat similar to `set` is `range`.
 
@@ -201,7 +209,8 @@
 
   (peg/match ~(capture (range "AZ"))
              "Content-Type:")
-  # => @["C"]
+  # =>
+  @["C"]
 
   # how are we going to match beyond the first character without
   # using a literal string?
@@ -213,7 +222,8 @@
   (peg/match ~(sequence (range "AZ")
                         (range "az"))
              "Content-Type:")
-  # => @[]
+  # =>
+  @[]
 
   # wrapping multiple pegs with `(sequence ...)` expresses the idea
   # that all of the pegs should match.  further, they should match in
@@ -228,14 +238,16 @@
   (peg/match ~(capture (sequence (range "AZ")
                                  (range "az")))
              "Content-Type:")
-  # => @["Co"]
+  # =>
+  @["Co"]
 
   # another way is to wrap some of the individual pegs with `capture`:
 
   (peg/match ~(sequence (capture (range "AZ"))
                         (capture (range "az")))
              "Content-Type:")
-  # => @["C" "o"]
+  # =>
+  @["C" "o"]
 
   # note that the returned array now has more than one element.
 
@@ -252,7 +264,8 @@
                                  (range "az")
                                  (range "az")))
              "Content-Type:")
-  # => @["Con"]
+  # =>
+  @["Con"]
 
   # but this has its limits :)
 
@@ -263,7 +276,8 @@
   (peg/match ~(capture (sequence (range "AZ")
                                  (some (range "az"))))
              "Content-Type:")
-  # => @["Content"]
+  # =>
+  @["Content"]
 
   # `some` expresses the idea of "1 or more".
 
@@ -286,7 +300,8 @@
                                  (some (range "az"))
                                  ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # is there a way to match a lower case or upper case letter?
 
@@ -299,7 +314,8 @@
                                  (some (range "az" "AZ"))
                                  ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # it turns out that `range` can be given more than one argument,
   # where each argument describes a range.
@@ -319,7 +335,8 @@
                                  (some :a)
                                  ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # `:a` is shorthand for `(range "az" "AZ")`
 
@@ -329,7 +346,8 @@
   # to see what `:a` stands for, try:
 
   (get default-peg-grammar :a)
-  # => '(range "az" "AZ")
+  # =>
+  '(range "az" "AZ")
 
   # which other conveniences exist can be seen by examining the keys
   # of `default-peg-grammar`:
@@ -348,7 +366,8 @@
       :h :h* :h+
       :s :s* :s+
       :w :w* :w+])
-  # => true
+  # =>
+  true
 
   # the `*` and `+` versions refer to "0 or more" and "1 or more", so
   # the example above could also be expressed as:
@@ -358,12 +377,14 @@
                                  :a+
                                  ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # once again, to see what something stands for:
 
   (get default-peg-grammar :a+)
-  # => '(some :a)
+  # =>
+  '(some :a)
 
   #############################################################
   ### BEGIN ASIDE ABOUT *, +, PEG SPECIALS, AND SHORT NAMES ###
@@ -380,7 +401,8 @@
                           :a+
                           ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # a number of the peg-related constructs (sometimes called "peg
   # specials") have short names.  one place they can be looked up is:
@@ -405,7 +427,8 @@
                                  :a+
                                  :A))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # the capital letter versions (such as `:A`) of the convenient
   # shorthands in `default-peg-grammar` are negated versions of the
@@ -433,7 +456,8 @@
   # `:A` is shorthand for:
 
   (get default-peg-grammar :A)
-  # => '(if-not :a 1)
+  # =>
+  '(if-not :a 1)
 
   # there are two constructs that are new here -- `if-not` and `1` --
   # which will be examine in the reverse order :)
@@ -449,7 +473,8 @@
                                  :a+
                                  1))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # `if-not` works by trying to match based on its first argument, and
   # if that FAILS, it proceeds to attempt a match using the second
@@ -463,7 +488,8 @@
 
   (peg/match ~(sequence (capture (if-not "a" 1)))
              "bz")
-  # => @["b"]
+  # =>
+  @["b"]
 
   # in this example, after `if-not`'s first argument "a" fails to
   # match "b", a match attempt is made with `1` starting at "b" rather
@@ -476,7 +502,8 @@
 
   (peg/match ~(sequence "Content" (position))
              "Content-Type:")
-  # => @[7]
+  # =>
+  @[7]
 
   # `position` can be used to obtain the current position or index
   # within the string being matched.
@@ -488,19 +515,22 @@
   # the string that was the target of matching:
 
   (string/slice "Content-Type:" 7)
-  # => "-Type:"
+  # =>
+  "-Type:"
 
   # `position` can be put in various locations:
 
   (peg/match ~(sequence (position) "Content" (position))
              "Content-Type:")
-  # => @[0 7]
+  # =>
+  @[0 7]
 
   # so one way to determine what part of the string matched is to
   # use these indeces:
 
   (string/slice "Content-Type:" 0 7)
-  # => "Content"
+  # =>
+  "Content"
 
   # there are also the peg specials `line` and `column` (1-based
   # instead of 0-based) which can be convenient when working with
@@ -510,7 +540,8 @@
                         "Content\nType"
                         (line) (column))
              "Content\nType")
-  # => @[1 1 2 5]
+  # =>
+  @[1 1 2 5]
 
   # in this example `1 1` refers to line 1 and column 1 -- the first
   # character -- while `2 5` refers to line 2 and column 5 -- the
@@ -522,7 +553,8 @@
 
   (peg/match ~(capture (to ":"))
              "Content-Type:")
-  # => @["Content-Type"]
+  # =>
+  @["Content-Type"]
 
   # the `to` peg special is equivalent to `(some (if-not ... 1))`.
   # put another way, keep matching "to" (up until but not including)
@@ -537,7 +569,8 @@
 
   (peg/match ~(capture (thru ":"))
              "Content-Type:")
-  # => @["Content-Type:"]
+  # =>
+  @["Content-Type:"]
 
   # in this example, `(thru ":")` matches characters from the
   # beginning of the string up through (and including) ":".  thus the
@@ -551,18 +584,21 @@
                         :s+
                         (capture (to "\r\n")) "\r\n")
              "Content-Type: text/plain\r\n")
-  # => @["Content-Type" "text/plain"]
+  # =>
+  @["Content-Type" "text/plain"]
 
   # `:s+` is the `+` form of `:s`:
 
   (get default-peg-grammar :s+)
-  # => '(some :s)
+  # =>
+  '(some :s)
 
   # `:s` is shorthand for matching whitespace (note that the zero byte
   # is included):
 
   (get default-peg-grammar :s)
-  # => '(set " \t\r\n\0\f\v")
+  # =>
+  '(set " \t\r\n\0\f\v")
 
   # in this example, a header line (perhaps from HTTP) is matched, and
   # the header name ("Content-Type") and header value ("text/plain")
@@ -582,7 +618,8 @@
                        ,(fn [& captures]
                           (table ;captures)))
              "Content-Type: text/plain\r\n")
-  # => @[@{"Content-Type" "text/plain"}]
+  # =>
+  @[@{"Content-Type" "text/plain"}]
 
   # the `replace` peg special can be used to capture the results of
   # running a janet function.  the function is passed initially
@@ -617,7 +654,8 @@
                             ,(fn [& captures]
                                (table ;captures))))
        first)
-  # => @{"Content-Type" "text/plain"}
+  # =>
+  @{"Content-Type" "text/plain"}
 
   #########################################################################
 
@@ -628,7 +666,8 @@
                                "\r\n")}
              (string "Content-Type: text/plain\r\n"
                      "Content-Length: 1024\r\n"))
-  # => @["Content-Type: text/plain" "Content-Length: 1024"]
+  # =>
+  @["Content-Type: text/plain" "Content-Length: 1024"]
 
   # it's possible to compose pegs using a struct or a table where the
   # keys are keywords and the values are pegs.  further, the keywords
@@ -646,7 +685,8 @@
                               "\r\n"))
              (string "Content-Type: text/plain\r\n"
                      "Content-Length: 1024\r\n"))
-  # => @["Content-Type: text/plain" "Content-Length: 1024"]
+  # =>
+  @["Content-Type: text/plain" "Content-Length: 1024"]
 
   # as pegs grow in size though, they might benefit from making use of
   # the struct / table arrangement.
@@ -672,7 +712,8 @@
     #
     @{"Content-Length" "1024"
       "Content-Type" "text/plain"})
-  # => true
+  # =>
+  true
 
   # bringing many of the examples so far together, this example takes
   # a string consisting of several lines and produces a table of
@@ -717,7 +758,8 @@
     #
     @{"Content-Length" "1024"
       "Content-Type" "text/plain"})
-  # => true
+  # =>
+  true
 
   #########################################################################
 
@@ -732,7 +774,8 @@
                         :a+
                         (backmatch :number))
              "123abc123")
-  # => @["123"]
+  # =>
+  @["123"]
 
   # in this example, a numeric prefix string "123" is captured for
   # reference later.  the capture is "tagged" with the keyword
@@ -749,7 +792,8 @@
                               :a+
                               (backmatch :number)))
              "123abc123")
-  # => @[]
+  # =>
+  @[]
 
   # one important peg special not covered earlier is `choice`.  as the
   # name suggests, this one allows multiple pegs to be attempted in
@@ -760,7 +804,8 @@
              (if (< (math/random) 0.5)
                "cat"
                "dog"))
-  # => @[]
+  # =>
+  @[]
 
   # to match the end of a string, use `-1`.
 
@@ -768,11 +813,13 @@
 
   (peg/match ~(sequence "Hello!" -1)
              "Hello!")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match ~(sequence "Hello!" -1)
              "Hello!There")
-  # => nil
+  # =>
+  nil
 
   # the second call returned `nil` because the string didn't end after
   # the "!", whereas the first call yielded a match (but no capture)
@@ -796,7 +843,8 @@
              "{{expression}}  {{action}}"
              0
              :smile :breathe)
-  # => @[:smile :breathe]
+  # =>
+  @[:smile :breathe]
 
   # there are more peg specials that are not covered here, but
   # see the following for a grouped listing that includes the short

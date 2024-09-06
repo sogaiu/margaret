@@ -33,12 +33,15 @@
       :main (+ :words :word)})
 
   (peg/match re-peg "a")
-  # => @["a"]
+  # =>
+  @["a"]
 
   (peg/match re-peg "a|b")
-  # => '@[(+ "a" "b")]
+  # => 
+  @[['+ "a" "b"]]
 
   (peg/match re-peg "[xyz]")
-  # => '@[(set "xyz")]
+  # =>
+  @[['set "xyz"]]
 
 )

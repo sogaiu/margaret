@@ -1,7 +1,7 @@
 (import ../../../margaret/meg :as peg)
 
 (comment
-  
+
   # https://tools.ietf.org/html/rfc2616
   # https://tools.ietf.org/html/rfc6265
   (def- cookie-header-peg
@@ -30,6 +30,7 @@
   (deep=
     (peg/match cookie-header-peg "a=b; b=c")
     @["a" "b" "b" "c"])
-  # => true
+  # =>
+  true
 
   )

@@ -18,7 +18,7 @@
 
   (defn- inverted
     ```
-    Return the computed `data` if the tag name in `open-id` and `close-id` 
+    Return the computed `data` if the tag name in `open-id` and `close-id`
     does not exist
     ```
     [open-id data ws close-id]
@@ -30,7 +30,7 @@
 
   (defn- section
     ```
-    Return the computed `data` if the tag name in `open-id` and `close-id` 
+    Return the computed `data` if the tag name in `open-id` and `close-id`
     exists or is a non-empty list
 
     If the tag represents:
@@ -165,7 +165,8 @@
   (peg/match
     musty-peg
     "{{tag}}")
-  # => @['(string (let [val (-> "tag" lookup (or "") string)] (escape val)))]
+  # =>
+  @['(string (let [val (-> "tag" lookup (or "") string)] (escape val)))]
 
   (deep=
     #
@@ -176,7 +177,9 @@
     @['(string "This is a" " "
                (let [val (-> "simple" lookup (or "") string)]
                  (escape val))
-               " template.")]) # => true
+               " template.")])
+  # =>
+  true
 
   (deep=
     #
@@ -244,6 +247,8 @@
              #
              :else
              ""))
-         "  section on the outside.")]) # => true
+         "  section on the outside.")])
+  # =>
+  true
 
   )

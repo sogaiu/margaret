@@ -27,12 +27,15 @@
         }))
 
   (peg/match irc-peg "NICK")
-  # => @[:command "NICK" :params @[]]
+  # =>
+  @[:command "NICK" :params @[]]
 
   (peg/match irc-peg "888")
-  # => @[:command 888 :params @[]]
+  # =>
+  @[:command 888 :params @[]]
 
   (peg/match irc-peg ":okwhatever OPER ASMR asmr")
-  # => @[:prefix "okwhatever" :command "OPER" :params @["ASMR" "asmr"]]
+  # =>
+  @[:prefix "okwhatever" :command "OPER" :params @["ASMR" "asmr"]]
 
   )

@@ -23,42 +23,56 @@
       :main (any :data)})
 
   (peg/match peg-decode "i-7654321e")
-  # => @[-7654321]
+  # =>
+  @[-7654321]
 
   (peg/match peg-decode "i1234567e")
-  # => @[1234567]
-  
+  # =>
+  @[1234567]
+
   (peg/match peg-decode "i1234ei5678e")
-  # => @[1234 5678]
+  # =>
+  @[1234 5678]
 
   (peg/match peg-decode "4:abcd")
-  # => @["abcd"]
+  # =>
+  @["abcd"]
 
   (peg/match peg-decode "4:abcd4:efgh")
-  # => @["abcd" "efgh"]
+  # =>
+  @["abcd" "efgh"]
 
   (peg/match peg-decode "4:abcdeee")
-  # => @["abcd"]
+  # =>
+  @["abcd"]
 
   (peg/match peg-decode "4:abcdi1234e")
-  # => @["abcd" 1234]
+  # =>
+  @["abcd" 1234]
 
   (peg/match peg-decode "0:")
-  # => @[""]
+  # =>
+  @[""]
 
   (peg/match peg-decode "li3453453ei8232434ei-3434ee")
-  # => @[@[3453453 8232434 -3434]]
+  # =>
+  @[@[3453453 8232434 -3434]]
 
   (peg/match peg-decode "li4343ee")
-  # => @[@[4343]]
+  # =>
+  @[@[4343]]
 
   (peg/match peg-decode "l4:abcd4:efghe")
-  # => @[@["abcd" "efgh"]]
+  # =>
+  @[@["abcd" "efgh"]]
 
   (peg/match peg-decode "le")
-  # => @[@[]]
+  # =>
+  @[@[]]
 
   (peg/match peg-decode "d4:spaml1:a1:bee")
-  # => @[{"spam" @["a" "b"]}]
+  # =>
+  @[{"spam"
+     @["a" "b"]}]
 
   )

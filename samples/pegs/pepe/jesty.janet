@@ -70,6 +70,8 @@
         :title "Patching on url"
         :url "https://my.api/products"
         :end 8}]
-    ) # => true
+    )
+  # =>
+  true
 
 )

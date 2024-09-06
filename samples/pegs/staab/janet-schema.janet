@@ -12,12 +12,14 @@
   (peg/match
     uuid-pattern
     "00000000-0000-0000-0000-000000000000")
-  # => @[]
+  # =>
+  @[]
 
   (peg/match
     uuid-pattern  
     "123e4567-e89b-12d3-a456-426614174000")
-  # => @[]
+  # =>
+  @[]
 
   (def year-pattern '(between 4 4 (range "09")))
   (def month-pattern '(+ (* "0" (range "19")) (* "1" (range "02"))))
@@ -38,6 +40,7 @@
   (peg/match
     datetime-pattern
     "2020-01-01T03:28:01.987Z")
-  # => @[]
+  # =>
+  @[]
 
   )
