@@ -41,6 +41,8 @@
 #   lenprefix              =  (lenprefix n patt)
 #   line                   =  (line ?tag)
 #   number                 =  (number patt ?base ?tag)
+#   nth                    =  (nth index patt ?tag)
+#   only-tags              =  (only-tags patt)
 #   position ($)           =  (position ?tag)
 #   replace (/)            =  (replace patt subst ?tag)
 #   uint                   =  (uint n ?tag)
