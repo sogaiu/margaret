@@ -14,13 +14,13 @@
   # =>
   @["x"]
 
-  (peg/match ~{:main
-               (some (sequence (only-tags (sequence :prefix ":" :word))
-                               (backref :target)))
-               :prefix (number :d+ nil :n)
-               :word (capture (lenprefix (backref :n) :w)
-                              :target)}
-             "3:ant3:bee6:flower")
+  (peg/match
+    ~{:main (some (sequence (only-tags (sequence :prefix ":" :word))
+                            (backref :target)))
+      :prefix (number :d+ nil :n)
+      :word (capture (lenprefix (backref :n) :w)
+                     :target)}
+    "3:ant3:bee6:flower")
   # =>
   @["ant" "bee" "flower"]
 
