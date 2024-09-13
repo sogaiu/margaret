@@ -28,6 +28,14 @@
   # =>
   @["tiger"]
 
+  (peg/match ~(replace (sequence (capture "ant")
+                                 (capture "bee"))
+                       {"ant" "fox"
+                        "bee" "elephant"})
+             "antbee")
+  # =>
+  @["elephant"]
+
   (peg/match ~(replace (capture "cat")
                        ,(fn [original]
                           (string original "alog")))
