@@ -45,6 +45,7 @@ with some tests:
   * [lenprefix](../examples/lenprefix.janet)
   * [line](../examples/line.janet)
   * [number](../examples/number.janet)
+  * [nth](../examples/nth.janet)
   * [only-tags](../examples/only-tags.janet)
   * [position, $](../examples/position.janet)
   * [replace, /](../examples/replace.janet)

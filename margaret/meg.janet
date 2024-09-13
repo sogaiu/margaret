@@ -351,6 +351,18 @@
                  :msg "2nd arg should be a keyword"}))
       (merge the-state
              (visit-peg (get the-peg 1) the-state)))
+    (defn check-nth
+      [the-peg the-state]
+      (assert-arity the-peg 2 3)
+      (assert (nat? (get the-peg 1))
+              {:peg the-peg
+               :msg "1st arg should be a non-neg integer"})
+      (when (> (length the-peg) 3)
+        (assert (keyword? (get the-peg 3))
+                {:peg the-peg
+                 :msg "3rd arg should be a keyword"}))
+      (merge the-state
+             (visit-peg (get the-peg 2) the-state)))
     (defn check-sub
       [the-peg the-state]
       (assert-arity the-peg 2 2)
@@ -489,6 +501,7 @@
             'only-tags (check-only-tags a-peg a-state)
             'drop (check-drop a-peg a-state)
             'group (check-group a-peg a-state)
+            'nth (check-nth a-peg a-state)
             'sub (check-sub a-peg a-state)
             'split (check-split a-peg a-state)
             'replace (check-replace a-peg a-state)
@@ -1263,6 +1276,11 @@
 
   (analyze '(only-tags (sequence (capture 1 :a)
                                  (capture 2 :b))))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(nth 1 (sequence (capture 1)
+                             (capture 2))))
   # =>
   @{:has-backref false}
 
@@ -2301,6 +2319,36 @@
               (cap-load-keept state cs)
               (pushcap state cap tag)
               res-idx))
+          (log-out)
+          ret)
+
+        # RULE_NTH
+        (= 'nth op)
+        (do
+          (log-in)
+          (def n (let [found (in args 0)]
+                   (if (< math/int32-max found)
+                     math/int32-max
+                     found)))
+          (def patt (in args 1))
+          (def tag (when (< 2 (length args)) (in args 2)))
+          (def old-mode (get state :mode))
+          (def cs (cap-save state))
+          (put state :mode :peg-mode-normal)
+          (def res-idx (peg-rule state patt index grammar))
+          (put state :mode old-mode)
+          (def ret
+            (when res-idx
+              (def num-sub-caps
+                (- (length (get state :captures))
+                   (get cs :captures)))
+              (when (> num-sub-caps n)
+                (def cap
+                  (get-in state [:captures
+                                 (+ (get cs :captures) n)]))
+                (cap-load-keept state cs)
+                (pushcap state cap tag)
+                res-idx)))
           (log-out)
           ret)
 
