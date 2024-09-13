@@ -2309,7 +2309,7 @@
           (def cs (cap-save state))
           (put state :mode :peg-mode-normal)
           (def res-idx (peg-rule state patt index grammar))
-          (put state  :mode old-mode)
+          (put state :mode old-mode)
           (def ret
             (when res-idx
               (def cap
