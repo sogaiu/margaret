@@ -1,8 +1,16 @@
 (import ../margaret/meg :as peg)
 
-# `(split sep patt)`
+# `(split separator-patt patt)`
 
-# TODO
+# Split the remaining input by `separator-patt`, and execute `patt` on
+# each substring.
+
+# `patt` will execute with its input constrained to the next instance of
+# `separator-patt`, as if narrowed by `(sub (to separator-patt) ...)`.
+
+# `split` will continue to match separators and patterns until it reaches
+# the end of the input; if you don't want to match to the end of the
+# input you should first narrow it with `(sub ... (split ...))`.
 
 (comment
 
