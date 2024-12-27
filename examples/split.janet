@@ -61,6 +61,7 @@
   # =>
   @["a" "b" "c"]
 
+  # does not advance past the end of the input
   (peg/match ~(sequence (split "," (capture :w+)) 0)
              "a,b,c")
   # =>
