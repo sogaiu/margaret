@@ -2380,35 +2380,39 @@
           (def sep-patt (in args 0))
           (def sub-patt (in args 1))
           (var cur-idx index)
-          (var sep-end nil)
+          (var chunk-start cur-idx)
+          (var chunk-end nil)
           (def ret
             (label result
-              (forever # not really
-                (def text-start cur-idx)
+              (while (<= cur-idx saved-end)
+                # find next split or text end
                 (def cs (cap-save state))
-                (while (<= cur-idx (get state :text-end))
-                  (set sep-end
-                       (peg-rule state sep-patt cur-idx grammar))
+                (while (<= cur-idx saved-end)
+                  (set chunk-end cur-idx)
+                  (def check
+                    (peg-rule state sep-patt cur-idx grammar))
                   (cap-load state cs)
-                  (when sep-end
+                  (when check
+                    (set cur-idx check)
                     (break))
                   (++ cur-idx))
-                #
-                (when sep-end
-                  (put state :text-end cur-idx)
-                  (set cur-idx sep-end))
+                # bound next peg-rule invocation
+                (put state :text-end chunk-end)
                 #
                 (def subpatt-end
-                  (peg-rule state sub-patt text-start grammar))
-                #
+                  (peg-rule state sub-patt chunk-start grammar))
+                # in case one of the following `return` forms is used
                 (put state :text-end saved-end)
-                #
+                # sub-patt must succeed for an overall success
                 (when (nil? subpatt-end)
                   (return result nil))
-                #
-                (when (nil? sep-end)
-                  (break)))
-              # when loop broken out of via break...
+                # prevent infinite loop
+                (when (= cur-idx chunk-start)
+                  (return result nil))
+
+                (set chunk-start cur-idx))
+              
+              (put state :text-end saved-end)
               (get state :text-end)))
           (log-out)
           ret)

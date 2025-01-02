@@ -67,5 +67,11 @@
   # =>
   @["a" "b" "c"]
 
+  # issue #1539 at janet repository
+  (peg/match ~(split "" (capture (to -1)))
+             "hello there friends")
+  # =>
+  nil
+
   )
 
