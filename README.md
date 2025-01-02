@@ -50,6 +50,16 @@ Output format is very much in-flux but ATM one can see:
 
 See [here](doc/tracing.md) for more.
 
+## Users
+
+* [janet-pegdoc](https://github.com/sogaiu/janet-pegdoc) reuses examples
+  from margaret to show sample invocations of `peg/match` as well as
+  a source for generating quizzes.
+
+* [small-peg-tracer](https://github.com/sogaiu/small-peg-tracer) uses
+  the emulation and tracing capabilities of margaret while generating
+  views of simulated `peg/match` execution.
+
 ## Other Docs
 
 * [The Specials](doc/the-specials.md) lists what's currently implemented
