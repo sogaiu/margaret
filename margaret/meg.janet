@@ -22,6 +22,9 @@
       :string
       @{:main peg}
       #
+      :buffer
+      @{:main (string peg)}
+      #
       :number
       (do
         (assert (int? peg)
@@ -102,10 +105,6 @@
   (protect (tablify-peg {}))
   # =>
   [false "missing :main in grammar: {}"]
-
-  (protect (tablify-peg @"hello"))
-  # =>
-  [false "Unexpected type for peg @\"hello\": :buffer"]
 
   (protect (tablify-peg +))
   # =>
@@ -439,6 +438,9 @@
       a-state
       #
       :string
+      a-state
+      #
+      :buffer
       a-state
       #
       :number
