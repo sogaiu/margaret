@@ -4,6 +4,7 @@
 #   range                  =  (range r1 ?r2 ... ?rn)
 #   set                    =  (set chars)
 #   String ("...")
+#   Buffer (@"...")
 #   Boolean (true, false)
 #
 # Combining Patterns
