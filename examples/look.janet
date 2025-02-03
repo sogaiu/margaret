@@ -1,16 +1,11 @@
 (import ../margaret/meg :as peg)
 
-# `(look offset ?patt)`
+# `(look ?offset patt)`
 
-# If `patt` is provided, matches only if `patt` matches at a fixed
-# offset.  `offset` should be an integer in this case.
+# Matches only if `patt` matches at a fixed offset.  `offset` should
+# be an integer and defaults to 0.
 
-# If `patt` is not provided, matching occurs as if the peg had been
-# `(look 0 offset)`.  Note that in this case `offset` is not
-# restricted to an integer.
-
-# Whether `patt` is provided or not, the peg will not advance any
-# characters.
+# The peg will not advance any characters.
 
 # `(> offset patt)` is an alias for `(look offset patt)`
 
