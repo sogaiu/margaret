@@ -157,13 +157,15 @@
     (defn check-look
       [the-peg the-state]
       (assert-arity the-peg 1 2)
-      (assert (int? (get the-peg 1))
-              {:peg the-peg
-               :msg "1st arg should be an integer"})
       (if (= (length the-peg) 3)
+        (do
+          (assert (int? (get the-peg 1))
+                  {:peg the-peg
+                   :msg "1st arg should be an integer"})
+          (merge the-state
+                 (visit-peg (get the-peg 2) the-state)))
         (merge the-state
-               (visit-peg (get the-peg 2) the-state))
-        the-state))
+               (visit-peg (get the-peg 1) the-state))))
     (defn check-choice
       [the-peg the-state]
       # can have zero args
@@ -1871,7 +1873,10 @@
             (= '> op))
         (do
           (log-in)
-          (def offset (in args 0))
+          (def [offset patt]
+            (if (= (length args) 2)
+              [(in args 0) (in args 1)]
+              [0 (in args 0)]))
           (def ret
             (label result
               (let [text-start (get state :text-start)
@@ -1880,11 +1885,8 @@
                 (when (or (< new-start text-start)
                           (> new-start text-end))
                   (return result nil))
-                (if-let [patt (get args 1)]
-                  (when (peg-rule state patt new-start grammar)
-                    index)
-                  (when (peg-rule state 0 offset grammar)
-                    index)))))
+                (when (peg-rule state patt new-start grammar)
+                  index))))
           (log-out)
           ret)
 

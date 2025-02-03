@@ -2,15 +2,15 @@
 
 # `(look offset ?patt)`
 
-# Matches only if `patt` matches at a fixed offset.
+# If `patt` is provided, matches only if `patt` matches at a fixed
+# offset.  `offset` should be an integer in this case.
 
-# `offset` can be any integer.
+# If `patt` is not provided, matching occurs as if the peg had been
+# `(look 0 offset)`.  Note that in this case `offset` is not
+# restricted to an integer.
 
-# `patt` will not produce captures and the peg will not advance any
+# Whether `patt` is provided or not, the peg will not advance any
 # characters.
-
-# If `patt` is omitted, matching occurs as if the peg had been
-# `(look 0 offset)`.
 
 # `(> offset patt)` is an alias for `(look offset patt)`
 
