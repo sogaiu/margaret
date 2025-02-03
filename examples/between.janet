@@ -68,3 +68,37 @@
 
   )
 
+(comment
+
+  # issue 1554 case 1
+  (peg/match '(any (> '1)) "abc")
+  # =>
+  @["a"]
+
+  # issue 1554 case 2
+  (peg/match '(any (? (> '1))) "abc")
+  # =>
+  @["a"]
+
+  # issue 1554 case 3
+  (peg/match '(any (> (? '1))) "abc")
+  # =>
+  @["a"]
+
+  # issue 1554 case 4
+  (peg/match '(* "a" (> '1)) "abc")
+  # =>
+  @["b"]
+
+  # issue 1554 case 5
+  (peg/match '(* "a" (? (> '1))) "abc")
+  # =>
+  @["b"]
+
+  # issue 1554 case 6
+  (peg/match '(* "a" (> (? '1))) "abc")
+  # =>
+  @["b"]
+
+  )
+

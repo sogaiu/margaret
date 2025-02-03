@@ -2114,7 +2114,9 @@
                 # match fail or no change in position
                 (when (or (nil? next-idx)
                           (= next-idx cur-idx))
-                  (cap-load state cs2)
+                  (when (or (nil? next-idx)
+                            (> captured 0))
+                    (cap-load state cs2))
                   (break))
                 (++ captured)
                 (set cur-idx next-idx))
