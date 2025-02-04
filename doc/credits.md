@@ -7,6 +7,7 @@ Thanks to (at least) the following folks:
 * bakpakin
 * CosmicToast
 * crocket
+* edsrzf
 * goto-engineering
 * GrayJack
 * ianthehenry
