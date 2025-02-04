@@ -27,6 +27,7 @@ with some tests:
   * [split](../examples/split.janet)
   * [sub](../examples/sub.janet)
   * [thru](../examples/thru.janet)
+  * [til](../examples/til.janet)
   * [to](../examples/to.janet)
 
 * Captures

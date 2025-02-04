@@ -369,6 +369,11 @@
       (assert-arity the-peg 2 2)
       (merge the-state ;(map |(visit-peg $ the-state)
                              (drop 1 the-peg))))
+    (defn check-til
+      [the-peg the-state]
+      (assert-arity the-peg 2 2)
+      (merge the-state ;(map |(visit-peg $ the-state)
+                             (drop 1 the-peg))))
     (defn check-split
       [the-peg the-state]
       (assert-arity the-peg 2 2)
@@ -507,6 +512,7 @@
             'group (check-group a-peg a-state)
             'nth (check-nth a-peg a-state)
             'sub (check-sub a-peg a-state)
+            'til (check-til a-peg a-state)
             'split (check-split a-peg a-state)
             'replace (check-replace a-peg a-state)
             '/ (check-replace a-peg a-state)
@@ -1045,6 +1051,19 @@
   # =>
   '@{:error {:msg "needs exactly 2 arg(s)"
              :peg (sub)}}
+
+  (analyze '(til "," (capture 1)))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(til (capture ";" :x) (backref :x)))
+  # =>
+  @{:has-backref true}
+
+  (analyze '(til))
+  # =>
+  '@{:error {:msg "needs exactly 2 arg(s)"
+             :peg (til)}}
 
   (analyze '(split "," (capture 1)))
   # =>
@@ -2377,6 +2396,44 @@
               (put state :text-end saved-end)
               (when next-text
                 win-end)))
+          (log-out)
+          ret)
+
+        # RULE_TIL
+        (= 'til op)
+        (do
+          (log-in)
+          (def term-patt (in args 0))
+          (def sub-patt (in args 1))
+          (def cur-idx index)
+          (var term-start cur-idx)
+          (var term-end nil)
+          (def ret
+            (label result
+              (while (<= term-start (get state :text-end))
+                (def cs2 (cap-save state))
+                (set term-end
+                     (peg-rule state term-patt term-start grammar))
+                (cap-load state cs2)
+                (when term-end
+                  (break))
+                (++ term-start))
+              # did term-patt match?
+              (when (nil? term-end)
+                (return result nil))
+              # for restoring state's :text-end below
+              (def saved-end (get state :text-end))
+              # bound next peg-rule invocation
+              (put state :text-end term-start)
+              (def matched
+                (peg-rule state sub-patt cur-idx grammar))
+              # restore state's :text-end
+              (put state :text-end saved-end)
+              # sub-patt must succeed for an overall success
+              (when (nil? matched)
+                (return result nil))
+
+              term-end))
           (log-out)
           ret)
 
