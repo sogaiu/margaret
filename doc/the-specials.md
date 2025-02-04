@@ -8,6 +8,7 @@ with some tests:
   * [range](../examples/range.janet)
   * [set](../examples/set.janet)
   * [string patterns](../examples/0.string.janet)
+  * [buffer patterns](../examples/0.buffer.janet)
   * [boolean patterns](../examples/0.boolean.janet)
 
 * Combinators
