@@ -1,6 +1,6 @@
 (import ../margaret/meg :as peg)
 
-# "<s>" -- where <s> is string literal content
+# `"<s>"` -- where <s> is string content
 
 # Matches a literal string, and advances a corresponding number of characters.
 

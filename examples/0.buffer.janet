@@ -1,6 +1,6 @@
 (import ../margaret/meg :as peg)
 
-# "<s>" -- where <s> is buffer literal content
+# `@"<b>"` -- where <s> is buffer content
 
 # Matches a literal buffer, and advances a corresponding number of characters.
 
