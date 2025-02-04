@@ -24,6 +24,7 @@
 #   split                  =  (split sep patt)
 #   sub                    =  (sub window-patt patt)
 #   thru                   =  (thru patt)
+#   til                    =  (til sep patt)
 #   to                     =  (to patt)
 #
 # Captures
