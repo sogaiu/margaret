@@ -35,6 +35,21 @@
   # =>
   @["abc"]
 
+  (peg/match
+    ~(repeat 2
+       (replace (lenprefix (number :d+) (capture 1))
+                ,|(string ;$&)))
+    "2aa1b")
+  # =>
+  @["aa" "b"]
+
+  (peg/match
+    ~(repeat 2
+       (accumulate (lenprefix (number :d+) (capture 1))))
+    "2aa1b")
+  # =>
+  @["aa" "b"]
+
   (peg/match ~(lenprefix
                 (replace (sequence (capture (any (if-not ":" 1)))
                                    ":")
