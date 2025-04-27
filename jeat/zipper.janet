@@ -130,29 +130,20 @@
   Returns a new zipper consisting of two elements:
 
   * `root` - the passed in root node.
-
   * `state` - table of info about node's z-location in the tree with keys:
-
     * `:ls` - left siblings
-
     * `:pnodes` - path of nodes from root to current z-location
-
     * `:pstate` - parent node's state
-
     * `:rs` - right siblings
-
     * `:changed?` - indicates whether "editing" has occured
 
-  * `state` has a prototype table with four functions:
+  `state` has a prototype table with four functions:
 
-    * :branch? - fn that tests if a node is a branch (has children)
-
-    * :children - fn that returns the child nodes for the given branch.
-
-    * :make-node - fn that takes a node + children and returns a new branch
-                   node with the same.
-
-    * :make-state - fn for creating a new state
+  * :branch? - fn that tests if a node is a branch (has children)
+  * :children - fn that returns the child nodes for the given branch.
+  * :make-node - fn that takes a node + children and returns a new branch
+    node with the same.
+  * :make-state - fn for creating a new state
   ``
   [root &keys {:branch? branch?
                :children children
