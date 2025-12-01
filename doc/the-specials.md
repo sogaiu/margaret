@@ -36,6 +36,7 @@ with some tests:
   * [argument](../examples/argument.janet)
   * [backref, \->](../examples/backref.janet)
   * [capture, \<-, quote](../examples/capture.janet)
+  * [cms](../examples/cms.janet)
   * [cmt](../examples/cmt.janet)
   * [column](../examples/column.janet)
   * [constant](../examples/constant.janet)
