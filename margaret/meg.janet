@@ -53,10 +53,10 @@
         peg)
       #
       (errorf "Unexpected type for peg %n: %n" peg (type peg))))
-    #
-    (table/setproto peg-tbl default-peg-grammar)
-    #
-    peg-tbl)
+  #
+  (table/setproto peg-tbl default-peg-grammar)
+  #
+  peg-tbl)
 
 (comment
 
@@ -1468,20 +1468,20 @@
 (comment
 
   (state? @{:captures @[]
-             :extrav @[]
-             :grammar ~(capture "a" :x)
-             :has-backref true
-             :linemap @[]
-             :linemaplen -1
-             :mode :peg-mode-normal
-             :original-text "123"
-             :outer-text-end 3
-             :scratch @""
-             :start 0
-             :tagged-captures @[]
-             :tags @[]
-             :text-end 3
-             :text-start 0})
+            :extrav @[]
+            :grammar ~(capture "a" :x)
+            :has-backref true
+            :linemap @[]
+            :linemaplen -1
+            :mode :peg-mode-normal
+            :original-text "123"
+            :outer-text-end 3
+            :scratch @""
+            :start 0
+            :tagged-captures @[]
+            :tags @[]
+            :text-end 3
+            :text-start 0})
   # =>
   true
 
