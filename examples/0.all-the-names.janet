@@ -33,6 +33,7 @@
 #   backref (->)           =  (backref prev-tag ?tag)
 #   capture (<-, quote)    =  (capture patt ?tag)
 #   cmt                    =  (cmt patt fun ?tag)
+#   cms                    =  (cms patt fun ?tag)
 #   column                 =  (column ?tag)
 #   constant               =  (constant k ?tag)
 #   drop                   =  (drop patt)
