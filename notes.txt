@@ -1,10 +1,56 @@
 (comment
 
+# * more examples
+#   * backref
+#     * technique of accessing something that was dropped, e.g.
+#
+#       (sequence (drop (capture (sequence "\n
+#                                          (position))
+#                                :line-end))
+#                 (backref :line-end))
+#
+#       the tagged capture can be accessed (put on the capture
+#       stack even after the drop(?)
+#
+#       did not get this to work.
+
+# * error messages different from peg/match
+#   * 0.start.janet
+#   * 0.compile.janet
+
+# * dbg form - (dbg body)
+#   * (drop (cmt (constant :fun)
+#                ,(fn [_]
+#                    # do something here
+#                    )))
+
+# by implementing enough of marshal's capabilities in janet, it may be
+# possible to implement peg/compile in janet.  strictly speaking, it
+# may be impractical to execute a full-implementation because
+# implementing support for `constant` might involve having to
+# implement all (or a lot of?) marshaling functionality, which may in
+# turn be too hard (e.g. marshaling of fibers might be impractical --
+# though could we just use janet's implementaiton of `marshal` for
+# that?).  in any case, by producing what `(marshal (peg/compile
+# ...))` produces, we can then use `unmarshal` on the content to end
+# up with what `(peg/compile ...)` would have produced.  is this worth
+# it or useful?  who knows? :)
+
+# turn has-backref? into an analyzer
+# * check arity during traversal
+# * possibly check argument types?
+# * could turn into linter for peg and externalize?
+# * pass a function to the traversal function to
+#   perform checking -- this way custom checking
+#   can be performed instead of hard-wiring
+#   checking only for whether something is
+#   a backref / backmatch construct
+
+# consider splitting `between` handling in peg-rule?
+
 # questions
 #
 # X. peg_call_reset doesn't touch tagged_captures...is that ok?
-# Y. how to address the problem of testing / exploring code with
-#    "inner" definitions (e.g. defn within a defn)
 
 # notes
 #
