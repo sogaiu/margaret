@@ -1,0 +1,18 @@
+{:name "margaret"
+ :url "https://github.com/sogaiu/margaret"
+ :repo "git+https://github.com/sogaiu/margaret"
+
+ :vendored
+ [{:name "some-bundle-bits"
+   :url "https://github.com/sogaiu/some-bundle-bits"
+   :tag "7ddb7ec53a6eb8c81b0c22bb7710a01fff57a759"
+   :paths [["sbb.janet" "bundle/"]]}
+  {:name "niche"
+   :url "https://github.com/sogaiu/niche"
+   :tag "3f744cfb02b472971f82e78f16a027908a4bd717"
+   :paths [["niche.janet" "bin/"]]}]
+
+ :sources
+ [{:prefix "margaret"
+   :items [["margaret/meg.janet" "meg.janet"]]}]}
+

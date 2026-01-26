@@ -1,0 +1,5 @@
+{# describes what to test - file and dir paths
+ :includes ["margaret" "examples" "samples" "tutorials"]
+ # describes what to skip - file paths only
+ :excludes []
+}
