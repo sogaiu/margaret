@@ -10,7 +10,11 @@
   {:name "niche"
    :url "https://github.com/sogaiu/niche"
    :tag "3f744cfb02b472971f82e78f16a027908a4bd717"
-   :paths [["niche.janet" "bin/"]]}]
+   :paths [["niche.janet" "bin/"]]}
+  {:name "spork"
+   :url "https://github.com/janet-lang/spork"
+   :tag "60110c3688c5687cc603159bcfa38d579f95a27d"
+   :paths [["spork/sh-dsl.janet" "bin/"]]}]
 
  :sources
  [{:prefix "margaret"
