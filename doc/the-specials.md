@@ -55,3 +55,7 @@ with some tests:
   * [uint](../examples/uint.janet)
   * [uint-be](../examples/uint-be.janet)
   * [unref](../examples/unref.janet)
+
+* Others
+  * [debug, ??](../examples/debug.janet)
+

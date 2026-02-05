@@ -112,28 +112,57 @@
 
   )
 
+(defn assert-arity
+  [argv n &opt limit]
+  (def args (drop 1 argv))
+  (default limit -1)
+  (when (not (neg? limit))
+    (assert (<= n limit)
+            (string/format "n: %d not <= limit: %d" n limit)))
+  (def num-args (length args))
+  (if (neg? limit)
+    (assert (>= num-args n)
+            {:peg argv
+             :msg (string/format "needs >= %d arg(s)" n)})
+    (assert (<= n num-args limit)
+            {:peg argv
+             :msg (if (= n limit)
+                    (string/format "needs exactly %d arg(s)" n)
+                    (string/format "needs between %d and %d args"
+                                   n limit))})))
+
+(comment
+
+  (assert-arity '(range "az") 0 1)
+  # =>
+  true
+
+  (def [ok? result] (protect (assert-arity '(range "az" "hi") 0 1)))
+  # =>
+  [false
+   {:msg "needs between 0 and 1 args"
+    :peg '(range "az" "hi")}]
+
+  (assert-arity '(debug) 0 0)
+  # =>
+  true
+
+  (def [ok? result] (protect (assert-arity '(debug 1) 0 0)))
+  # =>
+  [false
+   {:msg "needs exactly 0 arg(s)"
+    :peg '(debug 1)}]
+
+  )
+
 (defn analyze
   [peg]
   (defn visit-peg
     [a-peg a-state]
-    (defn assert-arity
-      [argv n &opt limit]
-      (def args (drop 1 argv))
-      (default limit -1)
-      (when (not (neg? limit))
-        (assert (<= n limit)
-                (string/format "n: %d not <= limit: %d" n limit)))
-      (def num-args (length args))
-      (if (neg? limit)
-        (assert (>= num-args n)
-                {:peg argv
-                 :msg (string/format "needs >= %d arg(s)" n)})
-        (assert (<= n num-args limit)
-                {:peg argv
-                 :msg (if (= n limit)
-                        (string/format "needs exactly %d arg(s)" n)
-                        (string/format "needs between %d and %d args"
-                                       n limit))})))
+    (defn check-debug
+      [the-peg the-state]
+      (assert-arity the-peg 0 0)
+      the-state)
     (defn check-range
       [the-peg the-state]
       (assert-arity the-peg 1)
@@ -484,6 +513,8 @@
             (merge a-state
                    (visit-peg (get a-peg 1) a-state)))
           (case op
+            'debug (check-debug a-peg a-state)
+            '?? (check-debug a-peg a-state)
             'range (check-range a-peg a-state)
             'set (check-set a-peg a-state)
             'look (check-look a-peg a-state)
@@ -592,6 +623,24 @@
   # =>
   '@{:error @{:msg "1st arg should be non-neg integer"
               :peg [-1 :a]}}
+
+  (analyze '(debug))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(debug 1))
+  # =>
+  '@{:error {:msg "needs exactly 0 arg(s)"
+             :peg (debug 1)}}
+
+  (analyze '(??))
+  # =>
+  @{:has-backref false}
+
+  (analyze '(?? 1 2))
+  # =>
+  '@{:error {:msg "needs exactly 0 arg(s)"
+             :peg (?? 1 2)}}
 
   (analyze '(range "az"))
   # =>
@@ -1889,6 +1938,23 @@
       (def op (get peg 0))
       (def args (drop 1 peg))
       (cond
+        # RULE_DEBUG
+        (or (= 'debug op)
+            (= '?? op))
+        (do
+          (log-in)
+          (def text (get-text index))
+          (def ret index)
+          (def len (- (get state :outer-text-end) index))
+          (def cap-count (length (get state :captures)))
+          (def buffer-str (string/slice text 0 (min len 31)))
+          (printf "\n?? at [%s]\nstack [%d]:"
+                  buffer-str cap-count)
+          (for i 0 cap-count
+            (printf "  [%d]: %M" i (get-in state [:captures i])))
+          (log-out)
+          ret)
+
         # RULE_RANGE
         (= 'range op)
         (do
