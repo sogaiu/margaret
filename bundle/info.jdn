@@ -5,11 +5,11 @@
  :vendored
  [{:name "some-bundle-bits"
    :url "https://github.com/sogaiu/some-bundle-bits"
-   :tag "7ddb7ec53a6eb8c81b0c22bb7710a01fff57a759"
+   :tag "70409ab34b7c762118e0d31efaa4d2f01d46fecf"
    :paths [["sbb.janet" "bundle/"]]}
   {:name "niche"
    :url "https://github.com/sogaiu/niche"
-   :tag "3f744cfb02b472971f82e78f16a027908a4bd717"
+   :tag "7caf81f636bb97104aada6544219733b3c86badf"
    :paths [["niche.janet" "bin/"]]}
   {:name "spork"
    :url "https://github.com/janet-lang/spork"

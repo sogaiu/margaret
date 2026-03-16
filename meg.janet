@@ -1706,7 +1706,7 @@
   (array/push frame-nums frame-num))
 
 (defn log-edge
-  [frame-num ev-num the-type & args]
+  [fram-num ev-num the-type & args]
   (when (os/getenv "VERBOSE")
     (def mt (dyn :meg-trace (file/temp)))
     (def spec
@@ -1714,7 +1714,7 @@
     (xprin mt "{")
     (xprin mt (string ":event-num " ev-num " "))
     (xprinf mt (string ":type %" spec " ") (keyword the-type))
-    (xprinf mt (string ":frame-num %" spec " ") frame-num)
+    (xprinf mt (string ":frame-num %" spec " ") fram-num)
     (each arg args
       (if (and (tuple? arg) (= 2 (length arg)))
         (xprinf mt (string "%" spec " %" spec " ")
@@ -1725,22 +1725,22 @@
 
 (defn log-entry
   [& args]
-  (def frame-num (++ frame-num))
+  (def fram-num (++ frame-num))
   (def ev-num (++ event-num))
-  (array/push frame-nums frame-num)
-  (log-edge frame-num ev-num "entry" ;args))
+  (array/push frame-nums fram-num)
+  (log-edge fram-num ev-num "entry" ;args))
 
 (defn log-exit
   [& args]
-  (def frame-num (array/pop frame-nums))
+  (def fram-num (array/pop frame-nums))
   (def ev-num (++ event-num))
-  (log-edge frame-num ev-num "exit" ;args))
+  (log-edge fram-num ev-num "exit" ;args))
 
 (defn log-error
   [& args]
-  (def frame-num (array/pop frame-nums))
+  (def fram-num (array/pop frame-nums))
   (def ev-num (++ event-num))
-  (log-edge frame-num ev-num "error" ;args))
+  (log-edge fram-num ev-num "error" ;args))
 
 (defn log
   [msg & args]
@@ -1858,9 +1858,9 @@
     (check-params state peg index grammar))
 
   (defn get-text
-    [index]
+    [an-index]
     (string/slice (get state :original-text)
-                  index (get state :text-end)))
+                  an-index (get state :text-end)))
 
   (cond
     # true / false
@@ -3135,6 +3135,6 @@
 
 # XXX: hack for better naming
 
-(def match peg-match)
+(def match :shadow peg-match)
 
-(def compile peg-compile)
+(def compile :shadow peg-compile)

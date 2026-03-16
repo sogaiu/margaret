@@ -407,9 +407,9 @@
         (bundle/add manifest i (string pre i))
         #
         (tuple? i)
-        (let [[src rename] i]
-          # XXX: ensure src refers to a file?
-          (bundle/add-file manifest src (string pre rename)))
+        (let [[i-src rename] i]
+          # XXX: ensure i-src refers to a file?
+          (bundle/add-file manifest i-src (string pre rename)))
         #
         (errorf "expected string or tuple, got: %n" (type i))))))
 
@@ -417,14 +417,14 @@
   [manifest [tos s]]
   (ddumpf "add-binscripts: %n" manifest)
   (each binscript (get-in manifest [:info :binscripts] [])
-    (def {:main main
+    (def {:main main-path
           :hardcode-syspath hardcode-syspath
           :is-janet is-janet} binscript)
-    (def main (abspath main))
-    (def bin-name (basename main))
+    (def main-abspath (abspath main-path))
+    (def bin-name (basename main-abspath))
     (def dest (join "bin" bin-name))
     (def contents
-      (with [f (file/open main :rbn)]
+      (with [f (file/open main-abspath :rbn)]
         (def line-1 (:read f :line))
         (def auto-shebang
           (and is-janet (not (string/has-prefix? "#!" line-1))))
@@ -459,7 +459,7 @@
         (string "@echo off\r\n"
                 "goto #_undefined_# 2>NUL || "
                 `title %COMSPEC% & janet "` absdest `" %*`))
-      (def bat-name (string main ".bat"))
+      (def bat-name (string main-abspath ".bat"))
       # XXX: want bundle/add-buffer so this temp file would be unneeded...
       (defer (os/rm bat-name)
         (spit bat-name bat-content)
