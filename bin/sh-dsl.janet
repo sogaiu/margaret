@@ -5,6 +5,9 @@
 ### sh-dsl.janet
 ###
 
+(defdyn *pipefail* "When set, the return value of a pipeline is the last non-zero exit code instead of the default right-most exit code")
+(defdyn *errexit* "When set, error immediately if pipelines run with `$`, `$<`, or `$<_` return with a non-zero exit code.")
+
 (def- parse-env-set-peg (peg/compile '(* '(to "=") "=" ':S*)))
 
 # Re-implements ev/go-gather
@@ -40,6 +43,25 @@
 
 # End ev/go-gather
 
+(defn- last-nonzero
+  [xs]
+  (var ret 0)
+  (each x xs (when (not= 0 x) (set ret x)))
+  ret)
+
+(defn- pipeline-results
+  [xs err-exit]
+  (def status-codes (filter number? xs))
+  (assert (next status-codes)) # we must have at least 1 status code
+  (let [rc (if (dyn *pipefail*)
+             (last-nonzero status-codes)
+             (last status-codes))]
+    (if (not= 0 rc)
+      (if (and err-exit (dyn *errexit*))
+        (error (string/format "non-zero exit code %v" rc))
+        rc)
+      (last xs))))
+
 (defn- string-token [x]
   (if (bytes? x)
     (string x)
@@ -69,10 +91,11 @@
   and opens files, calls os/spawn on each command, and finally waits
   until completion. Also cleans up resources when done.
   ```
-  [pipeline &opt capture return-all]
+  [pipeline &opt capture return-all no-err-exit]
   (def procs @[])
   (def fds @[])
   (var pipein nil)
+  (var out nil)
   (defn getfd [f] (array/push fds f) f)
 
   (defer
@@ -140,8 +163,10 @@
           (ev/read final-pipe :all capture-buf)
           capture-buf)))
 
-    (def out (wait-thunks thunks))
-    (if return-all out (last out))))
+    (set out (wait-thunks thunks)))
+
+  # Outside defer for better stack trace on error
+  (if return-all out (pipeline-results out (not no-err-exit))))
 
 ###
 ### DSL Parsing
@@ -204,7 +229,9 @@
       (s (and (empty? cmd-buffer) (bytes? s) (peg/match parse-env-set-peg s)))
       (let [[k v] (peg/match parse-env-set-peg s)]
         (put tab :has-envvar true)
-        (put tab k (parse-token (if (symbol? s) (symbol v) v))))
+        (if (and (symbol? s) (= "" v)) # empty v binding means next arg is the value
+          (set tabkey k)
+          (put tab k (parse-token (if (symbol? s) (symbol v) v)))))
       # Pipe
       ['short-fn x]
       (do (unless (empty? cmd-buffer) (next-cmd)) (look-token x))
@@ -213,16 +240,25 @@
 
   # Parse tokens and build pipeline data
   (each t tokens
-    (if tabkey
+    (cond
+      # Env var
+      (string? tabkey)
+      (do
+        (set (tab tabkey) ~(,string ,(parse-token t)))
+        (set tabkey nil))
+      # Redirection
+      tabkey
       (do
         (set (tab tabkey) (parse-token t))
         (set tabkey nil))
+      # Default
       (look-token t)))
 
   # Handle last cmd
   (unless (empty? cmd-buffer) (next-cmd))
 
   # Process and check pipeline
+  (assert (next pipeline) "cannot make empty pipeline")
   (eachp [i {:tab t}] pipeline
     (def is-first (zero? i))
     (def is-last (= i (dec (length pipeline))))
@@ -234,9 +270,9 @@
   pipeline)
 
 (defn- dsl-impl
-  [tokens &opt capture all-status]
+  [tokens &opt capture all-status no-err-exit]
   # Run pipeline at runtime
-  ~(,do-pipeline-impl ,(build-pipeline tokens) ,capture ,all-status))
+  ~(,do-pipeline-impl ,(build-pipeline tokens) ,capture ,all-status ,no-err-exit))
 
 ###
 ### API
@@ -258,7 +294,7 @@
 (defmacro $?
   "Run and return true if last command passed, false otherwise"
   [& cmd]
-  ~(,zero? ,(dsl-impl cmd false)))
+  ~(,zero? ,(dsl-impl cmd false false true)))
 
 (defmacro $<_
   "Run and returns the standard output of the last command in the output with the last newline stripped."

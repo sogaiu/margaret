@@ -9,11 +9,11 @@
    :paths [["sbb.janet" "bundle/"]]}
   {:name "niche"
    :url "https://github.com/sogaiu/niche"
-   :tag "7caf81f636bb97104aada6544219733b3c86badf"
+   :tag "7d6914d48132b13241154252b20b131b1d0e46ba"
    :paths [["niche.janet" "bin/"]]}
   {:name "spork"
    :url "https://github.com/janet-lang/spork"
-   :tag "60110c3688c5687cc603159bcfa38d579f95a27d"
+   :tag "06ba2ed185631714e0fce0056927980ff4d9538c"
    :paths [["spork/sh-dsl.janet" "bin/"]]}]
 
  :sources
