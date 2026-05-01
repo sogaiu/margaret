@@ -127,6 +127,18 @@
            "  [3]: {}" eol
            "  [4]: @[]" eol)]
 
+  # regression test for change in janet's %m / %M behavior
+  (let [buf @""]
+    (with-dyns [:err buf]
+      [(peg/match ~(sequence (constant @[]) (??))
+                  "a")
+       buf]))
+  # =>
+  [@[@[]]
+   (buffer "?? at [a] (index 0)" eol
+           "stack [1]:" eol
+           "  [0]: @[]" eol)]
+
   (let [buf @""]
     (with-dyns [:err buf]
       [(peg/match

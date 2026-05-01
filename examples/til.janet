@@ -18,6 +18,12 @@
 
 (comment
 
+  (peg/match ~(sequence (til ";" (capture :a+))
+                        (capture :d+))
+             "xyz_;123")
+  # =>
+  @["xyz" "123"]
+
   (peg/match ~(sequence (til "bcde" (capture (to -1)))
                         (capture (to -1)))
              "abcdef")
