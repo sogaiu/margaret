@@ -74,10 +74,10 @@
   # =>
   @[]
 
- (peg/match ~(sequence (sub (capture "abcd" :a)
-                            (capture "abc"))
-                       (capture (backmatch)))
-            "abcdabcd")
+  (peg/match ~(sequence (sub (capture "abcd" :a)
+                             (capture "abc"))
+                        (capture (backmatch)))
+             "abcdabcd")
   # =>
   @["abcd" "abc" "abc"]
 
