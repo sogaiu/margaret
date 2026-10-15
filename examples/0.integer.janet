@@ -54,5 +54,10 @@
   # =>
   @[]
 
+  # janet af2471ce
+  (peg/match math/int32-min "abc")
+  # =>
+  @[]
+
   )
 

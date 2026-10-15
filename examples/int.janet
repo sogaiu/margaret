@@ -47,5 +47,10 @@
   # =>
   nil
 
+  # janet af2471ce
+  (peg/match ~(int 0) "123")
+  # =>
+  @[0]
+
   )
 

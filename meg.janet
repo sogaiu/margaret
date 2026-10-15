@@ -1921,14 +1921,18 @@
       (log-out)
       ret)
 
-    # negative integer is RULE_NOTNCHAR
+    # negative integer is RULE_NOTNCHAR, except if math/int32-min
     (and (int? peg) (neg? peg))
     (do
       (log-in)
       (def ret
-        (when (not (<= (math/abs peg)
+        (cond # likely unneeded in janet, but mirroring c anyway
+              (= math/int32-min peg)
+              index
+              #
+              (not (<= (math/abs peg)
                        (length (get-text index))))
-          index))
+              index))
       (log-out)
       ret)
 
@@ -2852,9 +2856,12 @@
               #
               (when (or (= 'int op)
                         (= 'int-be op))
-                (def shift (* 8 (- 8 width)))
-                (set accum
-                     (brshift (blshift accum shift) shift)))
+                (if (= 0 width)
+                  (set accum 0)
+                  (do
+                    (def shift (* 8 (- 8 width)))
+                    (set accum
+                         (brshift (blshift accum shift) shift)))))
               (var capture-value accum)
               (pushcap state capture-value tag)
               width))
